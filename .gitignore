@@ -3,6 +3,18 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# backup
+ 
+save/
+
+# libraries
+
+Library/
+
+# test files
+
+OPUA/main.cpp
+
 # User-specific files
 *.rsuser
 *.suo
