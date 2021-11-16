@@ -189,91 +189,57 @@ Objective::OpObjI::~OpObjI()
 
 void Objective::OpObj::setLinExpr(const Expression::OpLinExpr& expr)
 {
-	impl_->setLinExpr(expr);
+	static_cast<OpObjI*>(impl_)->setLinExpr(expr);
 }
 
 void Objective::OpObj::setQuadExpr(const Expression::OpQuadExpr& expr)
 {
-	impl_->setQuadExpr(expr);
+	static_cast<OpObjI*>(impl_)->setQuadExpr(expr);
 }
 
 void Objective::OpObj::setSense(OpObjSense sense)
 {
-	impl_->setSense(sense);
+	static_cast<OpObjI*>(impl_)->setSense(sense);
 }
 
 void Objective::OpObj::setName(OpStr name)
 {
-	impl_->setName(name);
+	static_cast<OpObjI*>(impl_)->setName(name);
 }
 
 const Expression::OpLinExpr& Objective::OpObj::getLinExpr() const
 {
-	return impl_->getLinExpr();
+	return static_cast<OpObjI*>(impl_)->getLinExpr();
 }
 
 const Expression::OpQuadExpr& Objective::OpObj::getQuadExpr() const
 {
-	return impl_->getQuadExpr();
+	return static_cast<OpObjI*>(impl_)->getQuadExpr();
 }
 
 Objective::OpObjSense Objective::OpObj::getSense() const
 {
-	return impl_->getSense();
+	return static_cast<OpObjI*>(impl_)->getSense();
 }
 
 OpStr Objective::OpObj::getName() const
 {
-	return impl_->getName();
+	return static_cast<OpObjI*>(impl_)->getName();
 }
 
 OpBool Objective::OpObj::isConstant() const
 {
-	return impl_->isConstant();
+	return static_cast<OpObjI*>(impl_)->isConstant();
 }
 
 OpBool Objective::OpObj::isQuad() const
 {
-	return impl_->isQuad();
-}
-
-OpBool Objective::OpObj::isLocked() const
-{
-	return impl_->isLocked();
+	return static_cast<OpObjI*>(impl_)->isQuad();
 }
 
 Objective::OpObjI* Objective::OpObj::getImpl() const
 {
-	return impl_;
-}
-
-OpLInt Objective::OpObj::getIndex() const
-{
-	return impl_->getIndex();
-}
-
-OpEnv Objective::OpObj::getEnv() const
-{
-	return impl_ ? OpEnv(impl_->getEnv()) : OpEnv(nullptr);
-}
-
-void Objective::OpObj::release()
-{
-	if (impl_)
-	{
-		impl_->release();
-		impl_ = nullptr;
-	}
-}
-
-void Objective::OpObj::lock()
-{
-	impl_->lock();
-}
-
-void Objective::OpObj::unlock()
-{
-	impl_->unlock();
+	return static_cast<OpObjI*>(impl_);
 }
 
 OpBool Objective::OpObj::operator==(const OpObj& obj)
@@ -287,43 +253,41 @@ OpBool Objective::OpObj::operator!=(const OpObj& obj)
 }
 
 Objective::OpObj::OpObj()
-	: impl_(nullptr)
 {
 
 }
 
 Objective::OpObj::OpObj(OpObjI* impl)
-	: impl_(impl)
 {
-
+	impl_ = impl;
 }
 
 Objective::OpObj::OpObj(OpEnv env)
-	: impl_(new OpObjI(env.getImpl()))
 {
-
+	impl_ = new OpObjI(env.getImpl());
 }
 
 Objective::OpObj::OpObj(OpEnv env, OpObjSense sense)
-	: impl_(new OpObjI(env.getImpl(), sense))
 {
-
+	impl_ = new OpObjI(env.getImpl(), sense);
 }
 
 Objective::OpObj::OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr)
-	: impl_(new OpObjI(env.getImpl(), sense, lexpr))
 {
-
+	impl_ = new OpObjI(env.getImpl(), sense, lexpr);
 }
 
 Objective::OpObj::OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr, const Expression::OpQuadExpr& qexpr)
-	: impl_(new OpObjI(env.getImpl(), sense, lexpr, qexpr))
 {
-
+	impl_ = new OpObjI(env.getImpl(), sense, lexpr, qexpr);
 }
 
 Objective::OpObj::OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr, const Expression::OpQuadExpr& qexpr, OpStr name)
-	: impl_(new OpObjI(env.getImpl(), sense, lexpr, qexpr, name))
+{
+	impl_ = new OpObjI(env.getImpl(), sense, lexpr, qexpr, name);
+}
+
+OPUA::Objective::OpObj::~OpObj()
 {
 
 }

@@ -28,9 +28,8 @@ namespace OPUA
 
 		// OpVar：OPUA变量类
 		class OpVar
+			: public OpBase
 		{
-		protected:
-			OpVarI* impl_;
 		public:
 			void setLb(OpFloat lb); // 设置变量下界
 			void setUb(OpFloat ub); // 设置变量上界
@@ -42,13 +41,7 @@ namespace OPUA
 			OpFloat getUb() const; // 获取变量下界
 			OpVarType getType() const; // 获取变量类型
 			OpStr getName() const; // 获取变量名称
-			OpBool isLocked() const; // 是否被锁定
 			OpVarI* getImpl() const; // 获取impl
-			OpLInt getIndex() const; // 获取索引
-			OpEnv getEnv() const; // 获取环境变量
-			void release(); // 释放变量(手动释放)
-			void lock(); // 锁定变量(锁定后不能更改边界和类型)
-			void unlock(); // 解锁
 		public:
 			OpBool operator==(const OpVar& var);
 			OpBool operator!=(const OpVar& var);
@@ -59,6 +52,8 @@ namespace OPUA
 			OpVar(OpEnv env, OpVarType type); // 从env构造并指定部分参数
 			OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub); // 从env构造并指定部分参数
 			OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpVar();
 		};
 	}
 }

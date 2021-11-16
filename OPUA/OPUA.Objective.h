@@ -29,9 +29,8 @@ namespace OPUA
 
 		// OpObj：OPUA目标函数类
 		class OpObj
+			: public OpBase
 		{
-		protected:
-			OpObjI* impl_;
 		public:
 			void setLinExpr(const Expression::OpLinExpr& expr); // 设置线性项表达式
 			void setQuadExpr(const Expression::OpQuadExpr& expr); // 设置二次项表达式(忽略线性项)
@@ -44,13 +43,7 @@ namespace OPUA
 			OpStr getName() const; // 获取目标函数名称
 			OpBool isConstant() const; // 是否为常量目标函数
 			OpBool isQuad() const; // 是否为二次目标函数
-			OpBool isLocked() const; // 是否被锁定
 			OpObjI* getImpl() const; // 获取impl
-			OpLInt getIndex() const; // 获取索引
-			OpEnv getEnv() const; // 获取环境变量
-			void release(); // 释放变量(手动释放)
-			void lock(); // 锁定目标函数(锁定后禁止修改表达式和符号)
-			void unlock(); // 解锁
 		public:
 			OpBool operator==(const OpObj& obj);
 			OpBool operator!=(const OpObj& obj);
@@ -62,6 +55,8 @@ namespace OPUA
 			OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr); // 从env构造并指定部分参数
 			OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr, const Expression::OpQuadExpr& qexpr); // 从env构造并指定部分参数
 			OpObj(OpEnv env, OpObjSense sense, const Expression::OpLinExpr& lexpr, const Expression::OpQuadExpr& qexpr, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpObj();
 		};
 	}
 }

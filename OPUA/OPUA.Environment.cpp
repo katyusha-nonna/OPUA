@@ -100,6 +100,7 @@ void OPUA::OpEnv::release()
 	if (impl_)
 	{
 		impl_->release();
+		delete impl_;
 		impl_ = nullptr;
 	}
 }
@@ -182,3 +183,49 @@ OPUA::OpImplBase::OpImplBase(OpChar cls, OpEnvI* env)
 	env_->addManagement(this);
 }
 
+/* OPUA::OpBase:: */
+
+OPUA::OpBool OPUA::OpBase::isLocked() const
+{
+	return impl_->isLocked();
+}
+
+OPUA::OpLInt OPUA::OpBase::getIndex() const
+{
+	return impl_->getIndex();
+}
+
+OPUA::OpEnv OPUA::OpBase::getEnv() const
+{
+	return impl_ ? OpEnv(impl_->getEnv()) : OpEnv(nullptr);
+}
+
+void OPUA::OpBase::release()
+{
+	if (impl_)
+	{
+		impl_->release();
+		impl_ = nullptr;
+	}
+}
+
+void OPUA::OpBase::lock()
+{
+	impl_->lock();
+}
+
+void OPUA::OpBase::unlock()
+{
+	impl_->unlock();
+}
+
+OPUA::OpBase::OpBase()
+	: impl_(nullptr)
+{
+
+}
+
+OPUA::OpBase::~OpBase()
+{
+
+}

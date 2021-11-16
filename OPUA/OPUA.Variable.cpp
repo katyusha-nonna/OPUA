@@ -132,86 +132,52 @@ Variable::OpVarI::~OpVarI()
 
 void Variable::OpVar::setLb(OpFloat lb)
 {
-	impl_->setLb(lb);
+	static_cast<OpVarI*>(impl_)->setLb(lb);
 }
 
 void Variable::OpVar::setUb(OpFloat ub)
 {
-	impl_->setUb(ub);
+	static_cast<OpVarI*>(impl_)->setUb(ub);
 }
 
 void Variable::OpVar::setBound(OpFloat lb, OpFloat ub)
 {
-	impl_->setBound(lb, ub);
+	static_cast<OpVarI*>(impl_)->setBound(lb, ub);
 }
 
 void Variable::OpVar::setType(OpVarType type)
 {
-	impl_->setType(type);
+	static_cast<OpVarI*>(impl_)->setType(type);
 }
 
 void Variable::OpVar::setName(OpStr name)
 {
-	impl_->setName(name);
+	static_cast<OpVarI*>(impl_)->setName(name);
 }
 
 OpFloat Variable::OpVar::getLb() const
 {
-	return impl_->getLb();
+	return static_cast<OpVarI*>(impl_)->getLb();
 }
 
 OpFloat Variable::OpVar::getUb() const
 {
-	return impl_->getUb();
+	return static_cast<OpVarI*>(impl_)->getUb();
 }
 
 Variable::OpVarType Variable::OpVar::getType() const
 {
-	return impl_->getType();
+	return static_cast<OpVarI*>(impl_)->getType();
 }
 
 OpStr Variable::OpVar::getName() const
 {
-	return impl_->getName();
-}
-
-OpBool OPUA::Variable::OpVar::isLocked() const
-{
-	return impl_->isLocked();
+	return static_cast<OpVarI*>(impl_)->getName();
 }
 
 Variable::OpVarI* Variable::OpVar::getImpl() const
 {
-	return impl_;
-}
-
-OpLInt OPUA::Variable::OpVar::getIndex() const
-{
-	return impl_->getIndex();
-}
-
-OpEnv OPUA::Variable::OpVar::getEnv() const
-{
-	return impl_ ? OpEnv(impl_->getEnv()) : OpEnv(nullptr);
-}
-
-void OPUA::Variable::OpVar::release()
-{
-	if (impl_)
-	{
-		impl_->release();
-		impl_ = nullptr;
-	}
-}
-
-void Variable::OpVar::lock()
-{
-	impl_->lock();
-}
-
-void Variable::OpVar::unlock()
-{
-	impl_->unlock();
+	return static_cast<OpVarI*>(impl_);
 }
 
 OpBool Variable::OpVar::operator==(const OpVar& var)
@@ -225,37 +191,36 @@ OpBool Variable::OpVar::operator!=(const OpVar& var)
 }
 
 OPUA::Variable::OpVar::OpVar()
-	: impl_(nullptr)
 {
 
 }
 
 OPUA::Variable::OpVar::OpVar(OpVarI* impl)
-	: impl_(impl)
 {
-
+	impl_ = impl;
 }
 
 OPUA::Variable::OpVar::OpVar(OpEnv env)
-	: impl_(new OpVarI(env.getImpl()))
 {
-	
+	impl_ = new OpVarI(env.getImpl());
 }
 
 OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type)
-	: impl_(new OpVarI(env.getImpl(), type))
 {
-
+	impl_ = new OpVarI(env.getImpl(), type);
 }
 
 OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub)
-	: impl_(new OpVarI(env.getImpl(), type, lb, ub))
 {
-
+	impl_ = new OpVarI(env.getImpl(), type, lb, ub);
 }
 
 OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name)
-	: impl_(new OpVarI(env.getImpl(), type, lb, ub, name))
+{
+	impl_ = new OpVarI(env.getImpl(), type, lb, ub, name);
+}
+
+OPUA::Variable::OpVar::~OpVar()
 {
 
 }

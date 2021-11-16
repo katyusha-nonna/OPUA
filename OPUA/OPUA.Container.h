@@ -134,44 +134,52 @@ namespace OPUA
 		// 没有做const和ref类型去除，因此最好T不要带const和ref
 		template<typename T>
 		class OpArray
+			: public OpBase
 		{
-		protected:
-			OpArrayI<T>* impl_;
-
 		public:
-			OpULInt getSize() const { return impl_->getSize(); } // 获取当前数组大小
-			void add(OpArray arr) { impl_->add(arr->getImpl()); } // 插入元素
+			OpULInt getSize() const { return static_cast<OpArrayI<T>*>(impl_)->getSize(); } // 获取当前数组大小
+			void add(OpArray arr) { static_cast<OpArrayI<T>*>(impl_)->add(arr->getImpl()); } // 插入元素
 			template<class... ArgTy>
-			void add(ArgTy&&... arg) { impl_->add(std::forward<ArgTy>(arg)...); } // 加入元素
+			void add(ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(std::forward<ArgTy>(arg)...); } // 加入元素
 			template<class... ArgTy>
-			void add(OpULInt n, ArgTy&&... arg) { impl_->add(n, arg); } // 加入元素	
-			OpULInt find(const T& e)  const { return impl_->find(e); } // 查找元素
-			void remove(const T& e) { impl_->remove(e); } // 移除元素
-			void remove(OpULInt from, OpULInt to) { impl_->remove(from, to); } // 移除元素
-			void clear() { impl_->clear(); } // 清空数组(不释放内存)
-			void release() { if (impl_) impl_->release(), impl_ = nullptr; } // 释放数组(手动释放)
-			void releaseElements() { impl_->releaseElements(); } // 释放数组中所有元素			
-			OpArrayI<T>* getImpl() const { return impl_; } // 获取impl
-			OpEnv getEnv() const { return impl_ ? OpEnv(impl_->getEnv()), OpEnv(nullptr); } // 获取环境变量
+			void add(OpULInt n, ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(n, arg); } // 加入元素	
+			OpULInt find(const T& e)  const { return static_cast<OpArrayI<T>*>(impl_)->find(e); } // 查找元素
+			void remove(const T& e) { static_cast<OpArrayI<T>*>(impl_)->remove(e); } // 移除元素
+			void remove(OpULInt from, OpULInt to) { static_cast<OpArrayI<T>*>(impl_)->remove(from, to); } // 移除元素
+			void clear() { static_cast<OpArrayI<T>*>(impl_)->clear(); } // 清空数组(不释放内存)
+			void releaseElements() { static_cast<OpArrayI<T>*>(impl_)->releaseElements(); } // 释放数组中所有元素			
+			OpArrayI<T>* getImpl() const { return static_cast<OpArrayI<T>*>(impl_); } // 获取impl
 		public:
-			OpArrCIter<T> getCBegin() const { return impl_->elements_.cbegin(); } // 得到常量初始迭代器
-			OpArrCIter<T> getCEnd() const { return impl_->elements_.cend(); }; // 得到常量尾后迭代器
-			OpArrIter<T> getBegin() { return impl_->elements_.begin(); }; // 得到初始迭代器
-			OpArrIter<T> getEnd() { return impl_->elements_.end(); }; // 得到尾后迭代器
+			OpArrCIter<T> getCBegin() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
+			OpArrCIter<T> getCEnd() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
+			OpArrIter<T> getBegin() { return static_cast<OpArrayI<T>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
+			OpArrIter<T> getEnd() { return static_cast<OpArrayI<T>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
 		public:
 			OpBool operator==(const OpArray<T>& arr) { return impl_ == arr.getImpl(); } /*判断是否为同一数组*/
 			OpBool operator!=(const OpArray<T>& arr) { return impl_ != arr.getImpl(); } /*判断是否非同一数组*/
-			T& operator[](OpULInt i) { return impl_->getElement(i); } // 访问元素
+			T& operator[](OpULInt i) { return static_cast<OpArrayI<T>*>(impl_)->getElement(i); } // 访问元素
 		public:
 			OpArray()
-				: impl_(nullptr) {}
+			{
+
+			}
 			OpArray(OpArrayI<T>* impl)
-				: impl_(impl) {}
+			{
+				impl_ = impl;
+			}
 			OpArray(OpEnv env)
-				: impl_(new OpArrayI<T>(env.getImpl())) {}
+			{
+				impl_ = new OpArrayI<T>(env.getImpl());
+			}
 			template<class... ArgTy>
 			OpArray(OpEnv env, OpULInt n, ArgTy&&... arg)
-				: impl_(new OpArrayI<T>(env.getImpl(), n, std::forward<ArgTy>(arg)...)) {}
+			{
+				impl_ = new OpArrayI<T>(env.getImpl(), n, std::forward<ArgTy>(arg)...);
+			}
+			~OpArray()
+			{
+
+			}
 		};
 
 		// OpDictI：OpDict的Impl类
@@ -253,36 +261,43 @@ namespace OPUA
 		// OpDict：OPUA的字典类
 		template<typename TK, typename TV> 
 		class OpDict
+			: public OpBase
 		{
-		protected:
-			OpDictI<TK, TV>* impl_;
 		public:
-			OpULInt getSize() const { return impl_->getSize(); } // 获取字典大小
-			OpBool has(const TK& key) { return impl_->has(key); } // 是否存在元素
+			OpULInt getSize() const { return static_cast<OpDictI<TK, TV>*>(impl_)->getSize(); } // 获取字典大小
+			OpBool has(const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->has(key); } // 是否存在元素
 			template<class... ArgTy>
-			void add(const TK& key, ArgTy&&... arg) { impl_->add(key, std::forward<ArgTy>(arg)...); } // 添加元素
-			void remove(const TK& key) { impl_->remove(key); } // 移除元素
-			void clear() { impl_->clear(); } // 清空字典
-			void release() { if (impl_) impl_->release(), impl_ = nullptr; } // 释放字典
-			void releaseElements() { impl_->releaseElements(); } // 释放字典中元素(需要元素自定义release)
-			OpDictI<TK, TV>* getImpl() const { return impl_; } // 获取impl
-			OpEnv getEnv() const { return impl_ ? OpEnv(impl_->getEnv()), OpEnv(nullptr); }
+			void add(const TK& key, ArgTy&&... arg) { static_cast<OpDictI<TK, TV>*>(impl_)->add(key, std::forward<ArgTy>(arg)...); } // 添加元素
+			void remove(const TK& key) { static_cast<OpDictI<TK, TV>*>(impl_)->remove(key); } // 移除元素
+			void clear() { static_cast<OpDictI<TK, TV>*>(impl_)->clear(); } // 清空字典
+			void releaseElements() { static_cast<OpDictI<TK, TV>*>(impl_)->releaseElements(); } // 释放字典中元素(需要元素自定义release)
+			OpDictI<TK, TV>* getImpl() const { return static_cast<OpDictI<TK, TV>*>(impl_); } // 获取impl
 		public:
-			OpDictCIter<TK, TV> getCBegin() const { return impl_->elements_.cbegin(); } // 得到常量初始迭代器
-			OpDictCIter<TK, TV> getCEnd() const { return impl_->elements_.cend(); }; // 得到常量尾后迭代器
-			OpDictIter<TK, TV> getBegin() { return impl_->elements_.begin(); }; // 得到初始迭代器
-			OpDictIter<TK, TV> getEnd() { return impl_->elements_.end(); }; // 得到尾后迭代器
+			OpDictCIter<TK, TV> getCBegin() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
+			OpDictCIter<TK, TV> getCEnd() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
+			OpDictIter<TK, TV> getBegin() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
+			OpDictIter<TK, TV> getEnd() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
 		public:
 			OpBool operator==(const OpDict<TK, TV>& dict) { return impl_ == dict.getImpl(); } /*判断是否为同一字典*/
 			OpBool operator!=(const OpDict<TK, TV>& dict) { return impl_ != dict.getImpl(); } /*判断是否非同一字典*/
-			TV& operator[](const TK& key) { return impl_->getElement(key); } // 访问元素(如果不存在则原地创建)
+			TV& operator[](const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->getElement(key); } // 访问元素(如果不存在则原地创建)
 		public:
 			OpDict()
-				: impl_(nullptr) {}
+			{
+
+			}
 			OpDict(OpDictI<TK, TV>* impl)
-				: impl_(impl) {}
+			{
+				impl_ = impl;
+			}
 			OpDict(OpEnv env)
-				: impl_(new OpDictI<TK, TV>(env.getImpl())) {}
+			{
+				impl_ = new OpDictI<TK, TV>(env.getImpl());
+			}
+			~OpDict()
+			{
+
+			}
 		};
 	}
 }

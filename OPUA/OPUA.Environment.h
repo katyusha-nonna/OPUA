@@ -48,6 +48,7 @@ namespace OPUA
 		OpEnvI* env_; // 环境变量
 
 		friend class OpEnvI;
+		friend class OpBase;
 	protected:
 		void lock(); // 锁定组件
 		void unlock(); // 解锁组件
@@ -60,5 +61,23 @@ namespace OPUA
 		OpImplBase(OpChar cls, OpEnvI* env);
 	public:
 		virtual ~OpImplBase(); // 释放组件本身(被动释放)
+	};
+
+	// 所有Op组件的基类(表达式除外)
+	class OpBase
+	{
+	protected:
+		OpImplBase* impl_;
+	public:
+		OpBool isLocked() const; // 是否被锁定
+		OpLInt getIndex() const; // 获取索引
+		OpEnv getEnv() const; // 获取环境变量
+		void release(); // 释放变量(手动释放)
+		void lock(); // 锁定组件
+		void unlock(); // 解锁组件
+	public:
+		OpBase();
+	public:
+		virtual ~OpBase();
 	};
 }

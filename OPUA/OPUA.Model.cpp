@@ -84,6 +84,7 @@ void Model::OpModelI::addVar(Variable::OpVar var)
 	auto idx(var.getIndex());
 	mvars_.add(idx, var);
 	mvrc_[idx]++;
+	var.lock();
 }
 
 void Model::OpModelI::removeVar(Variable::OpVar var)
@@ -93,8 +94,9 @@ void Model::OpModelI::removeVar(Variable::OpVar var)
 	{
 		if (!--mvrc_[idx])
 		{
+			var.unlock();
 			mvars_.remove(idx);
-			mvrc_.remove(idx);
+			mvrc_.remove(idx);		
 		}
 	}
 }
@@ -341,116 +343,87 @@ Model::OpModelI::~OpModelI()
 
 void Model::OpModel::add(Constraint::OpLinCon con)
 {
-	impl_->addLinCon(con);
+	static_cast<OpModelI*>(impl_)->addLinCon(con);
 }
 
 void Model::OpModel::add(Constraint::OpLCArr cons)
 {
-	impl_->addLinCons(cons);
+	static_cast<OpModelI*>(impl_)->addLinCons(cons);
 }
 
 void Model::OpModel::add(Constraint::OpQuadCon con)
 {
-	impl_->addQuadCon(con);
+	static_cast<OpModelI*>(impl_)->addQuadCon(con);
 }
 
 void Model::OpModel::add(Constraint::OpQCArr cons)
 {
-	impl_->addQuadCons(cons);
+	static_cast<OpModelI*>(impl_)->addQuadCons(cons);
 }
 
 void Model::OpModel::add(Constraint::OpSOSCon con)
 {
-	impl_->addSOS(con);
+	static_cast<OpModelI*>(impl_)->addSOS(con);
 }
 
 void Model::OpModel::add(Constraint::OpSOSArr cons)
 {
-	impl_->addSOSs(cons);
+	static_cast<OpModelI*>(impl_)->addSOSs(cons);
 }
 
 void Model::OpModel::setObj(Objective::OpObj obj)
 {
-	impl_->setObj(obj);
+	static_cast<OpModelI*>(impl_)->setObj(obj);
 }
 
 void Model::OpModel::remove(Constraint::OpLinCon con)
 {
-	impl_->removeLinCon(con);
+	static_cast<OpModelI*>(impl_)->removeLinCon(con);
 }
 
 void Model::OpModel::remove(Constraint::OpLCArr cons)
 {
-	impl_->removeLinCons(cons);
+	static_cast<OpModelI*>(impl_)->removeLinCons(cons);
 }
 
 void Model::OpModel::remove(Constraint::OpQuadCon con)
 {
-	impl_->removeQuadCon(con);
+	static_cast<OpModelI*>(impl_)->removeQuadCon(con);
 }
 
 void Model::OpModel::remove(Constraint::OpQCArr cons)
 {
-	impl_->removeQuadCons(cons);
+	static_cast<OpModelI*>(impl_)->removeQuadCons(cons);
 }
 
 void Model::OpModel::remove(Constraint::OpSOSCon con)
 {
-	impl_->removeSOS(con);
+	static_cast<OpModelI*>(impl_)->removeSOS(con);
 }
 
 void Model::OpModel::remove(Constraint::OpSOSArr cons)
 {
-	impl_->removeSOSs(cons);
+	static_cast<OpModelI*>(impl_)->removeSOSs(cons);
 }
 
 void Model::OpModel::write(OpStr path)
 {
-	impl_->write(path);
+	static_cast<OpModelI*>(impl_)->write(path);
 }
 
 void OPUA::Model::OpModel::setName(OpStr name)
 {
-	impl_->setName(name);
+	static_cast<OpModelI*>(impl_)->setName(name);
 }
 
 OpStr Model::OpModel::getName() const
 {
-	return impl_->getName();
-}
-
-OpBool Model::OpModel::isLocked() const
-{
-	return impl_->isLocked();
+	return static_cast<OpModelI*>(impl_)->getName();
 }
 
 Model::OpModelI* Model::OpModel::getImpl() const
 {
-	return impl_;
-}
-
-OpEnv Model::OpModel::getEnv() const
-{
-	return impl_ ? OpEnv(impl_->getEnv()) : OpEnv(nullptr);
-}
-
-void Model::OpModel::release()
-{
-	if (impl_)
-	{
-		impl_->release();
-		impl_ = nullptr;
-	}
-}
-
-void Model::OpModel::lock()
-{
-	impl_->lock();
-}
-
-void Model::OpModel::unlock()
-{
-	impl_->unlock();
+	return static_cast<OpModelI*>(impl_);
 }
 
 OpBool Model::OpModel::operator==(const OpModel& model)
@@ -464,25 +437,26 @@ OpBool Model::OpModel::operator!=(const OpModel& model)
 }
 
 Model::OpModel::OpModel()
-	: impl_(nullptr)
 {
 
 }
 
 Model::OpModel::OpModel(OpModelI* impl)
-	: impl_(impl)
 {
-
+	impl_ = impl;
 }
 
 Model::OpModel::OpModel(OpEnv env)
-	: impl_(new OpModelI(env.getImpl()))
 {
-
+	impl_ = new OpModelI(env.getImpl());
 }
 
 Model::OpModel::OpModel(OpEnv env, OpStr name)
-	: impl_(new OpModelI(env.getImpl(), name))
+{
+	impl_ = new OpModelI(env.getImpl(), name);
+}
+
+OPUA::Model::OpModel::~OpModel()
 {
 
 }
