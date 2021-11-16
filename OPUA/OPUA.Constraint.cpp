@@ -966,6 +966,7 @@ std::ostream& Constraint::operator<<(std::ostream& stream, OpSOSCon con)
 		stream << iter.getVar().getName();
 	}
 	stream << " )" << std::endl;
+	return stream;
 }
 
 
