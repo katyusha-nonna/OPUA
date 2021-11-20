@@ -441,45 +441,58 @@ class Constraint::OpNLConI
 	: public OpImplBase
 {
 protected:
-	OpConFunc cfun_; // 约束操作函数
-	Variable::OpVarArr cvars_; // 约束操作数(根据操作函数不同有先后顺序区分)
+	Variable::OpVar clvar_; // 约束左操作数
+	Expression::OpNLExpr crexpr_; // 约束右操作表达式
+
 	OpStr cname_;
 
 	friend class OpNLCon;
 protected:
-	void setFunction(OpConFunc func); // 设置(改变)约束的操作函数
 	void setName(OpStr name); // 设置约束名称
-	void addVar(Variable::OpVar var); // 添加操作数
-	OpConFunc getFunction() const; // 获取约束的操作函数
+	void setVar(Variable::OpVar var); // 设置左操作变量
+	void setExpr(const Expression::OpNLExpr& expr); // 设置右操作表达式
+	Variable::OpVar getVar() const; // 获取右操作变量
+	const Expression::OpNLExpr& getExpr() const; // 获取左操作表达式
+	Expression::OpNLFunc getFunction() const; // 获取约束的操作函数
 	OpStr getName() const; // 获取约束名称
 protected:
 	OpNLConI(OpEnvI* env);
-	OpNLConI(OpEnvI* env, OpConFunc func);
-	OpNLConI(OpEnvI* env, OpConFunc func, OpStr name);
+	OpNLConI(OpEnvI* env, Variable::OpVar var, const Expression::OpNLExpr& expr);
+	OpNLConI(OpEnvI* env, Variable::OpVar var, const Expression::OpNLExpr& expr, OpStr name);
 public:
 	virtual ~OpNLConI();
 };
-
-void Constraint::OpNLConI::setFunction(OpConFunc func)
-{
-	if (!locked_)
-		cfun_ = func;
-}
 
 void Constraint::OpNLConI::setName(OpStr name)
 {
 	cname_ = name;
 }
 
-void Constraint::OpNLConI::addVar(Variable::OpVar var)
+void Constraint::OpNLConI::setVar(Variable::OpVar var)
 {
 	if (!locked_)
-		cvars_.add(var);
+		clvar_ = var;
 }
 
-Constraint::OpConFunc Constraint::OpNLConI::getFunction() const
+void Constraint::OpNLConI::setExpr(const Expression::OpNLExpr& expr)
 {
-	return cfun_;
+	if (!locked_)
+		crexpr_ = expr;
+}
+
+Variable::OpVar Constraint::OpNLConI::getVar() const
+{
+	return clvar_;
+}
+
+const Expression::OpNLExpr& Constraint::OpNLConI::getExpr() const
+{
+	return crexpr_;
+}
+
+Expression::OpNLFunc Constraint::OpNLConI::getFunction() const
+{
+	return crexpr_.getFunction();
 }
 
 OpStr Constraint::OpNLConI::getName() const
@@ -489,26 +502,26 @@ OpStr Constraint::OpNLConI::getName() const
 
 Constraint::OpNLConI::OpNLConI(OpEnvI* env)
 	: OpImplBase('C', env),
-	cfun_(OpConFunc::Sum),
-	cvars_(OpEnv(env)), 
+	clvar_(),
+	crexpr_(),
 	cname_("nlc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpNLConI::OpNLConI(OpEnvI* env, OpConFunc func)
+Constraint::OpNLConI::OpNLConI(OpEnvI* env, Variable::OpVar var, const Expression::OpNLExpr& expr)
 	: OpImplBase('C', env),
-	cfun_(func),
-	cvars_(OpEnv(env)),
+	clvar_(var),
+	crexpr_(expr),
 	cname_("nlc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpNLConI::OpNLConI(OpEnvI* env, OpConFunc func, OpStr name)
+Constraint::OpNLConI::OpNLConI(OpEnvI* env, Variable::OpVar var, const Expression::OpNLExpr& expr, OpStr name)
 	: OpImplBase('C', env),
-	cfun_(func),
-	cvars_(OpEnv(env)),
+	clvar_(var),
+	crexpr_(expr),
 	cname_(name)
 {
 
@@ -516,7 +529,7 @@ Constraint::OpNLConI::OpNLConI(OpEnvI* env, OpConFunc func, OpStr name)
 
 Constraint::OpNLConI::~OpNLConI()
 {
-	cvars_.release();
+
 }
 
 /* OPUA::Constraint::OpLinCon */
@@ -802,24 +815,34 @@ OPUA::Constraint::OpSOSCon::~OpSOSCon()
 
 /* OPUA::Constraint::OpNLCon */
 
-void Constraint::OpNLCon::setFunction(OpConFunc func)
-{
-	static_cast<OpNLConI*>(impl_)->setFunction(func);
-}
-
 void Constraint::OpNLCon::setName(OpStr name)
 {
 	static_cast<OpNLConI*>(impl_)->setName(name);
 }
 
-void Constraint::OpNLCon::addVar(Variable::OpVar var)
+void Constraint::OpNLCon::setVar(Variable::OpVar var)
 {
-	static_cast<OpNLConI*>(impl_)->addVar(var);
+	static_cast<OpNLConI*>(impl_)->setVar(var);
 }
 
-Constraint::OpConFunc Constraint::OpNLCon::getFunction() const
+void Constraint::OpNLCon::setExpr(const Expression::OpNLExpr& expr)
+{
+	static_cast<OpNLConI*>(impl_)->setExpr(expr);
+}
+
+Expression::OpNLFunc Constraint::OpNLCon::getFunction() const
 {
 	return static_cast<OpNLConI*>(impl_)->getFunction();
+}
+
+const Expression::OpNLExpr& Constraint::OpNLCon::getExpr() const
+{
+	return static_cast<OpNLConI*>(impl_)->getExpr();
+}
+
+Variable::OpVar Constraint::OpNLCon::getVar() const
+{
+	return static_cast<OpNLConI*>(impl_)->getVar();
 }
 
 OpStr Constraint::OpNLCon::getName() const
@@ -830,16 +853,6 @@ OpStr Constraint::OpNLCon::getName() const
 Constraint::OpNLConI* Constraint::OpNLCon::getImpl() const
 {
 	return static_cast<OpNLConI*>(impl_);
-}
-
-Variable::OpVarArr::OpArrCIter OPUA::Constraint::OpNLCon::getCBegin()
-{
-	return static_cast<OpNLConI*>(impl_)->cvars_.getCBegin();
-}
-
-Variable::OpVarArr::OpArrCIter OPUA::Constraint::OpNLCon::getCEnd()
-{
-	return static_cast<OpNLConI*>(impl_)->cvars_.getCEnd();
 }
 
 OpBool Constraint::OpNLCon::operator==(const OpNLCon& con)
@@ -867,17 +880,17 @@ Constraint::OpNLCon::OpNLCon(OpEnv env)
 	impl_ = new OpNLConI(env.getImpl());
 }
 
-OPUA::Constraint::OpNLCon::OpNLCon(OpEnv env, OpConFunc func)
+Constraint::OpNLCon::OpNLCon(OpEnv env, Variable::OpVar var, const Expression::OpNLExpr& expr)
 {
-	impl_ = new OpNLConI(env.getImpl(), func);
+	impl_ = new OpNLConI(env.getImpl(), var, expr);
 }
 
-OPUA::Constraint::OpNLCon::OpNLCon(OpEnv env, OpConFunc func, OpStr name)
+Constraint::OpNLCon::OpNLCon(OpEnv env, Variable::OpVar var, const Expression::OpNLExpr& expr, OpStr name)
 {
-	impl_ = new OpNLConI(env.getImpl(), func, name);
+	impl_ = new OpNLConI(env.getImpl(), var, expr, name);
 }
 
-OPUA::Constraint::OpNLCon::~OpNLCon()
+Constraint::OpNLCon::~OpNLCon()
 {
 
 }
@@ -1026,147 +1039,218 @@ std::ostream& Constraint::operator<<(std::ostream& stream, OpSOSCon con)
 			stream << ", ";
 		stream << iter.getVar().getName();
 	}
-	stream << " )" << std::endl;
+	stream << " )";
 	return stream;
+}
+
+std::ostream& Constraint::operator<<(std::ostream& stream, OpNLCon con)
+{
+	stream << con.getVar().getName() << " == ";
+	auto& expr(con.getExpr());
+	stream << Expression::NLFunc2Str(expr.getFunction()) << "( ";
+	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
+	{
+		if (iter != expr.getNLBegin())
+			stream << ", ";
+		stream << iter.getVar().getName();
+	}
+	stream << " )";
+	return stream;
+}
+
+Constraint::OpNLCon Constraint::operator==(const Expression::OpNLExpr& lhs, Variable::OpVar rhs)
+{
+	OpNLCon con(nullptr);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv)
+	{
+		if (lenv == renv)
+			con = OpNLCon(OpEnv(lenv), rhs, lhs);
+	}
+	else if (!lenv && renv)
+		con = OpNLCon(OpEnv(renv), rhs, lhs);
+	else if (lenv && !renv)
+		con = OpNLCon(OpEnv(lenv), rhs, lhs);
+	return con;
+}
+
+Constraint::OpNLCon Constraint::operator==(Variable::OpVar lhs, const Expression::OpNLExpr& rhs)
+{
+	OpNLCon con(nullptr);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv)
+	{
+		if (lenv == renv)
+			con = OpNLCon(OpEnv(lenv), lhs, rhs);
+	}
+	else if (!lenv && renv)
+		con = OpNLCon(OpEnv(renv), lhs, rhs);
+	else if (lenv && !renv)
+		con = OpNLCon(OpEnv(lenv), lhs, rhs);
+	return con;
 }
 
 Constraint::OpNLCon Constraint::OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
 {
-	OpNLCon tmp(env, OpConFunc::Sum);
-	tmp.addVar(x1);
-	for (auto iter = X.getCBegin(); iter != X.getCEnd(); ++iter)
-		tmp.addVar(iter.getVal());
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Sum, X);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
 {
-	OpNLCon tmp(env, OpConFunc::Max);
-	tmp.addVar(x1);
-	for (auto iter = X.getCBegin(); iter != X.getCEnd(); ++iter)
-		tmp.addVar(iter.getVal());
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Max, X);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
 {
-	OpNLCon tmp(env, OpConFunc::Min);
-	tmp.addVar(x1);
-	for (auto iter = X.getCBegin(); iter != X.getCEnd(); ++iter)
-		tmp.addVar(iter.getVal());
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Min, X);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpAbs(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Abs);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Abs);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpSquare(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Square);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Square);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpSqrt(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Sqrt);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Sqrt);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
 {
-	OpNLCon tmp(env, OpConFunc::Pow);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
-	tmp.addVar(x3);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Pow);
+	expr.addVar(x2);
+	expr.addVar(x3);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpExp1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Exp1);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Exp1);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
 {
-	OpNLCon tmp(env, OpConFunc::Exp2);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
-	tmp.addVar(x3);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Exp2);
+	expr.addVar(x2);
+	expr.addVar(x3);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpLog1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Log1);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Log1);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpLog2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Log2);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Log2);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
 {
-	OpNLCon tmp(env, OpConFunc::Log3);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
-	tmp.addVar(x3);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Log3);
+	expr.addVar(x2);
+	expr.addVar(x3);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Sin);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Sin);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpCos(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Cos);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Cos);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }
 
 Constraint::OpNLCon Constraint::OpTan(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
-	OpNLCon tmp(env, OpConFunc::Tan);
-	tmp.addVar(x1);
-	tmp.addVar(x2);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Tan);
+	expr.addVar(x2);
+	OpNLCon tmp(env);
+	tmp.setVar(x1);
+	tmp.setExpr(expr);
 	tmp.lock();
 	return tmp;
 }

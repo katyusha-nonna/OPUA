@@ -11,7 +11,18 @@ namespace OPUA
 		class OpModelI;
 		class OpModel;
 
-		// OpModel：OPUA优化模型类
+		/*
+			OpModel：OPUA优化模型类
+			优化模型对以下组件使用字典进行分别存储:
+				[1] OpVar / 变量 
+				[2] OpLinCon / 线性约束
+				[3] OpQuadCon / 二次约束
+				[4] OpSOSCon / SOS约束
+				[5] OpNLCon / 非线性约束
+				[6] OpObj / 多目标优化目标函数
+
+				迭代器可以遍历上述组件的字典，键值为索引
+		*/
 		class OpModel
 			: public OpBase
 		{

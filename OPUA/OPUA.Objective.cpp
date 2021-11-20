@@ -2,7 +2,7 @@
 
 using namespace OPUA;
 
-OpStr OPUA::Objective::ObjSense2Str(OpObjSense sense)
+OpStr Objective::ObjSense2Str(OpObjSense sense)
 {
 	OpStr str(" ? ");
 	if (sense == OpObjSense::Min)
@@ -12,7 +12,7 @@ OpStr OPUA::Objective::ObjSense2Str(OpObjSense sense)
 	return str;
 }
 
-std::ostream& OPUA::Objective::operator<<(std::ostream& stream, OpObj obj)
+std::ostream& Objective::operator<<(std::ostream& stream, OpObj obj)
 {
 	stream << ObjSense2Str(obj.getSense());
 	if (obj.isQuad())

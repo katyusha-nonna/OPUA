@@ -33,25 +33,6 @@ namespace OPUA
 			SOS2 // SOS2约束
 		};
 
-		enum class OpConFunc
-		{
-			Sum, // 求和 x1 = Sum(x2, x3, ...)
-			Abs, // 绝对值 x1 = abs(x2)
-			Max, // 取最大值 x1 = max(x2, x3, ...)
-			Min, // 取最小值 x1 = min(x2, x3, ...)
-			Square, // 平方 x1 = x2^^2
-			Sqrt, // 平方根 x1 = sqrt(x2)
-			Pow, // 幂 x1 = x2^^x3
-			Exp1, // 指数 x1 = e^^x2
-			Exp2, // 指数 x1 = x2^^x3
-			Log1, // 对数 x1 = log (10) x2
-			Log2, // 对数 x1 = log (e) x2
-			Log3, // 对数 x1 = log (x2) x3
-			Sin, // 正弦 x1 = sin(x2)
-			Cos, // 余弦 x1 = cos(x2)
-			Tan, // 正切 x1 = tan(x2)
-		};
-
 		// 警告，不允许“常数 <=/>=/== 常数”，否则将返回空约束
 
 		std::ostream& operator<<(std::ostream& stream, OpLinCon con);
@@ -66,22 +47,26 @@ namespace OPUA
 
 		std::ostream& operator<<(std::ostream& stream, OpSOSCon con);
 
+		std::ostream& operator<<(std::ostream& stream, OpNLCon con);
+		OpNLCon operator==(const Expression::OpNLExpr& lhs, Variable::OpVar rhs);
+		OpNLCon operator==(Variable::OpVar lhs, const Expression::OpNLExpr& rhs);
+
 		// 警告，参数的顺序关系到操作数的位置，详见操作函数说明
-		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X);
-		OpNLCon OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X);
-		OpNLCon OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X);
-		OpNLCon OpAbs(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpSquare(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpSqrt(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
-		OpNLCon OpExp1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
-		OpNLCon OpLog1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpLog2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
-		OpNLCon OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpCos(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpTan(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
+		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Sum(X)
+		OpNLCon OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Max(X)
+		OpNLCon OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Min(X)
+		OpNLCon OpAbs(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = Abs(x2)
+		OpNLCon OpSquare(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = x2^^2
+		OpNLCon OpSqrt(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = x2^^0.5
+		OpNLCon OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = x2^^x3
+		OpNLCon OpExp1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = e^^x2
+		OpNLCon OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = x2^^x3
+		OpNLCon OpLog1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = log (10) x2
+		OpNLCon OpLog2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = log (e) x2
+		OpNLCon OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = log (x2) x3
+		OpNLCon OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = sin(x2)
+		OpNLCon OpCos(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = cos(x2)
+		OpNLCon OpTan(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = tan(x2)
 
 		OpStr ConSense2Str(OpConSense sense); // 将约束类型转换为字符
 
@@ -173,19 +158,19 @@ namespace OPUA
 		};
 
 		// OpNLCon：OPUA的非线性约束类
+		// 格式：x = expr
 		class OpNLCon
 			: public OpBase
 		{
 		public:
-			void setFunction(OpConFunc func); // 设置(改变)约束的操作函数
 			void setName(OpStr name); // 设置约束名称
-			void addVar(Variable::OpVar var); // 添加操作数(有顺序区别)
-			OpConFunc getFunction() const; // 获取约束的操作函数
+			void setVar(Variable::OpVar var); // 设置变量(约束左操作数)
+			void setExpr(const Expression::OpNLExpr& expr); // 设置非线性表达式(约束右操作数)
+			Expression::OpNLFunc getFunction() const; // 获取非线性约束的操作函数
+			const Expression::OpNLExpr& getExpr() const; // 获取非线性表达式
+			Variable::OpVar getVar() const; // 获取变量
 			OpStr getName() const; // 获取约束名称
 			OpNLConI* getImpl() const; // 获取impl
-		public:
-			Variable::OpVarArr::OpArrCIter getCBegin(); // 获取变量数组的常量首端迭代器
-			Variable::OpVarArr::OpArrCIter getCEnd(); // 获取变量数组的常量末端迭代器
 		public:
 			OpBool operator==(const OpNLCon& con);
 			OpBool operator!=(const OpNLCon& con);
@@ -193,8 +178,8 @@ namespace OPUA
 			OpNLCon(); // 默认构造函数(默认为空)
 			OpNLCon(OpNLConI* impl); // 从impl构造
 			OpNLCon(OpEnv env); // 从env构造
-			OpNLCon(OpEnv env, OpConFunc func); // 从env构造并指定部分参数
-			OpNLCon(OpEnv env, OpConFunc func, OpStr name); // 从env构造并指定部分参数
+			OpNLCon(OpEnv env, Variable::OpVar var, const Expression::OpNLExpr& expr); // 从env构造并指定部分参数
+			OpNLCon(OpEnv env, Variable::OpVar var, const Expression::OpNLExpr& expr, OpStr name); // 从env构造并指定部分参数
 		public:
 			virtual ~OpNLCon();
 		};

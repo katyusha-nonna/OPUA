@@ -28,8 +28,10 @@ private:
 	void removeVar(Variable::OpVar var); // 移除变量(引用计数归零才真正删除)
 	void addVarsFromLE(const Expression::OpLinExpr& expr); // 通过表达式添加变量(用于添加约束条件/目标函数时检查变量添加)
 	void addVarsFromQE(const Expression::OpQuadExpr& expr); // 通过表达式添加变量(用于添加约束条件/目标函数时检查变量添加)
+	void addVarsFromNLE(const Expression::OpNLExpr& expr); // 通过表达式添加变量(用于添加约束条件/目标函数时检查变量添加)
 	void removeVarsFromLE(const Expression::OpLinExpr& expr); // 通过表达式移除变量
 	void removeVarsFromQE(const Expression::OpQuadExpr& expr); // 通过表达式移除变量
+	void removeVarsFromNLE(const Expression::OpNLExpr& expr); // 通过表达式移除变量
 protected:
 	void addLinCon(Constraint::OpLinCon con); // 添加线性约束
 	void addLinCons(Constraint::OpLCArr cons); // 添加线性约束集
@@ -129,6 +131,12 @@ void Model::OpModelI::addVarsFromQE(const Expression::OpQuadExpr& expr)
 	}
 }
 
+void Model::OpModelI::addVarsFromNLE(const Expression::OpNLExpr& expr)
+{
+	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
+		addVar(iter.getVar());
+}
+
 void Model::OpModelI::removeVarsFromLE(const Expression::OpLinExpr& expr)
 {
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -146,6 +154,12 @@ void Model::OpModelI::removeVarsFromQE(const Expression::OpQuadExpr& expr)
 		if (var1 != var2)
 			removeVar(var2);
 	}
+}
+
+void Model::OpModelI::removeVarsFromNLE(const Expression::OpNLExpr& expr)
+{
+	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
+		removeVar(iter.getVar());
 }
 
 void Model::OpModelI::addLinCon(Constraint::OpLinCon con)
@@ -208,8 +222,8 @@ void Model::OpModelI::addNLCon(Constraint::OpNLCon con)
 	auto idx(con.getIndex());
 	if (!mnlcs_.has(idx))
 	{
-		for (auto iter = con.getCBegin(); iter != con.getCEnd(); ++iter)
-			addVar(iter.getVal());
+		addVar(con.getVar());
+		addVarsFromNLE(con.getExpr());
 		mnlcs_.add(idx, con);
 		con.lock();
 	}
@@ -318,8 +332,8 @@ void Model::OpModelI::removeNLCon(Constraint::OpNLCon con)
 	{
 		con.unlock();
 		mnlcs_.remove(idx);
-		for (auto iter = con.getCBegin(); iter != con.getCEnd(); ++iter)
-			removeVar(iter.getVal());
+		removeVarsFromNLE(con.getExpr());
+		removeVar(con.getVar());
 	}
 }
 
@@ -358,6 +372,8 @@ void Model::OpModelI::write(OpStr path) const
 	for (auto iter = mlcs_.getCBegin(); iter != mlcs_.getCEnd(); ++iter)
 		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
 	for (auto iter = mqcs_.getCBegin(); iter != mqcs_.getCEnd(); ++iter)
+		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+	for (auto iter = mnlcs_.getCBegin(); iter != mnlcs_.getCEnd(); ++iter)
 		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
 	for (auto iter = mscs_.getCBegin(); iter != mscs_.getCEnd(); ++iter)
 		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;

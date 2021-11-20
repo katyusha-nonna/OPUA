@@ -1,5 +1,5 @@
 #include "OPUA.Expression.h"
-#include <iostream>
+#include <algorithm>
 
 using namespace OPUA;
 
@@ -220,6 +220,42 @@ Expression::OpQuadExpr Expression::operator/(const OpQuadExpr& expr, OpFloat val
 	OpQuadExpr result(expr);
 	result /= val;
 	return result;
+}
+
+OpStr OPUA::Expression::NLFunc2Str(OpNLFunc func)
+{
+	OpStr str(" ? ");
+	if (func == OpNLFunc::Sum)
+		str = " Sum ";
+	else if (func == OpNLFunc::Abs)
+		str = " Abs ";
+	else if (func == OpNLFunc::Max)
+		str = " Max ";
+	else if (func == OpNLFunc::Min)
+		str = " Min ";
+	else if (func == OpNLFunc::Square)
+		str = " Square ";
+	else if (func == OpNLFunc::Sqrt)
+		str = " Sqrt ";
+	else if (func == OpNLFunc::Pow)
+		str = " Pow ";
+	else if (func == OpNLFunc::Exp1)
+		str = " Exp1 ";
+	else if (func == OpNLFunc::Exp2)
+		str = " Exp2 ";
+	else if (func == OpNLFunc::Log1)
+		str = " Log1 ";
+	else if (func == OpNLFunc::Log2)
+		str = " Log2 ";
+	else if (func == OpNLFunc::Log3)
+		str = " Log3 ";
+	else if (func == OpNLFunc::Sin)
+		str = " Sin ";
+	else if (func == OpNLFunc::Cos)
+		str = " Cos ";
+	else if (func == OpNLFunc::Tan)
+		str = " Tan ";
+	return str;
 }
 
 /* OPUA::Expression::OpLinExpr */
@@ -632,6 +668,109 @@ Expression::OpQuadExpr::OpQuadExpr(Variable::OpVar var, OpFloat coeff)
 
 Expression::OpQuadExpr::OpQuadExpr(const OpLinExpr& expr)
 	: linexpr_(expr)
+{
+
+}
+
+/* OPUA::Expression::OpNLExpr */
+
+OpULInt Expression::OpNLExpr::getSize() const
+{
+	return nlterm_.size();
+}
+
+OpEnv Expression::OpNLExpr::getEnv() const
+{
+	OpEnv env(nullptr);
+	if (getSize())
+	{
+		for (auto& nl : nlterm_)
+		{
+			env = Variable::OpVar(nl).getEnv();
+			break;
+		}
+	}
+	return env;
+}
+
+Expression::OpNLFunc Expression::OpNLExpr::getFunction() const
+{
+	return func_;
+}
+
+void Expression::OpNLExpr::setFunction(OpNLFunc func)
+{
+	func_ = func;
+}
+
+void Expression::OpNLExpr::addVar(Variable::OpVar var)
+{
+	nlterm_.emplace_back(var.getImpl());
+}
+
+void Expression::OpNLExpr::removeVar(Variable::OpVar var)
+{
+	nlterm_.erase(std::remove(nlterm_.begin(), nlterm_.end(), var.getImpl()), nlterm_.end());
+}
+
+void Expression::OpNLExpr::clear()
+{
+	nlterm_.clear();
+	func_ = OpNLFunc::Unknow;
+}
+
+Expression::OpNLExpr::OpNLEIter Expression::OpNLExpr::getNLBegin() const
+{
+	return OpNLEIter(nlterm_.cbegin());
+}
+
+Expression::OpNLExpr::OpNLEIter Expression::OpNLExpr::getNLEnd() const
+{
+	return OpNLEIter(nlterm_.cend());
+}
+
+Expression::OpNLExpr::OpNLExpr(OpNLFunc func)
+	: func_(func)
+{
+
+}
+
+Expression::OpNLExpr::OpNLExpr(OpNLFunc func, Variable::OpVarArr vars)
+	: func_(func)
+{
+	for (auto iter = vars.getCBegin(); iter != vars.getCEnd(); ++iter)
+		addVar(iter.getVal());
+}
+
+OpBool Expression::OpNLExpr::OpNLEIter::operator==(const OpNLEIter& iter) const
+{
+	return iter_ == iter.iter_;
+}
+
+OpBool Expression::OpNLExpr::OpNLEIter::operator!=(const OpNLEIter& iter) const
+{
+	return iter_ != iter.iter_;
+}
+
+Expression::OpNLExpr::OpNLEIter& Expression::OpNLExpr::OpNLEIter::operator--()
+{
+	--iter_;
+	return *this;
+}
+
+Expression::OpNLExpr::OpNLEIter& Expression::OpNLExpr::OpNLEIter::operator++()
+{
+	++iter_;
+	return *this;
+}
+
+Variable::OpVar Expression::OpNLExpr::OpNLEIter::getVar() const
+{
+	return Variable::OpVar(*iter_);
+}
+
+Expression::OpNLExpr::OpNLEIter::OpNLEIter(NLTerm iter)
+	: iter_(iter)
 {
 
 }

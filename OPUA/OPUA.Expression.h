@@ -14,6 +14,7 @@ namespace OPUA
 		
 		typedef Container::OpArray<OpLinExpr> OpLEArr; // 线性表达式数组
 		typedef Container::OpArray<OpQuadExpr> OpQEArr; // 二次表达式数组
+		typedef Container::OpArray<OpNLExpr> OpNLEArr; // 非线性表达式数组
 
 		std::ostream& operator<<(std::ostream& stream, const OpLinExpr& expr);
 		OpLinExpr operator+(const OpLinExpr& expr1, const OpLinExpr& expr2);
@@ -46,6 +47,29 @@ namespace OPUA
 		OpQuadExpr operator*(const OpLinExpr& expr, Variable::OpVar var);
 		OpQuadExpr operator*(const OpLinExpr& expr1, const OpLinExpr& expr2);
 		OpQuadExpr operator/(const OpQuadExpr& expr, OpFloat val);
+
+		// OPUA非线性函数
+		enum class OpNLFunc
+		{
+			Unknow, // 未知
+			Sum, // 求和 Sum(x1, x2, ...)
+			Abs, // 绝对值 abs(x1)
+			Max, // 取最大值 max(x1, x2, ...)
+			Min, // 取最小值 min(x1, x2, ...)
+			Square, // 平方x1^^2
+			Sqrt, // 平方根 sqrt(x1)
+			Pow, // 幂 x1^^x2
+			Exp1, // 指数 e^^x1
+			Exp2, // 指数 x1^^x2
+			Log1, // 对数 log (10) x1
+			Log2, // 对数 log (e) x1
+			Log3, // 对数 log (x1) x2
+			Sin, // 正弦 sin(x1)
+			Cos, // 余弦 cos(x1)
+			Tan, // 正切 tan(x1)
+		};
+
+		OpStr NLFunc2Str(OpNLFunc func); // 将非线性操作函数类型转换为字符
 
 		// OpExpr：OPUA表达式基类
 		// 不要使用这个类
@@ -233,6 +257,48 @@ namespace OPUA
 			OpQuadExpr(OpFloat constant = 0.0);
 			OpQuadExpr(Variable::OpVar var, OpFloat coeff = 1.0);
 			OpQuadExpr(const OpLinExpr& expr);
+		};
+
+		class OpNLExpr
+			: public OpExpr
+		{
+		protected:
+			using NLTermTab = std::vector<Variable::OpVarI*>;
+
+			OpNLFunc func_; // 非线性函数
+			NLTermTab nlterm_; // 非线性项(变量表，有序)
+		public:
+			OpULInt getSize() const; // 获取非线性项数目
+			OpEnv getEnv() const; // 获取环境变量(默认返回非线性项中第一个变量的环境变量，否则为空环境变量)
+			OpNLFunc getFunction() const;  // 获取非线性函数
+			void setFunction(OpNLFunc func); // 设置非线性函数		
+			void addVar(Variable::OpVar var);  // 向变量表中追加一个变量
+			void removeVar(Variable::OpVar var);  // 从变量表中移除一个变量
+			void clear(); // 清除非线性表达式
+		public:
+			class OpNLEIter
+			{
+			private:
+				using NLTerm = NLTermTab::const_iterator;
+
+				NLTerm iter_;
+
+				friend class OpNLExpr;
+			public:
+				OpBool operator==(const OpNLEIter& iter) const; // 判等运算
+				OpBool operator!=(const OpNLEIter& iter) const; // 判非运算
+				OpNLEIter& operator--(); // 前缀自减运算
+				OpNLEIter& operator++(); // 前缀自加运算
+				Variable::OpVar getVar() const; // 获取当前变量
+			protected:
+				OpNLEIter(NLTerm iter);
+			};
+
+			OpNLExpr::OpNLEIter getNLBegin() const; // 得到非线性项初始迭代器
+			OpNLExpr::OpNLEIter getNLEnd() const; // 得到非线性项尾后迭代器
+		public:
+			OpNLExpr(OpNLFunc func = OpNLFunc::Unknow);
+			OpNLExpr(OpNLFunc func, Variable::OpVarArr vars);
 		};
 	}
 }
