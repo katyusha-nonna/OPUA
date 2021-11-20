@@ -78,8 +78,8 @@ namespace OPUA
 		OpNLCon OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
 		OpNLCon OpLog1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
 		OpNLCon OpLog2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
-		OpNLCon OpnLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
-		OpNLCon OpnSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
+		OpNLCon OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3);
+		OpNLCon OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
 		OpNLCon OpCos(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
 		OpNLCon OpTan(OpEnv env, Variable::OpVar x1, Variable::OpVar x2);
 
@@ -183,6 +183,9 @@ namespace OPUA
 			OpConFunc getFunction() const; // 获取约束的操作函数
 			OpStr getName() const; // 获取约束名称
 			OpNLConI* getImpl() const; // 获取impl
+		public:
+			Variable::OpVarArr::OpArrCIter getCBegin(); // 获取变量数组的常量首端迭代器
+			Variable::OpVarArr::OpArrCIter getCEnd(); // 获取变量数组的常量末端迭代器
 		public:
 			OpBool operator==(const OpNLCon& con);
 			OpBool operator!=(const OpNLCon& con);

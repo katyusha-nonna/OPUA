@@ -14,11 +14,13 @@ protected:
 	Constraint::OpLCIdxDict mlcs_; // 优化模型线性约束集
 	Constraint::OpQCIdxDict mqcs_; // 优化模型二次约束集
 	Constraint::OpSOSIdxDict mscs_; // 优化模型SOS约束集
+	Constraint::OpNLCIdxDict mnlcs_; // 优化模型非线性约束集
 	Objective::OpObj mobj0_; // 优化模型目标函数(单目标优化)
 	Objective::OpObjIdxDict mobjs_; // 优化模型目标函数集(多目标优化)
 	OpStr mname_; // 优化模型名称
 
 	friend class OpModel;
+	friend class OpMdlCIter;
 private:
 	void init(); // 初始化
 	void clear(); // 清空模型
@@ -35,7 +37,10 @@ protected:
 	void addQuadCons(Constraint::OpQCArr cons); // 添加二次约束集
 	void addSOS(Constraint::OpSOSCon con); // 添加SOS约束
 	void addSOSs(Constraint::OpSOSArr cons); // 添加SOS约束集
+	void addNLCon(Constraint::OpNLCon con); // 添加非线性约束
+	void addNLCons(Constraint::OpNLCArr cons); // 添加非线性约束集
 	void setObj(Objective::OpObj obj); // 设置单目标优化目标函数
+	Objective::OpObj getObj(); // 获取单目标优化目标函数
 	void addMultiObj(Objective::OpObj obj); // 添加多目标优化目标函数
 	void addMultiObj(Objective::OpObjArr objs); // 添加多目标优化目标函数
 	
@@ -45,12 +50,14 @@ protected:
 	void removeQuadCons(Constraint::OpQCArr cons); // 移除二次约束集
 	void removeSOS(Constraint::OpSOSCon con); // 移除SOS约束
 	void removeSOSs(Constraint::OpSOSArr cons); // 移除SOS约束集
+	void removeNLCon(Constraint::OpNLCon con); // 移除非线性约束
+	void removeNLCons(Constraint::OpNLCArr cons); // 移除非线性约束集
 	void removeMultiObj(Objective::OpObj obj); // 移除多目标优化目标函数
 	void removeMultiObj(Objective::OpObjArr objs); // 移除多目标优化目标函数
 
 	void setName(OpStr name); // 设置名称
-	OpStr getName(); // 获取名称
-	void write(OpStr path); // 输出模型
+	OpStr getName() const; // 获取名称
+	void write(OpStr path) const; // 输出模型
 protected:
 	OpModelI(OpEnvI* env);
 	OpModelI(OpEnvI* env, OpStr name);
@@ -66,6 +73,7 @@ void Model::OpModelI::init()
 	mlcs_ = Constraint::OpLCIdxDict(localEnv);
 	mqcs_ = Constraint::OpQCIdxDict(localEnv);
 	mscs_ = Constraint::OpSOSIdxDict(localEnv);
+	mnlcs_ = Constraint::OpNLCIdxDict(localEnv);
 	mobjs_ = Objective::OpObjIdxDict(localEnv);
 }
 
@@ -76,6 +84,7 @@ void Model::OpModelI::clear()
 	mlcs_.release();
 	mqcs_.release();
 	mscs_.release();
+	mnlcs_.release();
 	mobjs_.release();
 }
 
@@ -194,6 +203,24 @@ void Model::OpModelI::addSOSs(Constraint::OpSOSArr cons)
 		addSOS(cons[i]);
 }
 
+void Model::OpModelI::addNLCon(Constraint::OpNLCon con)
+{
+	auto idx(con.getIndex());
+	if (!mnlcs_.has(idx))
+	{
+		for (auto iter = con.getCBegin(); iter != con.getCEnd(); ++iter)
+			addVar(iter.getVal());
+		mnlcs_.add(idx, con);
+		con.lock();
+	}
+}
+
+void Model::OpModelI::addNLCons(Constraint::OpNLCArr cons)
+{
+	for (OpULInt i = 0; i < cons.getSize(); i++)
+		addNLCon(cons[i]);
+}
+
 void Model::OpModelI::setObj(Objective::OpObj obj)
 {
 	if (mobj0_ != obj)
@@ -211,6 +238,11 @@ void Model::OpModelI::setObj(Objective::OpObj obj)
 		mobj0_ = obj;
 		obj.lock();
 	}
+}
+
+Objective::OpObj Model::OpModelI::getObj()
+{
+	return mobj0_;
 }
 
 void Model::OpModelI::addMultiObj(Objective::OpObj obj)
@@ -279,6 +311,24 @@ void Model::OpModelI::removeSOSs(Constraint::OpSOSArr cons)
 		removeSOS(cons[i]);
 }
 
+void Model::OpModelI::removeNLCon(Constraint::OpNLCon con)
+{
+	auto idx(con.getIndex());
+	if (mnlcs_.has(idx))
+	{
+		con.unlock();
+		mnlcs_.remove(idx);
+		for (auto iter = con.getCBegin(); iter != con.getCEnd(); ++iter)
+			removeVar(iter.getVal());
+	}
+}
+
+void Model::OpModelI::removeNLCons(Constraint::OpNLCArr cons)
+{
+	for (OpULInt i = 0; i < cons.getSize(); i++)
+		removeNLCon(cons[i]);
+}
+
 void Model::OpModelI::removeMultiObj(Objective::OpObj obj)
 {
 	// TODO 暂未实现，需要考虑多目标优化的方式()
@@ -295,12 +345,12 @@ void Model::OpModelI::setName(OpStr name)
 	mname_ = name;
 }
 
-OpStr Model::OpModelI::getName()
+OpStr Model::OpModelI::getName() const
 {
 	return mname_;
 }
 
-void Model::OpModelI::write(OpStr path)
+void Model::OpModelI::write(OpStr path) const
 {
 	auto& stream(std::cout);
 	stream << "Name: " << mname_ << std::endl;
@@ -371,9 +421,24 @@ void Model::OpModel::add(Constraint::OpSOSArr cons)
 	static_cast<OpModelI*>(impl_)->addSOSs(cons);
 }
 
+void OPUA::Model::OpModel::add(Constraint::OpNLCon con)
+{
+	static_cast<OpModelI*>(impl_)->addNLCon(con);
+}
+
+void OPUA::Model::OpModel::add(Constraint::OpNLCArr cons)
+{
+	static_cast<OpModelI*>(impl_)->addNLCons(cons);
+}
+
 void Model::OpModel::setObj(Objective::OpObj obj)
 {
 	static_cast<OpModelI*>(impl_)->setObj(obj);
+}
+
+Objective::OpObj Model::OpModel::getObj()
+{
+	return static_cast<OpModelI*>(impl_)->getObj();
 }
 
 void Model::OpModel::remove(Constraint::OpLinCon con)
@@ -406,7 +471,17 @@ void Model::OpModel::remove(Constraint::OpSOSArr cons)
 	static_cast<OpModelI*>(impl_)->removeSOSs(cons);
 }
 
-void Model::OpModel::write(OpStr path)
+void OPUA::Model::OpModel::remove(Constraint::OpNLCon con)
+{
+	static_cast<OpModelI*>(impl_)->removeNLCon(con);
+}
+
+void OPUA::Model::OpModel::remove(Constraint::OpNLCArr cons)
+{
+	static_cast<OpModelI*>(impl_)->removeNLCons(cons);
+}
+
+void Model::OpModel::write(OpStr path) const
 {
 	static_cast<OpModelI*>(impl_)->write(path);
 }
@@ -424,6 +499,66 @@ OpStr Model::OpModel::getName() const
 Model::OpModelI* Model::OpModel::getImpl() const
 {
 	return static_cast<OpModelI*>(impl_);
+}
+
+Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getVBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mvars_.getCBegin();
+}
+
+Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getVEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mvars_.getCEnd();
+}
+
+Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getLCBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mlcs_.getCBegin();
+}
+
+Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getLCEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mlcs_.getCEnd();
+}
+
+Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getQCBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mqcs_.getCBegin();
+}
+
+Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getQCEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mqcs_.getCEnd();
+}
+
+Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getSOSBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mscs_.getCBegin();
+}
+
+Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getSOSEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mscs_.getCEnd();
+}
+
+Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mnlcs_.getCBegin();
+}
+
+Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mnlcs_.getCEnd();
+}
+
+Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getOBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mobjs_.getCBegin();
+}
+
+Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getOEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mobjs_.getCEnd();
 }
 
 OpBool Model::OpModel::operator==(const OpModel& model)

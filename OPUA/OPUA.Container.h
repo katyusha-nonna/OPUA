@@ -9,12 +9,8 @@ namespace OPUA
 	namespace Container
 	{
 		template<typename T> class OpArrayI;
-		template<typename T> class OpArrCIter;
-		template<typename T> class OpArrIter;
 		template<typename T> class OpArray;
 		template<typename TK, typename TV> class OpDictI;
-		template<typename TK, typename TV> class OpDictCIter;
-		template<typename TK, typename TV> class OpDictIter;
 		template<typename TK, typename TV> class OpDict;
 
 		typedef OpArray<OpBool> OpBoolArr;
@@ -32,8 +28,6 @@ namespace OPUA
 			ValTab elements_;
 
 			friend class OpArray<T>;
-			friend class OpArrCIter<T>;
-			friend class OpArrIter<T>;
 		protected:
 			OpULInt getSize() const { return size_; }
 			void add(OpArrayI* arr) { elements_.insert(elements_.end(), arr->elements_.begin(), arr->elements_.end()), size_ = elements_.size(); }
@@ -90,46 +84,6 @@ namespace OPUA
 			virtual ~OpArrayI() {}
 		};
 
-		template<typename T>
-		class OpArrCIter // 常量迭代器
-		{
-		private:
-			using Val = typename OpArrayI<T>::ValTab::const_iterator;
-
-			Val iter_;
-
-			friend class OpArray<T>;
-		public:
-			OpBool operator==(const OpArrCIter<T>& iter) const { return iter_ == iter.iter_; }
-			OpBool operator!=(const OpArrCIter<T>& iter) const { return iter_ != iter.iter_; }
-			OpArrCIter<T>& operator--() { --iter_; return *this; }
-			OpArrCIter<T>& operator++() { ++iter_; return *this; }
-			const T& getVal() const { return *iter_; }
-		protected:
-			OpArrCIter(Val iter)
-				: iter_(iter) {}
-		};
-
-		template<typename T>
-		class OpArrIter // 普通迭代器
-		{
-		private:
-			using Val = typename OpArrayI<T>::ValTab::iterator;
-
-			Val iter_;
-
-			friend class OpArray<T>;
-		public:
-			OpBool operator==(const OpArrIter<T>& iter) const { return iter_ == iter.iter_; }
-			OpBool operator!=(const OpArrIter<T>& iter) const { return iter_ != iter.iter_; }
-			OpArrIter<T>& operator--() { --iter_; return *this; }
-			OpArrIter<T>& operator++() { ++iter_; return *this; }
-			T& getVal() { return *iter_; }
-		protected:
-			OpArrIter(Val iter)
-				: iter_(iter) {}
-		};
-
 		// OpArray：OPUA动态数组模板
 		// 没有做const和ref类型去除，因此最好T不要带const和ref
 		template<typename T>
@@ -150,10 +104,48 @@ namespace OPUA
 			void releaseElements() { static_cast<OpArrayI<T>*>(impl_)->releaseElements(); } // 释放数组中所有元素			
 			OpArrayI<T>* getImpl() const { return static_cast<OpArrayI<T>*>(impl_); } // 获取impl
 		public:
-			OpArrCIter<T> getCBegin() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
-			OpArrCIter<T> getCEnd() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
-			OpArrIter<T> getBegin() { return static_cast<OpArrayI<T>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
-			OpArrIter<T> getEnd() { return static_cast<OpArrayI<T>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
+			class OpArrCIter // 常量迭代器
+			{
+			private:
+				using Val = typename OpArrayI<T>::ValTab::const_iterator;
+
+				Val iter_;
+
+				friend class OpArray<T>;
+			public:
+				OpBool operator==(const OpArrCIter& iter) const { return iter_ == iter.iter_; }
+				OpBool operator!=(const OpArrCIter& iter) const { return iter_ != iter.iter_; }
+				OpArrCIter& operator--() { --iter_; return *this; }
+				OpArrCIter& operator++() { ++iter_; return *this; }
+				const T& getVal() const { return *iter_; }
+			protected:
+				OpArrCIter(Val iter)
+					: iter_(iter) {}
+			};
+
+			class OpArrIter // 普通迭代器
+			{
+			private:
+				using Val = typename OpArrayI<T>::ValTab::iterator;
+
+				Val iter_;
+
+				friend class OpArray<T>;
+			public:
+				OpBool operator==(const OpArrIter& iter) const { return iter_ == iter.iter_; }
+				OpBool operator!=(const OpArrIter& iter) const { return iter_ != iter.iter_; }
+				OpArrIter& operator--() { --iter_; return *this; }
+				OpArrIter& operator++() { ++iter_; return *this; }
+				T& getVal() { return *iter_; }
+			protected:
+				OpArrIter(Val iter)
+					: iter_(iter) {}
+			};
+		public:
+			OpArrCIter getCBegin() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
+			OpArrCIter getCEnd() const { return static_cast<OpArrayI<T>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
+			OpArrIter getBegin() { return static_cast<OpArrayI<T>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
+			OpArrIter getEnd() { return static_cast<OpArrayI<T>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
 		public:
 			OpBool operator==(const OpArray<T>& arr) { return impl_ == arr.getImpl(); } /*判断是否为同一数组*/
 			OpBool operator!=(const OpArray<T>& arr) { return impl_ != arr.getImpl(); } /*判断是否非同一数组*/
@@ -194,8 +186,6 @@ namespace OPUA
 			KeyValPairTab elements_;
 
 			friend class OpDict<TK, TV>;
-			friend class OpDictCIter<TK, TV>;
-			friend class OpDictIter<TK, TV>;
 		protected:
 			OpULInt getSize() const { return size_; }
 			TV& getElement(const TK& key) { return elements_[key]; }
@@ -216,48 +206,6 @@ namespace OPUA
 			virtual ~OpDictI() {}
 		};
 
-		template<typename TK, typename TV>
-		class OpDictCIter // 常量迭代器
-		{
-		private:
-			using CKeyValPair = typename OpDictI<TK, TV>::KeyValPairTab::const_iterator;
-
-			CKeyValPair iter_;
-
-			friend class OpDict<TK, TV>;
-		public:
-			OpBool operator==(const OpDictCIter<TK, TV>& iter) const { return iter_ == iter.iter_; }
-			OpBool operator!=(const OpDictCIter<TK, TV>& iter) const { return iter_ != iter.iter_; }
-			OpDictCIter<TK, TV>& operator--() { --iter_; return *this; }
-			OpDictCIter<TK, TV>& operator++() { ++iter_; return *this; }
-			const TV& getVal() const { return iter_->second; }
-			const TK& getKey() const { return iter_->first; }
-		protected:
-			OpDictCIter(CKeyValPair iter)
-				: iter_(iter) {}
-		};
-
-		template<typename TK, typename TV>
-		class OpDictIter // 普通迭代器
-		{
-		private:
-			using KeyValPair = typename OpDictI<TK, TV>::KeyValPairTab::iterator;
-
-			KeyValPair iter_;
-
-			friend class OpDict<TK, TV>;
-		public:
-			OpBool operator==(const OpDictIter<TK, TV>& iter) const { return iter_ == iter.iter_; }
-			OpBool operator!=(const OpDictIter<TK, TV>& iter) const { return iter_ != iter.iter_; }
-			OpDictIter<TK, TV>& operator--() { --iter_; return *this; }
-			OpDictIter<TK, TV>& operator++() { ++iter_; return *this; }
-			TV& getVal() { return iter_->second; }
-			const TK& getKey() const { return iter_->first; }
-		protected:
-			OpDictIter(KeyValPair iter)
-				: iter_(iter) {}
-		};
-
 		// OpDict：OPUA的字典类
 		template<typename TK, typename TV> 
 		class OpDict
@@ -273,10 +221,50 @@ namespace OPUA
 			void releaseElements() { static_cast<OpDictI<TK, TV>*>(impl_)->releaseElements(); } // 释放字典中元素(需要元素自定义release)
 			OpDictI<TK, TV>* getImpl() const { return static_cast<OpDictI<TK, TV>*>(impl_); } // 获取impl
 		public:
-			OpDictCIter<TK, TV> getCBegin() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
-			OpDictCIter<TK, TV> getCEnd() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
-			OpDictIter<TK, TV> getBegin() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
-			OpDictIter<TK, TV> getEnd() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
+			class OpDictCIter // 常量迭代器
+			{
+			private:
+				using CKeyValPair = typename OpDictI<TK, TV>::KeyValPairTab::const_iterator;
+
+				CKeyValPair iter_;
+
+				friend class OpDict<TK, TV>;
+			public:
+				OpBool operator==(const OpDictCIter& iter) const { return iter_ == iter.iter_; }
+				OpBool operator!=(const OpDictCIter& iter) const { return iter_ != iter.iter_; }
+				OpDictCIter& operator--() { --iter_; return *this; }
+				OpDictCIter& operator++() { ++iter_; return *this; }
+				const TV& getVal() const { return iter_->second; }
+				const TK& getKey() const { return iter_->first; }
+			protected:
+				OpDictCIter(CKeyValPair iter)
+					: iter_(iter) {}
+			};
+
+			class OpDictIter // 普通迭代器
+			{
+			private:
+				using KeyValPair = typename OpDictI<TK, TV>::KeyValPairTab::iterator;
+
+				KeyValPair iter_;
+
+				friend class OpDict<TK, TV>;
+			public:
+				OpBool operator==(const OpDictIter& iter) const { return iter_ == iter.iter_; }
+				OpBool operator!=(const OpDictIter& iter) const { return iter_ != iter.iter_; }
+				OpDictIter& operator--() { --iter_; return *this; }
+				OpDictIter& operator++() { ++iter_; return *this; }
+				TV& getVal() { return iter_->second; }
+				const TK& getKey() const { return iter_->first; }
+			protected:
+				OpDictIter(KeyValPair iter)
+					: iter_(iter) {}
+			};
+		public:
+			OpDictCIter getCBegin() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cbegin(); } // 得到常量初始迭代器
+			OpDictCIter getCEnd() const { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.cend(); }; // 得到常量尾后迭代器
+			OpDictIter getBegin() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.begin(); }; // 得到初始迭代器
+			OpDictIter getEnd() { return static_cast<OpDictI<TK, TV>*>(impl_)->elements_.end(); }; // 得到尾后迭代器
 		public:
 			OpBool operator==(const OpDict<TK, TV>& dict) { return impl_ == dict.getImpl(); } /*判断是否为同一字典*/
 			OpBool operator!=(const OpDict<TK, TV>& dict) { return impl_ != dict.getImpl(); } /*判断是否非同一字典*/

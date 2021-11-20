@@ -516,7 +516,7 @@ Constraint::OpNLConI::OpNLConI(OpEnvI* env, OpConFunc func, OpStr name)
 
 Constraint::OpNLConI::~OpNLConI()
 {
-
+	cvars_.release();
 }
 
 /* OPUA::Constraint::OpLinCon */
@@ -832,6 +832,16 @@ Constraint::OpNLConI* Constraint::OpNLCon::getImpl() const
 	return static_cast<OpNLConI*>(impl_);
 }
 
+Variable::OpVarArr::OpArrCIter OPUA::Constraint::OpNLCon::getCBegin()
+{
+	return static_cast<OpNLConI*>(impl_)->cvars_.getCBegin();
+}
+
+Variable::OpVarArr::OpArrCIter OPUA::Constraint::OpNLCon::getCEnd()
+{
+	return static_cast<OpNLConI*>(impl_)->cvars_.getCEnd();
+}
+
 OpBool Constraint::OpNLCon::operator==(const OpNLCon& con)
 {
 	return impl_ == con.getImpl();
@@ -1124,7 +1134,7 @@ Constraint::OpNLCon Constraint::OpLog2(OpEnv env, Variable::OpVar x1, Variable::
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpnLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
+Constraint::OpNLCon Constraint::OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
 {
 	OpNLCon tmp(env, OpConFunc::Log3);
 	tmp.addVar(x1);
@@ -1134,7 +1144,7 @@ Constraint::OpNLCon Constraint::OpnLog3(OpEnv env, Variable::OpVar x1, Variable:
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpnSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
+Constraint::OpNLCon Constraint::OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2)
 {
 	OpNLCon tmp(env, OpConFunc::Sin);
 	tmp.addVar(x1);
