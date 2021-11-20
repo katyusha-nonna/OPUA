@@ -14,6 +14,8 @@ namespace OPUA
 		class OpSOSCon;
 		class OpNLConI;
 		class OpNLCon;
+		class OpLogicConI; // TODO: 逻辑约束
+		class OpLogicCon;
 
 		typedef Container::OpArray<OpLinCon> OpLCArr; // 线性约束数组
 		typedef Container::OpArray<OpQuadCon> OpQCArr; // 二次约束数组
