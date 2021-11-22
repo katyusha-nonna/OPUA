@@ -698,9 +698,19 @@ Expression::OpNLFunc Expression::OpNLExpr::getFunction() const
 	return func_;
 }
 
+OpFloat OPUA::Expression::OpNLExpr::getParam() const
+{
+	return param_;
+}
+
 void Expression::OpNLExpr::setFunction(OpNLFunc func)
 {
 	func_ = func;
+}
+
+void OPUA::Expression::OpNLExpr::setParam(OpFloat param)
+{
+	param_ = param;
 }
 
 void Expression::OpNLExpr::addVar(Variable::OpVar var)
@@ -730,13 +740,23 @@ Expression::OpNLExpr::OpNLEIter Expression::OpNLExpr::getNLEnd() const
 }
 
 Expression::OpNLExpr::OpNLExpr(OpNLFunc func)
-	: func_(func)
+	: func_(func),
+	param_(0.0)
 {
 
 }
 
 Expression::OpNLExpr::OpNLExpr(OpNLFunc func, Variable::OpVarArr vars)
-	: func_(func)
+	: func_(func),
+	param_(0.0)
+{
+	for (auto iter = vars.getCBegin(); iter != vars.getCEnd(); ++iter)
+		addVar(iter.getVal());
+}
+
+OPUA::Expression::OpNLExpr::OpNLExpr(OpNLFunc func, OpFloat param, Variable::OpVarArr vars)
+	: func_(func),
+	param_(param)
 {
 	for (auto iter = vars.getCBegin(); iter != vars.getCEnd(); ++iter)
 		addVar(iter.getVal());

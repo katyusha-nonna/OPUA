@@ -52,18 +52,18 @@ namespace OPUA
 		enum class OpNLFunc
 		{
 			Unknow, // 未知
-			Sum, // 求和 Sum(x1, x2, ...)
+			Sum, // 求和 Sum(x1, x2, ..., a)
 			Abs, // 绝对值 abs(x1)
-			Max, // 取最大值 max(x1, x2, ...)
-			Min, // 取最小值 min(x1, x2, ...)
+			Max, // 取最大值 max(x1, x2, ..., a)
+			Min, // 取最小值 min(x1, x2, ..., a)
 			Square, // 平方x1^^2
 			Sqrt, // 平方根 sqrt(x1)
-			Pow, // 幂 x1^^x2
+			Pow, // 幂 x1^^a
 			Exp1, // 指数 e^^x1
-			Exp2, // 指数 x1^^x2
+			Exp2, // 指数 a^^x1
 			Log1, // 对数 log (10) x1
 			Log2, // 对数 log (e) x1
-			Log3, // 对数 log (x1) x2
+			Log3, // 对数 log (a) x1
 			Sin, // 正弦 sin(x1)
 			Cos, // 余弦 cos(x1)
 			Tan, // 正切 tan(x1)
@@ -266,12 +266,15 @@ namespace OPUA
 			using NLTermTab = std::vector<Variable::OpVarI*>;
 
 			OpNLFunc func_; // 非线性函数
+			OpFloat param_; // 非线性函数参数(暂时只允许单个参数)
 			NLTermTab nlterm_; // 非线性项(变量表，有序)
 		public:
 			OpULInt getSize() const; // 获取非线性项数目
 			OpEnv getEnv() const; // 获取环境变量(默认返回非线性项中第一个变量的环境变量，否则为空环境变量)
 			OpNLFunc getFunction() const;  // 获取非线性函数
+			OpFloat getParam() const; // 获取非线性函数参数
 			void setFunction(OpNLFunc func); // 设置非线性函数		
+			void setParam(OpFloat param); // 设置非线性函数参数
 			void addVar(Variable::OpVar var);  // 向变量表中追加一个变量
 			void removeVar(Variable::OpVar var);  // 从变量表中移除一个变量
 			void clear(); // 清除非线性表达式
@@ -299,6 +302,7 @@ namespace OPUA
 		public:
 			OpNLExpr(OpNLFunc func = OpNLFunc::Unknow);
 			OpNLExpr(OpNLFunc func, Variable::OpVarArr vars);
+			OpNLExpr(OpNLFunc func, OpFloat param, Variable::OpVarArr vars);
 		};
 	}
 }

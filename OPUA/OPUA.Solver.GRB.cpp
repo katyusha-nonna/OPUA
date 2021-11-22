@@ -3,6 +3,116 @@
 
 using namespace OPUA;
 
+/* OPUA::Solver::OpGRBCfgCvt */
+
+// GRB配置翻译器
+class Solver::OpGRBCfgCvt
+{
+protected:
+	std::unordered_map<OpStr, GRB_DoubleParam> dpdict_;
+	std::unordered_map<OpStr, GRB_IntParam> ipdict_;
+	std::unordered_map<OpStr, GRB_StringParam> spdict_;
+public:
+	void init();
+	GRB_DoubleParam getDoubleParam(OpStr key);
+	GRB_IntParam getIntParam(OpStr key);
+	GRB_StringParam getStringParam(OpStr key);
+public:
+	OpGRBCfgCvt();
+};
+
+void Solver::OpGRBCfgCvt::init()
+{
+	// 加载OPUA.GRB.Termination(终止条件)
+	ipdict_.emplace("OPUA.GRB.Termination.BarIterLimit", GRB_IntParam_BarIterLimit);
+	dpdict_.emplace("OPUA.GRB.Termination.BestBdStop", GRB_DoubleParam_BestBdStop);
+	dpdict_.emplace("OPUA.GRB.Termination.BestObjStop", GRB_DoubleParam_BestObjStop);
+	dpdict_.emplace("OPUA.GRB.Termination.Cutoff", GRB_DoubleParam_Cutoff);
+	dpdict_.emplace("OPUA.GRB.Termination.IterationLimit", GRB_DoubleParam_IterationLimit);
+	dpdict_.emplace("OPUA.GRB.Termination.NodeLimit", GRB_DoubleParam_NodeLimit);
+	ipdict_.emplace("OPUA.GRB.Termination.SolutionLimit", GRB_IntParam_SolutionLimit);
+	dpdict_.emplace("OPUA.GRB.Termination.TimeLimit", GRB_DoubleParam_TimeLimit);
+	// 加载OPUA.GRB.Tolerances(可行性 & 最优性收敛判定参数)
+	dpdict_.emplace("OPUA.GRB.Tolerances.BarConvTol", GRB_DoubleParam_BarConvTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.BarQCPConvTol", GRB_DoubleParam_BarQCPConvTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.FeasibilityTol", GRB_DoubleParam_FeasibilityTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.IntFeasTol", GRB_DoubleParam_IntFeasTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.MarkowitzTol", GRB_DoubleParam_MarkowitzTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.MIPGap", GRB_DoubleParam_MIPGap);
+	dpdict_.emplace("OPUA.GRB.Tolerances.MIPGapAbs", GRB_DoubleParam_MIPGapAbs);
+	dpdict_.emplace("OPUA.GRB.Tolerances.OptimalityTol", GRB_DoubleParam_OptimalityTol);
+	dpdict_.emplace("OPUA.GRB.Tolerances.PSDTol", GRB_DoubleParam_PSDTol);
+	// 加载OPUA.GRB.Simplex(单纯形法参数)
+	ipdict_.emplace("OPUA.GRB.Simplex.InfUnbdInfo", GRB_IntParam_InfUnbdInfo);
+	ipdict_.emplace("OPUA.GRB.Simplex.NormAdjust", GRB_IntParam_NormAdjust);
+	dpdict_.emplace("OPUA.GRB.Simplex.ObjScale", GRB_DoubleParam_ObjScale);
+	dpdict_.emplace("OPUA.GRB.Simplex.PerturbValue", GRB_DoubleParam_PerturbValue);
+	ipdict_.emplace("OPUA.GRB.Simplex.Quad", GRB_IntParam_Quad);
+	ipdict_.emplace("OPUA.GRB.Simplex.ScaleFlag", GRB_IntParam_ScaleFlag);
+	ipdict_.emplace("OPUA.GRB.Simplex.Sifting", GRB_IntParam_Sifting);
+	ipdict_.emplace("OPUA.GRB.Simplex.SiftMethod", GRB_IntParam_SiftMethod);
+	ipdict_.emplace("OPUA.GRB.Simplex.SimplexPricing", GRB_IntParam_SimplexPricing);
+	// 加载OPUA.GRB.Barrier(内点法参数)
+	ipdict_.emplace("OPUA.GRB.Barrier.BarCorrectors", GRB_IntParam_BarCorrectors);
+	ipdict_.emplace("OPUA.GRB.Barrier.BarHomogeneous", GRB_IntParam_BarHomogeneous);
+	ipdict_.emplace("OPUA.GRB.Barrier.BarOrder", GRB_IntParam_BarOrder);
+	ipdict_.emplace("OPUA.GRB.Barrier.Crossover", GRB_IntParam_Crossover);
+	ipdict_.emplace("OPUA.GRB.Barrier.CrossoverBasis", GRB_IntParam_CrossoverBasis);
+	ipdict_.emplace("OPUA.GRB.Barrier.QCPDual", GRB_IntParam_QCPDual);
+	// 加载OPUA.GRB.MIP(混合整数求解参数)
+	ipdict_.emplace("OPUA.GRB.MIP.BranchDir", GRB_IntParam_BranchDir);
+	ipdict_.emplace("OPUA.GRB.MIP.ConcurrentJobs", GRB_IntParam_ConcurrentJobs);
+	ipdict_.emplace("OPUA.GRB.MIP.ConcurrentMIP", GRB_IntParam_ConcurrentMIP);
+	ipdict_.emplace("OPUA.GRB.MIP.DegenMoves", GRB_IntParam_DegenMoves);
+	ipdict_.emplace("OPUA.GRB.MIP.Disconnected", GRB_IntParam_Disconnected);
+	ipdict_.emplace("OPUA.GRB.MIP.DistributedMIPJobs", GRB_IntParam_DistributedMIPJobs);
+	dpdict_.emplace("OPUA.GRB.MIP.Heuristics", GRB_DoubleParam_Heuristics);
+	dpdict_.emplace("OPUA.GRB.MIP.ImproveStartGap", GRB_DoubleParam_ImproveStartGap);
+	dpdict_.emplace("OPUA.GRB.MIP.ImproveStartNodes", GRB_DoubleParam_ImproveStartNodes);
+	dpdict_.emplace("OPUA.GRB.MIP.ImproveStartTime", GRB_DoubleParam_ImproveStartTime);
+	ipdict_.emplace("OPUA.GRB.MIP.LazyConstraints", GRB_IntParam_LazyConstraints);
+	ipdict_.emplace("OPUA.GRB.MIP.MinRelNodes", GRB_IntParam_MinRelNodes);
+	ipdict_.emplace("OPUA.GRB.MIP.MIPFocus", GRB_IntParam_MIPFocus);
+	ipdict_.emplace("OPUA.GRB.MIP.MIQCPMethod", GRB_IntParam_MIQCPMethod);
+	spdict_.emplace("OPUA.GRB.MIP.NodefileDir", GRB_StringParam_NodefileDir);
+	dpdict_.emplace("OPUA.GRB.MIP.NodefileStart", GRB_DoubleParam_NodefileStart);
+	ipdict_.emplace("OPUA.GRB.MIP.NodeMethod", GRB_IntParam_NodeMethod);
+	ipdict_.emplace("OPUA.GRB.MIP.NonConvex", GRB_IntParam_NonConvex);
+	dpdict_.emplace("OPUA.GRB.MIP.NoRelHeurTime", GRB_DoubleParam_NoRelHeurTime);
+	dpdict_.emplace("OPUA.GRB.MIP.NoRelHeurWork", GRB_DoubleParam_NoRelHeurWork);
+	ipdict_.emplace("OPUA.GRB.MIP.PartitionPlace", GRB_IntParam_PartitionPlace);
+	ipdict_.emplace("OPUA.GRB.MIP.PumpPassese", GRB_IntParam_PumpPasses);
+	ipdict_.emplace("OPUA.GRB.MIP.RINS", GRB_IntParam_RINS);
+	spdict_.emplace("OPUA.GRB.MIP.SolFiles", GRB_StringParam_SolFiles);
+	ipdict_.emplace("OPUA.GRB.MIP.SolutionNumber", GRB_IntParam_SolutionNumber);
+	ipdict_.emplace("OPUA.GRB.MIP.StartNodeLimit", GRB_IntParam_StartNodeLimit);
+	ipdict_.emplace("OPUA.GRB.MIP.StartNumber", GRB_IntParam_StartNumber);
+	ipdict_.emplace("OPUA.GRB.MIP.SubMIPNodes", GRB_IntParam_SubMIPNodes);
+	ipdict_.emplace("OPUA.GRB.MIP.Symmetry", GRB_IntParam_Symmetry);
+	ipdict_.emplace("OPUA.GRB.MIP.VarBranch", GRB_IntParam_VarBranch);
+	ipdict_.emplace("OPUA.GRB.MIP.ZeroObjNodes", GRB_IntParam_ZeroObjNodes);
+}
+
+GRB_DoubleParam Solver::OpGRBCfgCvt::getDoubleParam(OpStr key)
+{
+	return dpdict_.at(key);
+}
+
+GRB_IntParam Solver::OpGRBCfgCvt::getIntParam(OpStr key)
+{
+	return ipdict_.at(key);
+}
+
+GRB_StringParam Solver::OpGRBCfgCvt::getStringParam(OpStr key)
+{
+	return spdict_.at(key);
+}
+
+Solver::OpGRBCfgCvt::OpGRBCfgCvt()
+{
+	init();
+}
+
 /* OPUA::Solver::OpGRBSolI */
 
 class Solver::OpGRBSolI
@@ -13,16 +123,16 @@ protected:
 
 	GRBEnv* genv_; // GRB环境变量
 	GRBModel* gmdl_; // GRB模型对象
-	OpStr gname_; // GRB模型名称
 protected:
 	// OPUA-GRB映射信息
 
-	std::unordered_map<OpLInt, GRBVar> vardict_;
-	std::unordered_map<OpLInt, GRBConstr> lcdict_;
-	std::unordered_map<OpLInt, GRBQConstr> qcdict_;
-	std::unordered_map<OpLInt, GRBSOS> scdict_;
-	std::unordered_map<OpLInt, GRBGenConstr> nlcdict_;
-	std::unordered_map<OpLInt, GRBGenConstr> modict_;
+	std::unordered_map<OpLInt, GRBVar> vardict_; // GRB变量表
+	std::unordered_map<OpLInt, GRBConstr> lcdict_; // GRB线性约束表
+	std::unordered_map<OpLInt, GRBQConstr> qcdict_; // GRB二次约束表
+	std::unordered_map<OpLInt, GRBSOS> scdict_; // GRBSOS约束表
+	std::unordered_map<OpLInt, GRBGenConstr> nlcdict_; // GRB非线性约束表
+	std::unordered_map<OpLInt, GRBLinExpr> modict_; // GRB多目标优化目标函数表
+	OpGRBCfgCvt cfgcvt_; // 配置翻译器
 
 	friend class OpGRBSol;
 private:
@@ -36,17 +146,26 @@ private:
 	GRBSOS addGRBSOS(Constraint::OpSOSCon con); // 从OPUASOS约束创建一个GRBSOS约束
 	GRBGenConstr addGRBGen(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
 	GRBGenConstr addGRBGenMax(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
-	GRBGenConstr addGRBGenMin(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
-	GRBGenConstr addGRBGenAbs(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
+	GRBGenConstr addGRBGenMin(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Min约束
+	GRBGenConstr addGRBGenAbs(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Abs约束
+	GRBGenConstr addGRBGenExp(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Exp约束
+	GRBGenConstr addGRBGenExpA(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性ExpA约束
+	GRBGenConstr addGRBGenLog(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Log约束
+	GRBGenConstr addGRBGenLn(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性LogA约束
+	GRBGenConstr addGRBGenLogA(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性LogA约束
+	GRBGenConstr addGRBGenSquare(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Pow约束
+	GRBGenConstr addGRBGenSqrt(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Pow约束
+	GRBGenConstr addGRBGenPow(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Pow约束
+	GRBGenConstr addGRBGenSin(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Sin约束
+	GRBGenConstr addGRBGenCos(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Cos约束
+	GRBGenConstr addGRBGenTan(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Tan约束
 protected:
 	void init(); // 初始化
 	void clear(); // 清除所有组件与映射信息
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
-	void setConfig(OpStr key, OpBool val); // 设置配置(布尔型)
-	void setConfig(OpStr key, OpLInt val); // 设置配置(整数型)
-	void setConfig(OpStr key, OpFloat val); // 设置配置(浮点型)
-	void setConfig(OpStr key, OpStr val); // 设置配置(字符型)
+	void setParam(const OpConfig& cfg); // 设置配置
+	OpLInt getStatus(); // 获取求解状态
 	OpFloat getValue(Variable::OpVar var); // 获取变量的解
 	OpFloat getValue(const Expression::OpLinExpr& expr); // 获取表达式的解(速度较慢)
 	OpFloat getValue(const Expression::OpQuadExpr& expr); // 获取表达式的解(速度较慢)
@@ -54,9 +173,7 @@ protected:
 	OpFloat getDual(Constraint::OpLinCon con); // 获取对偶解
 protected:
 	OpGRBSolI(OpEnvI* env);
-	OpGRBSolI(OpEnvI* env, OpStr name);
 	OpGRBSolI(OpEnvI* env, Model::OpModel mdl);
-	OpGRBSolI(OpEnvI* env, Model::OpModel mdl, OpStr name);
 public:
 	virtual ~OpGRBSolI();
 };
@@ -187,27 +304,38 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGen(Constraint::OpNLCon con)
 	case Expression::OpNLFunc::Min:
 		tmp = addGRBGenMin(con);
 		break;
-	case Expression::OpNLFunc::Square: // 无法处理
+	case Expression::OpNLFunc::Square:
+		tmp = addGRBGenSquare(con);
 		break;
-	case Expression::OpNLFunc::Sqrt: // 无法处理
+	case Expression::OpNLFunc::Sqrt:
+		tmp = addGRBGenSqrt(con);
 		break;
-	case Expression::OpNLFunc::Pow: // 无法处理
+	case Expression::OpNLFunc::Pow:
+		tmp = addGRBGenPow(con);
 		break;
-	case Expression::OpNLFunc::Exp1: // 无法处理
+	case Expression::OpNLFunc::Exp1:
+		tmp = addGRBGenExp(con);
 		break;
-	case Expression::OpNLFunc::Exp2: // 无法处理
+	case Expression::OpNLFunc::Exp2:
+		tmp = addGRBGenExpA(con);
 		break;
-	case Expression::OpNLFunc::Log1: // 无法处理
+	case Expression::OpNLFunc::Log1:
+		tmp = addGRBGenLog(con);
 		break;
-	case Expression::OpNLFunc::Log2: // 无法处理
+	case Expression::OpNLFunc::Log2:
+		tmp = addGRBGenLn(con);
 		break;
-	case Expression::OpNLFunc::Log3: // 无法处理
+	case Expression::OpNLFunc::Log3:
+		tmp = addGRBGenLogA(con);
 		break;
-	case Expression::OpNLFunc::Sin: // 无法处理
+	case Expression::OpNLFunc::Sin:
+		tmp = addGRBGenSin(con);
 		break;
-	case Expression::OpNLFunc::Cos: // 无法处理
+	case Expression::OpNLFunc::Cos:
+		tmp = addGRBGenCos(con);
 		break;
-	case Expression::OpNLFunc::Tan: // 无法处理
+	case Expression::OpNLFunc::Tan:
+		tmp = addGRBGenTan(con);
 		break;
 	default:
 		break;
@@ -224,7 +352,7 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenMax(Constraint::OpNLCon con)
 	vars.reserve(len);
 	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
 		vars.emplace_back(vardict_.at(iter.getVar().getIndex()));
-	return gmdl_->addGenConstrMax(var0, vars.data(), len, -GRB_INFINITY, con.getName());
+	return gmdl_->addGenConstrMax(var0, vars.data(), len, expr.getParam(), con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenMin(Constraint::OpNLCon con)
@@ -236,7 +364,7 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenMin(Constraint::OpNLCon con)
 	vars.reserve(len);
 	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
 		vars.emplace_back(vardict_.at(iter.getVar().getIndex()));
-	return gmdl_->addGenConstrMin(var0, vars.data(), len, GRB_INFINITY, con.getName());
+	return gmdl_->addGenConstrMin(var0, vars.data(), len, expr.getParam(), con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenAbs(Constraint::OpNLCon con)
@@ -244,6 +372,83 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenAbs(Constraint::OpNLCon con)
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
 	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
 	return gmdl_->addGenConstrAbs(var0, var1, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenExp(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrExp(var1, var0, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenExpA(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrExpA(var1, var0, con.getExpr().getParam(), con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenLog(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrLog(var1, var0, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenLn(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrLogA(var1, var0, Constant::NL, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenLogA(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrLogA(var1, var0, con.getExpr().getParam(), con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenSquare(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrPow(var1, var0, 2.0, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenSqrt(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrPow(var1, var0, 0.5, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenPow(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrPow(var1, var0, con.getExpr().getParam(), con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenSin(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrSin(var1, var0, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenCos(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrCos(var1, var0, con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenTan(Constraint::OpNLCon con)
+{
+	GRBVar var0(vardict_.at(con.getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	return gmdl_->addGenConstrTan(var1, var0, con.getName());
 }
 
 void Solver::OpGRBSolI::init()
@@ -293,24 +498,19 @@ void Solver::OpGRBSolI::solve()
 	gmdl_->optimize();
 }
 
-void Solver::OpGRBSolI::setConfig(OpStr key, OpBool val)
+void Solver::OpGRBSolI::setParam(const OpConfig& cfg)
 {
-
+	for (const auto& key : cfg.icfg_)
+		gmdl_->set(cfgcvt_.getIntParam(key.first), key.second);
+	for (const auto& key : cfg.fcfg_)
+		gmdl_->set(cfgcvt_.getDoubleParam(key.first), key.second);
+	for (const auto& key : cfg.scfg_)
+		gmdl_->set(cfgcvt_.getStringParam(key.first), key.second);
 }
 
-void Solver::OpGRBSolI::setConfig(OpStr key, OpLInt val)
+OpLInt Solver::OpGRBSolI::getStatus()
 {
-
-}
-
-void Solver::OpGRBSolI::setConfig(OpStr key, OpFloat val)
-{
-
-}
-
-void Solver::OpGRBSolI::setConfig(OpStr key, OpStr val)
-{
-
+	return gmdl_->get(GRB_IntAttr_Status);
 }
 
 OpFloat Solver::OpGRBSolI::getValue(Variable::OpVar var)
@@ -349,17 +549,7 @@ OpFloat Solver::OpGRBSolI::getDual(Constraint::OpLinCon con)
 Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env)
 	: OpImplBase('S', env),
 	genv_(nullptr), 
-	gmdl_(nullptr),
-	gname_("GRB_Sol_" + std::to_string(idx_))
-{
-	init();
-}
-
-Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, OpStr name)
-	: OpImplBase('S', env),
-	genv_(nullptr),
-	gmdl_(nullptr),
-	gname_(name)
+	gmdl_(nullptr)
 {
 	init();
 }
@@ -367,18 +557,7 @@ Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, OpStr name)
 Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, Model::OpModel mdl)
 	: OpImplBase('S', env),
 	genv_(nullptr),
-	gmdl_(nullptr),
-	gname_("GRB_Sol_" + std::to_string(idx_))
-{
-	init();
-	extract(mdl);
-}
-
-Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, Model::OpModel mdl, OpStr name)
-	: OpImplBase('S', env),
-	genv_(nullptr),
-	gmdl_(nullptr),
-	gname_(name)
+	gmdl_(nullptr)
 {
 	init();
 	extract(mdl);
@@ -402,24 +581,14 @@ void Solver::OpGRBSol::solve()
 	static_cast<OpGRBSolI*>(impl_)->solve();
 }
 
-void Solver::OpGRBSol::set(OpStr key, OpBool val)
+void OPUA::Solver::OpGRBSol::setParam(const OpConfig& cfg)
 {
-	static_cast<OpGRBSolI*>(impl_)->setConfig(key, val);
+	static_cast<OpGRBSolI*>(impl_)->setParam(cfg);
 }
 
-void Solver::OpGRBSol::set(OpStr key, OpLInt val)
+OpLInt OPUA::Solver::OpGRBSol::getStatus()
 {
-	static_cast<OpGRBSolI*>(impl_)->setConfig(key, val);
-}
-
-void Solver::OpGRBSol::set(OpStr key, OpFloat val)
-{
-	static_cast<OpGRBSolI*>(impl_)->setConfig(key, val);
-}
-
-void Solver::OpGRBSol::set(OpStr key, OpStr val)
-{
-	static_cast<OpGRBSolI*>(impl_)->setConfig(key, val);
+	return static_cast<OpGRBSolI*>(impl_) ->getStatus();
 }
 
 OpFloat Solver::OpGRBSol::getValue(Variable::OpVar var)
@@ -462,19 +631,9 @@ Solver::OpGRBSol::OpGRBSol(OpEnv env)
 	impl_ = new OpGRBSolI(env.getImpl());
 }
 
-Solver::OpGRBSol::OpGRBSol(OpEnv env, OpStr name)
-{
-	impl_ = new OpGRBSolI(env.getImpl(), name);
-}
-
 Solver::OpGRBSol::OpGRBSol(OpEnv env, Model::OpModel mdl)
 {
 	impl_ = new OpGRBSolI(env.getImpl(), mdl);
-}
-
-Solver::OpGRBSol::OpGRBSol(OpEnv env, Model::OpModel mdl, OpStr name)
-{
-	impl_ = new OpGRBSolI(env.getImpl(), mdl, name);
 }
 
 Solver::OpGRBSol::~OpGRBSol()

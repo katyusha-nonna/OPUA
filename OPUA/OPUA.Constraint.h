@@ -14,7 +14,9 @@ namespace OPUA
 		class OpSOSCon;
 		class OpNLConI;
 		class OpNLCon;
-		class OpLogicConI; // TODO: 逻辑约束
+		class OpCdtConI; // TODO: 条件约束(IF-ELSE / INDICATOR)
+		class OpCdtCon;
+		class OpLogicConI; // TODO: 逻辑约束(AND / OR / NOR)
 		class OpLogicCon;
 
 		typedef Container::OpArray<OpLinCon> OpLCArr; // 线性约束数组
@@ -54,18 +56,18 @@ namespace OPUA
 		OpNLCon operator==(Variable::OpVar lhs, const Expression::OpNLExpr& rhs);
 
 		// 警告，参数的顺序关系到操作数的位置，详见操作函数说明
-		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Sum(X)
-		OpNLCon OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Max(X)
-		OpNLCon OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X); // x1 = Min(X)
+		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a); // x1 = Sum(X, a)
+		OpNLCon OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a); // x1 = Max(X, a)
+		OpNLCon OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a); // x1 = Min(X, a)
 		OpNLCon OpAbs(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = Abs(x2)
 		OpNLCon OpSquare(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = x2^^2
 		OpNLCon OpSqrt(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = x2^^0.5
-		OpNLCon OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = x2^^x3
+		OpNLCon OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a); // x1 = x2^^a
 		OpNLCon OpExp1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = e^^x2
-		OpNLCon OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = x2^^x3
+		OpNLCon OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a); // x1 = a^^x2
 		OpNLCon OpLog1(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = log (10) x2
 		OpNLCon OpLog2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = log (e) x2
-		OpNLCon OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3); // x1 = log (x2) x3
+		OpNLCon OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a); // x1 = log (a) x2
 		OpNLCon OpSin(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = sin(x2)
 		OpNLCon OpCos(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = cos(x2)
 		OpNLCon OpTan(OpEnv env, Variable::OpVar x1, Variable::OpVar x2); // x1 = tan(x2)

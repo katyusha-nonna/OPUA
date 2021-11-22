@@ -1090,9 +1090,9 @@ Constraint::OpNLCon Constraint::operator==(Variable::OpVar lhs, const Expression
 	return con;
 }
 
-Constraint::OpNLCon Constraint::OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
+Constraint::OpNLCon Constraint::OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a)
 {
-	Expression::OpNLExpr expr(Expression::OpNLFunc::Sum, X);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Sum, a, X);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
@@ -1100,9 +1100,9 @@ Constraint::OpNLCon Constraint::OpSum(OpEnv env, Variable::OpVar x1, Variable::O
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
+Constraint::OpNLCon Constraint::OpMax(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a)
 {
-	Expression::OpNLExpr expr(Expression::OpNLFunc::Max, X);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Max, a, X);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
@@ -1110,9 +1110,9 @@ Constraint::OpNLCon Constraint::OpMax(OpEnv env, Variable::OpVar x1, Variable::O
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X)
+Constraint::OpNLCon Constraint::OpMin(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a)
 {
-	Expression::OpNLExpr expr(Expression::OpNLFunc::Min, X);
+	Expression::OpNLExpr expr(Expression::OpNLFunc::Min, a, X);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
@@ -1153,11 +1153,11 @@ Constraint::OpNLCon Constraint::OpSqrt(OpEnv env, Variable::OpVar x1, Variable::
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
+Constraint::OpNLCon Constraint::OpPow(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a)
 {
 	Expression::OpNLExpr expr(Expression::OpNLFunc::Pow);
 	expr.addVar(x2);
-	expr.addVar(x3);
+	expr.setParam(a);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
@@ -1176,11 +1176,11 @@ Constraint::OpNLCon Constraint::OpExp1(OpEnv env, Variable::OpVar x1, Variable::
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
+Constraint::OpNLCon Constraint::OpExp2(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a)
 {
 	Expression::OpNLExpr expr(Expression::OpNLFunc::Exp2);
 	expr.addVar(x2);
-	expr.addVar(x3);
+	expr.setParam(a);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
@@ -1210,11 +1210,11 @@ Constraint::OpNLCon Constraint::OpLog2(OpEnv env, Variable::OpVar x1, Variable::
 	return tmp;
 }
 
-Constraint::OpNLCon Constraint::OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, Variable::OpVar x3)
+Constraint::OpNLCon Constraint::OpLog3(OpEnv env, Variable::OpVar x1, Variable::OpVar x2, OpFloat a)
 {
 	Expression::OpNLExpr expr(Expression::OpNLFunc::Log3);
 	expr.addVar(x2);
-	expr.addVar(x3);
+	expr.setParam(a);
 	OpNLCon tmp(env);
 	tmp.setVar(x1);
 	tmp.setExpr(expr);
