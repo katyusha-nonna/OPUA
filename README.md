@@ -23,7 +23,7 @@ OPUA由以下基本模块构成：
 * **OPUA.Containter**: 容器模块，提供OPUA的基本容器，如动态数组和字典
 * **OPUA.Variable**: 决策变量模块，提供OPUA的决策变量模型，包括0-1变量、离散变量、连续变量等
 * **OPUA.Expression**: 表达式模块，提供OPUA的表达式模型，包括线性表达式、二次表达式和非线性表达式等
-* **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、SOS约束、非线性约束、特殊约束等
+* **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、SOS约束、非线性约束、条件约束、逻辑约束、特殊约束等
 * **OPUA.Objective**: 目标函数模块，提供OPUA的目标函数模型
 * **OPUA.Model**: 优化问题模块，提供OPUA的优化问题模型
 * **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP等
@@ -77,6 +77,8 @@ auto quadcon1 = quadexpr1 <= linexpr1;
 auto sos1con1 = OpSOSCon(env, OpConSense::SOS1, linexpr1);
 // 非线性约束
 auto nlcon1 = OpAbs(env, var4, var1);
+// 条件约束
+auto indcon1 = var4 == lincon2;
 ```
 
 接着，我们可以创建目标函数：
@@ -102,11 +104,15 @@ mdl.remove(lincon1);
 至此，模型已经构建完毕。接下来进入求解阶段。我们提供了多种商业求解器的接口，允许用户在这些求解器之间自由选择而不必更改模型本身，实现了求解器的自由切换。以Gurobi为例，我们需要依次进行以下步骤：创建一个求解器接口对象->抽取我们的OPUA模型->设置参数->求解模型->最后获取求解结果：
 
 ```cpp
+// 创建求解器接口对象并抽取OPUA模型
 Solver::OpGRBSol grb1(env, mdl);
+// 调用求解器执行求解
 grb1.solve();
+// 求解完毕，取变量、表达式、目标函数的解
 std::cout << var1 << '\t' << grb1.getValue(var1) << std::endl;
 std::cout << var2 << '\t' << grb1.getValue(var2) << std::endl;
 std::cout << var3 << '\t' << grb1.getValue(var3) << std::endl;
+std::cout << "Obj:\t" << grb1.getValue(linobj1) << std::endl;
 ```
 
 最后需要特别提醒的是，OPUA除表达式以外的所有组件都有两种释放内存的方式

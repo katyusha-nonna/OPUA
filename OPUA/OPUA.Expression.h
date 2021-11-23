@@ -156,27 +156,60 @@ namespace OPUA
 			OpLinExpr(Variable::OpVar var, OpFloat coeff = 1.0);
 		};
 
+		// 参考了https://youngforest.github.io/2020/05/27/unordered-map-hash-pair-c/
+		// 一种比Xor更高效的Hasher写法
+		template <typename T>
+		inline void hash_combine(std::size_t& seed, const T& val)
+		{
+			seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
+
+		template <typename T>
+		inline void hash_val(std::size_t& seed, const T& val)
+		{
+			hash_combine(seed, val);
+		}
+		template <typename T, typename... Types>
+		inline void hash_val(std::size_t& seed, const T& val, const Types &... args)
+		{
+			hash_combine(seed, val);
+			hash_val(seed, args...);
+		}
+
+		template <typename... Types>
+		inline std::size_t hash_val(const Types &... args)
+		{
+			std::size_t seed = 0;
+			hash_val(seed, args...);
+			return seed;
+		}
+
 		// OpQuadExpr：OPUA二次表达式
 		class OpQuadExpr
 			: public OpExpr
 		{
 		protected:
-			template<class T>
 			struct PairHasher
-				: public std::unary_function < std::pair<T, T>, size_t >
 			{
-				size_t operator()(std::pair<T, T> val) const
+				/*
+				template<class T>
+				size_t operator()(const std::pair<T, T>& val) const
 				{
 					std::hash<T> hasher;
 					return hasher(val.first) ^ hasher(val.second);
 				}
+				*/			
+				template<class T>
+				size_t operator()(const std::pair<T, T>& val) const
+				{
+					return val.first < val.second ? hash_val(val.first, val.second) : hash_val(val.second, val.first);
+				}			
 			};
 
-			template<class T>
 			struct PairEqualityComparer
-				: public std::binary_function < const std::pair<T, T>, const std::pair<T, T>, bool >
 			{
-				bool operator()(const std::pair<T, T> x, const std::pair<T, T> y) const
+				template<class T>
+				bool operator()(const std::pair<T, T>& x, const std::pair<T, T>& y) const
 				{
 					return (x.first == y.first && x.second == y.second) ||
 						(x.first == y.second && x.second == y.first);
@@ -186,8 +219,8 @@ namespace OPUA
 			using QuadTermTab = std::unordered_map<
 				std::pair<Variable::OpVarI*, Variable::OpVarI*>,
 				double,
-				PairHasher<Variable::OpVarI*>,
-				PairEqualityComparer<Variable::OpVarI*> >;
+				PairHasher,
+				PairEqualityComparer>;
 
 			OpLinExpr linexpr_; // 线性项
 			QuadTermTab quadterm_;  // 二次项

@@ -14,7 +14,7 @@ namespace OPUA
 		class OpSOSCon;
 		class OpNLConI;
 		class OpNLCon;
-		class OpCdtConI; // TODO: 条件约束(IF-ELSE / INDICATOR)
+		class OpCdtConI;
 		class OpCdtCon;
 		class OpLogicConI; // TODO: 逻辑约束(AND / OR / NOR)
 		class OpLogicCon;
@@ -23,10 +23,12 @@ namespace OPUA
 		typedef Container::OpArray<OpQuadCon> OpQCArr; // 二次约束数组
 		typedef Container::OpArray<OpSOSCon> OpSOSArr; // SOS约束数组
 		typedef Container::OpArray<OpNLCon> OpNLCArr; // 非线性约束数组
+		typedef Container::OpArray<OpCdtCon> OpCCArr; // 条件约束数组
 		typedef Container::OpDict<OpLInt, OpLinCon> OpLCIdxDict; // 线性约束索引字典
 		typedef Container::OpDict<OpLInt, OpQuadCon> OpQCIdxDict; // 二次约束索引字典
 		typedef Container::OpDict<OpLInt, OpSOSCon> OpSOSIdxDict; // SOS约束索引字典
 		typedef Container::OpDict<OpLInt, OpNLCon> OpNLCIdxDict; // 非线性约束索引字典
+		typedef Container::OpDict<OpLInt, OpCdtCon> OpCCIdxDict; // 条件约束索引字典
 
 		enum class OpConSense
 		{
@@ -37,8 +39,7 @@ namespace OPUA
 			SOS2 // SOS2约束
 		};
 
-		// 警告，不允许“常数 <=/>=/== 常数”，否则将返回空约束
-
+		// 警告，创建线性/二次约束时，不允许“常数 <=/>=/== 常数”，否则将返回空约束
 		std::ostream& operator<<(std::ostream& stream, OpLinCon con);
 		OpLinCon operator<=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs);
 		OpLinCon operator>=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs);
@@ -51,9 +52,15 @@ namespace OPUA
 
 		std::ostream& operator<<(std::ostream& stream, OpSOSCon con);
 
+		// 警告，创建非线性约束时，传入的非线性表达式不能为空，否则将返回空约束
 		std::ostream& operator<<(std::ostream& stream, OpNLCon con);
 		OpNLCon operator==(const Expression::OpNLExpr& lhs, Variable::OpVar rhs);
 		OpNLCon operator==(Variable::OpVar lhs, const Expression::OpNLExpr& rhs);
+
+		// 警告，创建条件约束时，==左右两端约束/变量不能互换，左侧为条件，右侧为约束
+		std::ostream& operator<<(std::ostream& stream, OpCdtCon con);
+		OpCdtCon operator==(Variable::OpVar lhs, OpLinCon rhs);
+		OpCdtCon operator==(OpLinCon lhs, OpLinCon rhs);
 
 		// 警告，参数的顺序关系到操作数的位置，详见操作函数说明
 		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a); // x1 = Sum(X, a)
@@ -186,6 +193,38 @@ namespace OPUA
 			OpNLCon(OpEnv env, Variable::OpVar var, const Expression::OpNLExpr& expr, OpStr name); // 从env构造并指定部分参数
 		public:
 			virtual ~OpNLCon();
+		};
+
+		// OpCdtCon：OPUA的条件约束类
+		// 格式1(指示器约束)：ind -> con (当ind=1时，con生效；当ind=0时，con可以被违反)
+		// 格式2(If-Then约束)：con1 -> con2 (当con1生效时，con2生效；当con1被违反时，con2可以被违反)
+		class OpCdtCon
+			: public OpBase
+		{
+		public:
+			void setName(OpStr name); // 设置约束名称
+			void setVar(Variable::OpVar var); // 设置指示器变量
+			void setCon(OpLinCon con, OpBool con1); // 设置约束
+			Variable::OpVar getVar() const; // 获取指示器变量
+			OpLinCon getCon(OpBool con1) const; // 获取IF/Then约束
+			OpBool isIndicator() const; // 是否为指示器约束
+			OpStr getName() const; // 获取约束名称
+			OpCdtConI* getImpl() const; // 获取impl
+			void lock();  // 锁定条件约束(和普通的lock不同，会同时锁定con或con1&con2)
+			void unlock();// 解锁条件约束(和普通的lock不同，会同时解锁con或con1&con2)
+		public:
+			OpBool operator==(const OpCdtCon& con);
+			OpBool operator!=(const OpCdtCon& con);
+		public:
+			OpCdtCon(); // 默认构造函数(默认为空)
+			OpCdtCon(OpCdtConI* impl); // 从impl构造
+			OpCdtCon(OpEnv env); // 从env构造
+			OpCdtCon(OpEnv env, Variable::OpVar ind, OpLinCon con); // 从env构造并指定部分参数
+			OpCdtCon(OpEnv env, Variable::OpVar ind, OpLinCon con, OpStr name); // 从env构造并指定部分参数
+			OpCdtCon(OpEnv env, OpLinCon con1, OpLinCon con2); // 从env构造并指定部分参数
+			OpCdtCon(OpEnv env, OpLinCon con1, OpLinCon con2, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpCdtCon();
 		};
 	}
 }

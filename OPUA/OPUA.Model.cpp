@@ -15,6 +15,7 @@ protected:
 	Constraint::OpQCIdxDict mqcs_; // 优化模型二次约束集
 	Constraint::OpSOSIdxDict mscs_; // 优化模型SOS约束集
 	Constraint::OpNLCIdxDict mnlcs_; // 优化模型非线性约束集
+	Constraint::OpCCIdxDict mccs_; // 优化模型条件约束集
 	Objective::OpObj mobj0_; // 优化模型目标函数(单目标优化)
 	Objective::OpObjIdxDict mobjs_; // 优化模型目标函数集(多目标优化)
 	OpStr mname_; // 优化模型名称
@@ -41,6 +42,8 @@ protected:
 	void addSOSs(Constraint::OpSOSArr cons); // 添加SOS约束集
 	void addNLCon(Constraint::OpNLCon con); // 添加非线性约束
 	void addNLCons(Constraint::OpNLCArr cons); // 添加非线性约束集
+	void addCdtCon(Constraint::OpCdtCon con); // 添加条件约束
+	void addCdtCons(Constraint::OpCCArr cons); // 添加条件约束集
 	void setObj(Objective::OpObj obj); // 设置单目标优化目标函数
 	Objective::OpObj getObj(); // 获取单目标优化目标函数
 	void addMultiObj(Objective::OpObj obj); // 添加多目标优化目标函数
@@ -54,6 +57,8 @@ protected:
 	void removeSOSs(Constraint::OpSOSArr cons); // 移除SOS约束集
 	void removeNLCon(Constraint::OpNLCon con); // 移除非线性约束
 	void removeNLCons(Constraint::OpNLCArr cons); // 移除非线性约束集
+	void removeCdtCon(Constraint::OpCdtCon con); // 添加条件约束
+	void removeCdtCons(Constraint::OpCCArr cons); // 添加条件约束集
 	void removeMultiObj(Objective::OpObj obj); // 移除多目标优化目标函数
 	void removeMultiObj(Objective::OpObjArr objs); // 移除多目标优化目标函数
 
@@ -76,6 +81,7 @@ void Model::OpModelI::init()
 	mqcs_ = Constraint::OpQCIdxDict(localEnv);
 	mscs_ = Constraint::OpSOSIdxDict(localEnv);
 	mnlcs_ = Constraint::OpNLCIdxDict(localEnv);
+	mccs_ = Constraint::OpCCIdxDict(localEnv);
 	mobjs_ = Objective::OpObjIdxDict(localEnv);
 }
 
@@ -87,6 +93,7 @@ void Model::OpModelI::clear()
 	mqcs_.release();
 	mscs_.release();
 	mnlcs_.release();
+	mccs_.release();
 	mobjs_.release();
 }
 
@@ -235,6 +242,37 @@ void Model::OpModelI::addNLCons(Constraint::OpNLCArr cons)
 		addNLCon(cons[i]);
 }
 
+void Model::OpModelI::addCdtCon(Constraint::OpCdtCon con)
+{
+	auto idx(con.getIndex());
+	if (!mccs_.has(idx))
+	{
+		if (con.isIndicator())
+		{
+			addVar(con.getVar());
+		}
+		else
+		{
+			auto con1(con.getCon(true));
+			addVarsFromLE(con1.getExpr(true));
+			if (!con1.isStandard())
+				addVarsFromLE(con1.getExpr(false));
+		}
+		auto con2(con.getCon(false));
+		addVarsFromLE(con2.getExpr(true));
+		if (!con2.isStandard())
+			addVarsFromLE(con2.getExpr(false));
+		mccs_.add(idx, con);
+		con.lock();
+	}
+}
+
+void Model::OpModelI::addCdtCons(Constraint::OpCCArr cons)
+{
+	for (OpULInt i = 0; i < cons.getSize(); i++)
+		addCdtCon(cons[i]);
+}
+
 void Model::OpModelI::setObj(Objective::OpObj obj)
 {
 	if (mobj0_ != obj)
@@ -343,6 +381,37 @@ void Model::OpModelI::removeNLCons(Constraint::OpNLCArr cons)
 		removeNLCon(cons[i]);
 }
 
+void Model::OpModelI::removeCdtCon(Constraint::OpCdtCon con)
+{
+	auto idx(con.getIndex());
+	if (mccs_.has(idx))
+	{
+		con.unlock();
+		mccs_.remove(idx);
+		auto con2(con.getCon(false));
+		removeVarsFromLE(con2.getExpr(true));
+		if (!con2.isStandard())
+			removeVarsFromLE(con2.getExpr(false));
+		if (con.isIndicator())
+		{
+			removeVar(con.getVar());
+		}
+		else
+		{
+			auto con1(con.getCon(true));
+			removeVarsFromLE(con1.getExpr(true));
+			if (!con1.isStandard())
+				removeVarsFromLE(con1.getExpr(false));
+		}
+	}
+}
+
+void Model::OpModelI::removeCdtCons(Constraint::OpCCArr cons)
+{
+	for (OpULInt i = 0; i < cons.getSize(); i++)
+		removeCdtCon(cons[i]);
+}
+
 void Model::OpModelI::removeMultiObj(Objective::OpObj obj)
 {
 	// TODO 暂未实现，需要考虑多目标优化的方式()
@@ -377,13 +446,14 @@ void Model::OpModelI::write(OpStr path) const
 		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
 	for (auto iter = mscs_.getCBegin(); iter != mscs_.getCEnd(); ++iter)
 		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	stream << std::endl << "Bounds: " << std::endl;
+	for (auto iter = mccs_.getCBegin(); iter != mccs_.getCEnd(); ++iter)
+		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+	stream << "Bounds: " << std::endl;
 	for (auto iter = mvars_.getCBegin(); iter != mvars_.getCEnd(); ++iter)
 	{
 		auto& var(iter.getVal());
 		stream << var.getName() << ":\t" << var.getLb() << " <= " << var.getUb() << std::endl;
 	}
-
 }
 
 Model::OpModelI::OpModelI(OpEnvI* env)
@@ -437,14 +507,24 @@ void Model::OpModel::add(Constraint::OpSOSArr cons)
 	static_cast<OpModelI*>(impl_)->addSOSs(cons);
 }
 
-void OPUA::Model::OpModel::add(Constraint::OpNLCon con)
+void Model::OpModel::add(Constraint::OpNLCon con)
 {
 	static_cast<OpModelI*>(impl_)->addNLCon(con);
 }
 
-void OPUA::Model::OpModel::add(Constraint::OpNLCArr cons)
+void Model::OpModel::add(Constraint::OpNLCArr cons)
 {
 	static_cast<OpModelI*>(impl_)->addNLCons(cons);
+}
+
+void Model::OpModel::add(Constraint::OpCdtCon con)
+{
+	static_cast<OpModelI*>(impl_)->addCdtCon(con);
+}
+
+void Model::OpModel::add(Constraint::OpCCArr cons)
+{
+	static_cast<OpModelI*>(impl_)->addCdtCons(cons);
 }
 
 void Model::OpModel::setObj(Objective::OpObj obj)
@@ -495,6 +575,16 @@ void OPUA::Model::OpModel::remove(Constraint::OpNLCon con)
 void OPUA::Model::OpModel::remove(Constraint::OpNLCArr cons)
 {
 	static_cast<OpModelI*>(impl_)->removeNLCons(cons);
+}
+
+void OPUA::Model::OpModel::remove(Constraint::OpCdtCon con)
+{
+	static_cast<OpModelI*>(impl_)->removeCdtCon(con);
+}
+
+void OPUA::Model::OpModel::remove(Constraint::OpCCArr cons)
+{
+	static_cast<OpModelI*>(impl_)->removeCdtCons(cons);
 }
 
 void Model::OpModel::write(OpStr path) const
@@ -565,6 +655,16 @@ Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCBegin()
 Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCEnd()
 {
 	return static_cast<OpModelI*>(impl_)->mnlcs_.getCEnd();
+}
+
+Constraint::OpCCIdxDict::OpDictCIter OPUA::Model::OpModel::getCCBegin()
+{
+	return static_cast<OpModelI*>(impl_)->mccs_.getCBegin();
+}
+
+Constraint::OpCCIdxDict::OpDictCIter OPUA::Model::OpModel::getCCEnd()
+{
+	return static_cast<OpModelI*>(impl_)->mccs_.getCEnd();
 }
 
 Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getOBegin()

@@ -159,6 +159,7 @@ private:
 	GRBGenConstr addGRBGenSin(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Sin约束
 	GRBGenConstr addGRBGenCos(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Cos约束
 	GRBGenConstr addGRBGenTan(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Tan约束
+	GRBGenConstr addGRBGenIndicator(Constraint::OpCdtCon con); // 从OPUA条件约束创建一个GRB指示器约束
 protected:
 	void init(); // 初始化
 	void clear(); // 清除所有组件与映射信息
@@ -451,6 +452,30 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenTan(Constraint::OpNLCon con)
 	return gmdl_->addGenConstrTan(var1, var0, con.getName());
 }
 
+GRBGenConstr Solver::OpGRBSolI::addGRBGenIndicator(Constraint::OpCdtCon con)
+{
+	GRBVar ind(vardict_.at(con.getVar().getIndex()));
+	auto con2(con.getCon(false));
+	GRBLinExpr lhs(addGRBLE(con2.getExpr(true)));
+	GRBLinExpr rhs(con2.isStandard() ? con2.getRHS() : addGRBLE(con2.getExpr(false)));
+	GRBTempConstr tmp;
+	switch (con2.getSense())
+	{
+	case Constraint::OpConSense::Equal:
+		tmp = lhs == rhs;
+		break;
+	case Constraint::OpConSense::LessEqual:
+		tmp = lhs <= rhs;
+		break;
+	case Constraint::OpConSense::GreatEqual:
+		tmp = lhs >= rhs;
+		break;
+	default:
+		break;
+	}
+	return gmdl_->addGenConstrIndicator(ind, 1, tmp, con.getName());
+}
+
 void Solver::OpGRBSolI::init()
 {
 	genv_ = new GRBEnv();
@@ -490,6 +515,9 @@ void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 		scdict_.emplace(iter.getKey(), addGRBSOS(iter.getVal()));
 	for (auto iter = mdl.getNLCBegin(); iter != mdl.getNLCEnd(); ++iter)
 		nlcdict_.emplace(iter.getKey(), addGRBGen(iter.getVal()));
+	for (auto iter = mdl.getCCBegin(); iter != mdl.getCCEnd(); ++iter)
+		if (iter.getVal().isIndicator())
+			nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(iter.getVal()));
 	gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
 }
 

@@ -20,6 +20,7 @@ namespace OPUA
 
 		// 通用配置器
 		// 只接受四种类型(布尔、整数、浮点和字符串)
+		// 在注册/查询键值时，自动去除两侧的空白字符段
 		class OpConfig
 		{
 		protected:
@@ -32,25 +33,27 @@ namespace OPUA
 			friend class OpGRBSolI;
 			friend class OpMSKSolI;
 			friend class OpSCIPSolI;
+		protected:
+			void removeStrSpace(OpStr& key) const; // 移除键值两侧空白字符
 		public:
 			// 注册配置(配置存在则覆盖旧配置)
-			void RegisterConfig(OpStr key, OpBool val);
-			void RegisterConfig(OpStr key, OpLInt val);
-			void RegisterConfig(OpStr key, OpFloat val);
-			void RegisterConfig(OpStr key, OpStr val);
+			void regCfg(OpStr key, OpBool val);
+			void regCfg(OpStr key, OpLInt val);
+			void regCfg(OpStr key, OpFloat val);
+			void regCfg(OpStr key, OpStr val);
 			// 清除配置
-			void ClearConfig(OpStr key, OpBool flag);
-			void ClearConfig(OpStr key, OpLInt flag);
-			void ClearConfig(OpStr key, OpFloat flag);
-			void ClearConfig(OpStr key, OpStr flag);
-			template<typename T> void ClearConfig(OpStr key) { ClearConfig(key, T()); }
-			void ClearAll();
+			void clrCfg(OpStr key, OpBool flag);
+			void clrCfg(OpStr key, OpLInt flag);
+			void clrCfg(OpStr key, OpFloat flag);
+			void clrCfg(OpStr key, OpStr flag);
+			template<typename T> void clrCfg(OpStr key) { clrCfg(key, T()); }
+			void clrAll();
 			// 获取配置
-			OpBool GetConfig(OpStr key, OpBool flag) const;
-			OpLInt GetConfig(OpStr key, OpLInt flag) const;
-			OpFloat GetConfig(OpStr key, OpFloat flag) const;
-			OpStr GetConfig(OpStr key, OpStr flag) const;
-			template<typename T> auto GetConfig(OpStr key) const { return GetConfig(key, T()); }
+			OpBool getCfg(OpStr key, OpBool flag) const;
+			OpLInt getCfg(OpStr key, OpLInt flag) const;
+			OpFloat getCfg(OpStr key, OpFloat flag) const;
+			OpStr getCfg(OpStr key, OpStr flag) const;
+			template<typename T> auto getCfg(OpStr key) const { return getCfg(key, T()); }
 		};
 
 		/*

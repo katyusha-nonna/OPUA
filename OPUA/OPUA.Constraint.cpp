@@ -532,6 +532,167 @@ Constraint::OpNLConI::~OpNLConI()
 
 }
 
+/* OPUA::Constraint::OpCdtConI */
+
+class Constraint::OpCdtConI
+	: public OpImplBase
+{
+protected:
+	OpBool cic_; // 是否为指示器约束
+	Variable::OpVar cind_; // 指示器变量
+	OpLinCon cif_; // IF约束
+	OpLinCon cthen_; // Then约束
+	OpStr cname_;
+
+	friend class OpCdtCon;
+protected:
+	void setName(OpStr name); // 设置约束名称
+	void setVar(Variable::OpVar var); // 设置指示器变量
+	void setCon(OpLinCon con, OpBool ifCon); // 设置约束
+	Variable::OpVar getVar() const; // 获取指示器变量
+	OpLinCon getCon(OpBool ifCon) const; // 获取IF/Then约束
+	OpBool isIndicator() const; // 是否为指示器约束
+	OpStr getName() const; // 获取约束名称
+	void lock(); // 锁定条件约束
+	void unlock(); // 解锁条件约束
+protected:
+	OpCdtConI(OpEnvI* env);
+	OpCdtConI(OpEnvI* env, Variable::OpVar indicator, OpLinCon thenCon);
+	OpCdtConI(OpEnvI* env, Variable::OpVar indicator, OpLinCon thenCon, OpStr name);
+	OpCdtConI(OpEnvI* env, OpLinCon ifCon, OpLinCon thenCon);
+	OpCdtConI(OpEnvI* env, OpLinCon ifCon, OpLinCon thenCon, OpStr name);
+public:
+	virtual ~OpCdtConI();
+};
+
+void Constraint::OpCdtConI::setName(OpStr name)
+{
+	cname_ = name;
+}
+
+void Constraint::OpCdtConI::setVar(Variable::OpVar var)
+{
+	if (!locked_)
+	{
+		cind_ = var;
+		cif_ = OpLinCon();
+		cic_ = true;
+	}
+}
+
+void Constraint::OpCdtConI::setCon(OpLinCon con, OpBool ifCon)
+{
+	if (!locked_)
+	{
+		if (ifCon)
+		{
+			cif_ = con;
+			cind_ = Variable::OpVar();
+			cic_ = false;
+		}
+		else
+		{
+			cthen_ = con;
+		}
+	}
+}
+
+Variable::OpVar Constraint::OpCdtConI::getVar() const
+{
+	return cind_;
+}
+
+Constraint::OpLinCon Constraint::OpCdtConI::getCon(OpBool ifCon) const
+{
+	return ifCon ? cif_ : cthen_;
+}
+
+OpBool Constraint::OpCdtConI::isIndicator() const
+{
+	return cic_;
+}
+
+OpStr Constraint::OpCdtConI::getName() const
+{
+	return cname_;
+}
+
+void Constraint::OpCdtConI::lock()
+{
+	OpImplBase::lock();
+	if (!isIndicator())
+		cif_.lock();
+	cthen_.lock();
+}
+
+void Constraint::OpCdtConI::unlock()
+{
+	cthen_.unlock();
+	if (!isIndicator())
+		cif_.unlock();
+	OpImplBase::unlock();
+}
+
+Constraint::OpCdtConI::OpCdtConI(OpEnvI* env)
+	: OpImplBase('C', env),
+	cic_(false), 
+	cind_(), 
+	cif_(), 
+	cthen_(), 
+	cname_("cc_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpCdtConI::OpCdtConI(OpEnvI* env, Variable::OpVar indicator, OpLinCon thenCon)
+	: OpImplBase('C', env),
+	cic_(true),
+	cind_(indicator),
+	cif_(),
+	cthen_(thenCon),
+	cname_("cc_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpCdtConI::OpCdtConI(OpEnvI* env, Variable::OpVar indicator, OpLinCon thenCon, OpStr name)
+	: OpImplBase('C', env),
+	cic_(true),
+	cind_(indicator),
+	cif_(),
+	cthen_(thenCon),
+	cname_(name)
+{
+
+}
+
+Constraint::OpCdtConI::OpCdtConI(OpEnvI* env, OpLinCon ifCon, OpLinCon thenCon)
+	: OpImplBase('C', env),
+	cic_(false),
+	cind_(),
+	cif_(ifCon),
+	cthen_(thenCon),
+	cname_("cc_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpCdtConI::OpCdtConI(OpEnvI* env, OpLinCon ifCon, OpLinCon thenCon, OpStr name)
+	: OpImplBase('C', env),
+	cic_(false),
+	cind_(),
+	cif_(ifCon),
+	cthen_(thenCon),
+	cname_(name)
+{
+
+}
+
+Constraint::OpCdtConI::~OpCdtConI()
+{
+
+}
+
 /* OPUA::Constraint::OpLinCon */
 
 void Constraint::OpLinCon::setSense(OpConSense sense)
@@ -895,6 +1056,110 @@ Constraint::OpNLCon::~OpNLCon()
 
 }
 
+/* OPUA::Constraint::OpCdtCon */
+
+void Constraint::OpCdtCon::setName(OpStr name)
+{
+	static_cast<OpCdtConI*>(impl_)->setName(name);
+}
+
+void Constraint::OpCdtCon::setVar(Variable::OpVar var)
+{
+	static_cast<OpCdtConI*>(impl_)->setVar(var);
+}
+
+void Constraint::OpCdtCon::setCon(OpLinCon con, OpBool con1)
+{
+	static_cast<OpCdtConI*>(impl_)->setCon(con, con1);
+}
+
+Variable::OpVar Constraint::OpCdtCon::getVar() const
+{
+	return static_cast<OpCdtConI*>(impl_)->getVar();
+}
+
+Constraint::OpLinCon Constraint::OpCdtCon::getCon(OpBool con1) const
+{
+	return static_cast<OpCdtConI*>(impl_)->getCon(con1);
+}
+
+OpBool Constraint::OpCdtCon::isIndicator() const
+{
+	return static_cast<OpCdtConI*>(impl_)->isIndicator();
+}
+
+OpStr Constraint::OpCdtCon::getName() const
+{
+	return static_cast<OpCdtConI*>(impl_)->getName();
+}
+
+Constraint::OpCdtConI* Constraint::OpCdtCon::getImpl() const
+{
+	return static_cast<OpCdtConI*>(impl_);
+}
+
+void OPUA::Constraint::OpCdtCon::lock()
+{
+	static_cast<OpCdtConI*>(impl_)->lock();
+}
+
+void OPUA::Constraint::OpCdtCon::unlock()
+{
+	static_cast<OpCdtConI*>(impl_)->unlock();
+}
+
+OpBool Constraint::OpCdtCon::operator==(const OpCdtCon& con)
+{
+	return impl_ == con.getImpl();
+}
+
+OpBool Constraint::OpCdtCon::operator!=(const OpCdtCon& con)
+{
+	return impl_ != con.getImpl();
+}
+
+Constraint::OpCdtCon::OpCdtCon()
+{
+
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpCdtConI* impl)
+{
+	impl_ = impl;
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpEnv env)
+{
+	impl_ = new OpCdtConI(env.getImpl());
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpEnv env, Variable::OpVar ind, OpLinCon con)
+{
+	impl_ = new OpCdtConI(env.getImpl(), ind, con);
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpEnv env, Variable::OpVar ind, OpLinCon con, OpStr name)
+{
+	impl_ = new OpCdtConI(env.getImpl(), ind, con, name);
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpEnv env, OpLinCon con1, OpLinCon con2)
+{
+	impl_ = new OpCdtConI(env.getImpl(), con1, con2);
+}
+
+Constraint::OpCdtCon::OpCdtCon(OpEnv env, OpLinCon con1, OpLinCon con2, OpStr name)
+{
+	impl_ = new OpCdtConI(env.getImpl(), con1, con2, name);
+}
+
+Constraint::OpCdtCon::~OpCdtCon()
+{
+
+}
+
+/* OPUA::Constraint */
+
 OpStr Constraint::ConSense2Str(OpConSense sense)
 {
 	OpStr str(" ? ");
@@ -1062,14 +1327,7 @@ Constraint::OpNLCon Constraint::operator==(const Expression::OpNLExpr& lhs, Vari
 {
 	OpNLCon con(nullptr);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
-	if (lenv && renv)
-	{
-		if (lenv == renv)
-			con = OpNLCon(OpEnv(lenv), rhs, lhs);
-	}
-	else if (!lenv && renv)
-		con = OpNLCon(OpEnv(renv), rhs, lhs);
-	else if (lenv && !renv)
+	if (lenv && renv && lenv == renv)
 		con = OpNLCon(OpEnv(lenv), rhs, lhs);
 	return con;
 }
@@ -1078,15 +1336,37 @@ Constraint::OpNLCon Constraint::operator==(Variable::OpVar lhs, const Expression
 {
 	OpNLCon con(nullptr);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
-	if (lenv && renv)
-	{
-		if (lenv == renv)
-			con = OpNLCon(OpEnv(lenv), lhs, rhs);
-	}
-	else if (!lenv && renv)
-		con = OpNLCon(OpEnv(renv), lhs, rhs);
-	else if (lenv && !renv)
+	if (lenv && renv && lenv == renv)
 		con = OpNLCon(OpEnv(lenv), lhs, rhs);
+	return con;
+}
+
+std::ostream& Constraint::operator<<(std::ostream& stream, OpCdtCon con)
+{
+	stream << "( ";
+	if (con.isIndicator())
+		stream << con.getVar().getName() << " == 1";
+	else
+		stream << con.getCon(true);
+	stream << " ) -> " << con.getCon(false) << " )";
+	return stream;
+}
+
+Constraint::OpCdtCon Constraint::operator==(Variable::OpVar lhs, OpLinCon rhs)
+{
+	OpCdtCon con(nullptr);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv && lenv == renv)
+		con = OpCdtCon(OpEnv(lenv), lhs, rhs);
+	return con;
+}
+
+Constraint::OpCdtCon Constraint::operator==(OpLinCon lhs, OpLinCon rhs)
+{
+	OpCdtCon con(nullptr);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv && lenv == renv)
+		con = OpCdtCon(OpEnv(lenv), lhs, rhs);
 	return con;
 }
 

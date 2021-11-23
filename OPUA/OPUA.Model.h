@@ -19,7 +19,8 @@ namespace OPUA
 				[3] OpQuadCon / 二次约束
 				[4] OpSOSCon / SOS约束
 				[5] OpNLCon / 非线性约束
-				[6] OpObj / 多目标优化目标函数
+				[6] OpCdtCon / 条件约束
+				[7] OpObj / 多目标优化目标函数
 
 				迭代器可以遍历上述组件的字典，键值为索引
 		*/
@@ -35,6 +36,8 @@ namespace OPUA
 			void add(Constraint::OpSOSArr cons); // 添加SOS约束集
 			void add(Constraint::OpNLCon con); // 添加非线性约束
 			void add(Constraint::OpNLCArr cons); // 添加非线性约束集
+			void add(Constraint::OpCdtCon con); // 添加条件约束
+			void add(Constraint::OpCCArr cons);  // 添加条件约束集
 			void setObj(Objective::OpObj obj); // 设置单目标优化目标函数
 			Objective::OpObj getObj(); // 获取单目标优化目标函数
 			void remove(Constraint::OpLinCon con); // 移除线性约束
@@ -45,6 +48,8 @@ namespace OPUA
 			void remove(Constraint::OpSOSArr cons); // 移除SOS约束集
 			void remove(Constraint::OpNLCon con); // 移除非线性约束
 			void remove(Constraint::OpNLCArr cons); // 移除非线性约束集
+			void remove(Constraint::OpCdtCon con); // 添加条件约束
+			void remove(Constraint::OpCCArr cons);  // 添加条件约束集
 			void write(OpStr path) const; // 将模型写入文件
 			void setName(OpStr name); // 设置名称
 			OpStr getName() const; // 获取模型名称
@@ -60,6 +65,8 @@ namespace OPUA
 			Constraint::OpSOSIdxDict::OpDictCIter getSOSEnd(); // 获取SOS约束字典的末端常量迭代器
 			Constraint::OpNLCIdxDict::OpDictCIter getNLCBegin(); // 获取非线性约束字典的首端常量迭代器
 			Constraint::OpNLCIdxDict::OpDictCIter getNLCEnd(); // 获取非线性约束字典的末端常量迭代器
+			Constraint::OpCCIdxDict::OpDictCIter getCCBegin(); // 获取条件约束字典的首端常量迭代器
+			Constraint::OpCCIdxDict::OpDictCIter getCCEnd(); // 获取条件约束字典的末端常量迭代器
 			Objective::OpObjIdxDict::OpDictCIter getOBegin(); // 获取多目标函数字典的首端常量迭代器
 			Objective::OpObjIdxDict::OpDictCIter getOEnd(); // 获取多目标函数字典的末端常量迭代器
 		public:
