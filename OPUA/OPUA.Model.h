@@ -55,20 +55,23 @@ namespace OPUA
 			OpStr getName() const; // 获取模型名称
 			OpModelI* getImpl() const; // 获取impl
 		public:
-			Variable::OpVarIdxDict::OpDictCIter getVBegin(); // 获取变量字典的首端常量迭代器
-			Variable::OpVarIdxDict::OpDictCIter getVEnd(); // 获取变量字典的末端常量迭代器
-			Constraint::OpLCIdxDict::OpDictCIter getLCBegin(); // 获取线性约束字典的首端常量迭代器
-			Constraint::OpLCIdxDict::OpDictCIter getLCEnd(); // 获取线性约束字典的末端常量迭代器
-			Constraint::OpQCIdxDict::OpDictCIter getQCBegin(); // 获取二次约束字典的首端常量迭代器
-			Constraint::OpQCIdxDict::OpDictCIter getQCEnd(); // 获取二次约束字典的末端常量迭代器
-			Constraint::OpSOSIdxDict::OpDictCIter getSOSBegin(); // 获取SOS约束字典的首端常量迭代器
-			Constraint::OpSOSIdxDict::OpDictCIter getSOSEnd(); // 获取SOS约束字典的末端常量迭代器
-			Constraint::OpNLCIdxDict::OpDictCIter getNLCBegin(); // 获取非线性约束字典的首端常量迭代器
-			Constraint::OpNLCIdxDict::OpDictCIter getNLCEnd(); // 获取非线性约束字典的末端常量迭代器
-			Constraint::OpCCIdxDict::OpDictCIter getCCBegin(); // 获取条件约束字典的首端常量迭代器
-			Constraint::OpCCIdxDict::OpDictCIter getCCEnd(); // 获取条件约束字典的末端常量迭代器
-			Objective::OpObjIdxDict::OpDictCIter getOBegin(); // 获取多目标函数字典的首端常量迭代器
-			Objective::OpObjIdxDict::OpDictCIter getOEnd(); // 获取多目标函数字典的末端常量迭代器
+			Variable::OpVarIdxDict::OpDictCIter getCBegin(Variable::OpVar flag); // 获取变量字典的首端常量迭代器
+			Constraint::OpLCIdxDict::OpDictCIter getCBegin(Constraint::OpLinCon flag); // 获取线性约束字典的首端常量迭代器
+			Constraint::OpQCIdxDict::OpDictCIter getCBegin(Constraint::OpQuadCon flag); // 获取二次约束字典的首端常量迭代器
+			Constraint::OpSOSIdxDict::OpDictCIter getCBegin(Constraint::OpSOSCon flag); // 获取SOS约束字典的首端常量迭代器
+			Constraint::OpNLCIdxDict::OpDictCIter getCBegin(Constraint::OpNLCon flag); // 获取非线性约束字典的首端常量迭代器
+			Constraint::OpCCIdxDict::OpDictCIter getCBegin(Constraint::OpCdtCon flag); // 获取条件约束字典的首端常量迭代器
+			Objective::OpObjIdxDict::OpDictCIter getCBegin(Objective::OpObj flag); // 获取多目标函数字典的首端常量迭代器	
+			template<typename T> inline typename Container::OpDict<OpLInt, T>::OpDictCIter getCBegin() { return getCBegin(T()); }
+
+			Variable::OpVarIdxDict::OpDictCIter getCEnd(Variable::OpVar flag); // 获取变量字典的末端常量迭代器		
+			Constraint::OpLCIdxDict::OpDictCIter getCEnd(Constraint::OpLinCon flag); // 获取线性约束字典的末端常量迭代器		
+			Constraint::OpQCIdxDict::OpDictCIter getCEnd(Constraint::OpQuadCon flag); // 获取二次约束字典的末端常量迭代器		
+			Constraint::OpSOSIdxDict::OpDictCIter getCEnd(Constraint::OpSOSCon flag); // 获取SOS约束字典的末端常量迭代器
+			Constraint::OpNLCIdxDict::OpDictCIter getCEnd(Constraint::OpNLCon flag); // 获取非线性约束字典的末端常量迭代器
+			Constraint::OpCCIdxDict::OpDictCIter getCEnd(Constraint::OpCdtCon flag); // 获取条件约束字典的末端常量迭代器
+			Objective::OpObjIdxDict::OpDictCIter getCEnd(Objective::OpObj flag); // 获取多目标函数字典的末端常量迭代器
+			template<typename T> inline typename Container::OpDict<OpLInt, T>::OpDictCIter getCEnd() { return getCEnd(T()); }
 		public:
 			OpBool operator==(const OpModel& model);
 			OpBool operator!=(const OpModel& model);

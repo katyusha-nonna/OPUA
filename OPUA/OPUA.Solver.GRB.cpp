@@ -505,17 +505,17 @@ void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 		init();
 	}
 	// 加载现有模型
-	for (auto iter = mdl.getVBegin(); iter != mdl.getVEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
 		vardict_.emplace(iter.getKey(), addGRBVar(iter.getVal()));
-	for (auto iter = mdl.getLCBegin(); iter != mdl.getLCEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
 		lcdict_.emplace(iter.getKey(), addGRBLC(iter.getVal()));
-	for (auto iter = mdl.getQCBegin(); iter != mdl.getQCEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
 		qcdict_.emplace(iter.getKey(), addGRBQC(iter.getVal()));
-	for (auto iter = mdl.getSOSBegin(); iter != mdl.getSOSEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
 		scdict_.emplace(iter.getKey(), addGRBSOS(iter.getVal()));
-	for (auto iter = mdl.getNLCBegin(); iter != mdl.getNLCEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
 		nlcdict_.emplace(iter.getKey(), addGRBGen(iter.getVal()));
-	for (auto iter = mdl.getCCBegin(); iter != mdl.getCCEnd(); ++iter)
+	for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
 		if (iter.getVal().isIndicator())
 			nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(iter.getVal()));
 	gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));

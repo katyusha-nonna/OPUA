@@ -607,72 +607,72 @@ Model::OpModelI* Model::OpModel::getImpl() const
 	return static_cast<OpModelI*>(impl_);
 }
 
-Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getVBegin()
+Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getCBegin(Variable::OpVar flag)
 {
 	return static_cast<OpModelI*>(impl_)->mvars_.getCBegin();
 }
 
-Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getVEnd()
+Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getCEnd(Variable::OpVar flag)
 {
 	return static_cast<OpModelI*>(impl_)->mvars_.getCEnd();
 }
 
-Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getLCBegin()
+Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getCBegin(Constraint::OpLinCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mlcs_.getCBegin();
 }
 
-Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getLCEnd()
+Constraint::OpLCIdxDict::OpDictCIter Model::OpModel::getCEnd(Constraint::OpLinCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mlcs_.getCEnd();
 }
 
-Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getQCBegin()
+Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getCBegin(Constraint::OpQuadCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mqcs_.getCBegin();
 }
 
-Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getQCEnd()
+Constraint::OpQCIdxDict::OpDictCIter Model::OpModel::getCEnd(Constraint::OpQuadCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mqcs_.getCEnd();
 }
 
-Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getSOSBegin()
+Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getCBegin(Constraint::OpSOSCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mscs_.getCBegin();
 }
 
-Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getSOSEnd()
+Constraint::OpSOSIdxDict::OpDictCIter Model::OpModel::getCEnd(Constraint::OpSOSCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mscs_.getCEnd();
 }
 
-Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCBegin()
+Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getCBegin(Constraint::OpNLCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mnlcs_.getCBegin();
 }
 
-Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getNLCEnd()
+Constraint::OpNLCIdxDict::OpDictCIter Model::OpModel::getCEnd(Constraint::OpNLCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mnlcs_.getCEnd();
 }
 
-Constraint::OpCCIdxDict::OpDictCIter OPUA::Model::OpModel::getCCBegin()
+Constraint::OpCCIdxDict::OpDictCIter Model::OpModel::getCBegin(Constraint::OpCdtCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mccs_.getCBegin();
 }
 
-Constraint::OpCCIdxDict::OpDictCIter OPUA::Model::OpModel::getCCEnd()
+Constraint::OpCCIdxDict::OpDictCIter Model::OpModel::getCEnd(Constraint::OpCdtCon flag)
 {
 	return static_cast<OpModelI*>(impl_)->mccs_.getCEnd();
 }
 
-Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getOBegin()
+Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getCBegin(Objective::OpObj flag)
 {
 	return static_cast<OpModelI*>(impl_)->mobjs_.getCBegin();
 }
 
-Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getOEnd()
+Objective::OpObjIdxDict::OpDictCIter Model::OpModel::getCEnd(Objective::OpObj flag)
 {
 	return static_cast<OpModelI*>(impl_)->mobjs_.getCEnd();
 }
