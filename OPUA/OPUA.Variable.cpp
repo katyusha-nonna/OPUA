@@ -180,12 +180,12 @@ Variable::OpVarI* Variable::OpVar::getImpl() const
 	return static_cast<OpVarI*>(impl_);
 }
 
-OpBool Variable::OpVar::operator==(const OpVar& var)
+OpBool Variable::OpVar::operator==(const OpVar& var) const
 {
 	return impl_ == var.getImpl();
 }
 
-OpBool Variable::OpVar::operator!=(const OpVar& var)
+OpBool Variable::OpVar::operator!=(const OpVar& var) const
 {
 	return impl_ != var.getImpl();
 }

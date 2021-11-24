@@ -106,6 +106,11 @@ mdl.remove(lincon1);
 ```cpp
 // 创建求解器接口对象并抽取OPUA模型
 Solver::OpGRBSol grb1(env, mdl);
+// 创建通用配置器并填入配置
+Solver::OpConfig cfg1;
+cfg1.regCfg("OPUA.GRB.Termination.TimeLimit", OpFloat(60));
+// 加载求解配置
+grb1.setParam(cfg1);
 // 调用求解器执行求解
 grb1.solve();
 // 求解完毕，取变量、表达式、目标函数的解

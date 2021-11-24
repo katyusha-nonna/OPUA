@@ -29,10 +29,6 @@ namespace OPUA
 			std::unordered_map<OpStr, OpFloat> fcfg_;
 			std::unordered_map<OpStr, OpStr> scfg_;
 
-			friend class OpCPXSolI;
-			friend class OpGRBSolI;
-			friend class OpMSKSolI;
-			friend class OpSCIPSolI;
 		protected:
 			void removeStrSpace(OpStr& key) const; // 移除键值两侧空白字符
 		public:
@@ -46,14 +42,51 @@ namespace OPUA
 			void clrCfg(OpStr key, OpLInt flag);
 			void clrCfg(OpStr key, OpFloat flag);
 			void clrCfg(OpStr key, OpStr flag);
-			template<typename T> void clrCfg(OpStr key) { clrCfg(key, T()); }
+			template<typename T> inline void clrCfg(OpStr key) { clrCfg(key, T()); }
 			void clrAll();
 			// 获取配置
 			OpBool getCfg(OpStr key, OpBool flag) const;
 			OpLInt getCfg(OpStr key, OpLInt flag) const;
 			OpFloat getCfg(OpStr key, OpFloat flag) const;
 			OpStr getCfg(OpStr key, OpStr flag) const;
-			template<typename T> auto getCfg(OpStr key) const { return getCfg(key, T()); }
+			template<typename T> inline auto getCfg(OpStr key) const { return getCfg(key, T()); }
+		public:
+			template<typename T>
+			class OpCfgCIter
+			{
+			private:
+				using KeyValPair = typename std::unordered_map<OpStr, T>::const_iterator;
+				KeyValPair iter_;
+				OpStr prefix_;
+
+				friend class OpConfig;
+			private:
+				OpBool filter(OpStr key) const { return key.find(prefix_) != OpStr::npos; }
+			public:
+				OpBool operator==(const OpCfgCIter<T>& iter) const { return iter_ == iter.iter_; }
+				OpBool operator!=(const OpCfgCIter<T>& iter) const { return iter_ != iter.iter_; }
+				OpCfgCIter<T>& operator--() { --iter_; return *this; }
+				OpCfgCIter<T>& operator++() { ++iter_; return *this; }
+				OpBool ok() const { return filter(iter_->first); }
+				const OpStr& getKey() const { return iter_->first; }
+				const T& getVal() const { return iter_->second; }
+			protected:
+				OpCfgCIter(KeyValPair iter, OpStr prefix)
+					: iter_(iter), prefix_(prefix) {}
+			};
+
+			// 迭代配置
+			OpCfgCIter<OpBool> getCBegin(OpStr prefix, OpBool flag) const;
+			OpCfgCIter<OpLInt> getCBegin(OpStr prefix, OpLInt flag) const;
+			OpCfgCIter<OpFloat> getCBegin(OpStr prefix, OpFloat flag) const;
+			OpCfgCIter<OpStr> getCBegin(OpStr prefix, OpStr flag) const;
+			template<typename T> inline auto getCBegin(OpStr prefix) const { return getCBegin(prefix, T()); }
+
+			OpCfgCIter<OpBool> getCEnd(OpStr prefix, OpBool flag) const;
+			OpCfgCIter<OpLInt> getCEnd(OpStr prefix, OpLInt flag) const;
+			OpCfgCIter<OpFloat> getCEnd(OpStr prefix, OpFloat flag) const;
+			OpCfgCIter<OpStr> getCEnd(OpStr prefix, OpStr flag) const;
+			template<typename T> inline auto getCEnd(OpStr prefix) const { return getCEnd(prefix, T()); }
 		};
 
 		/*
@@ -141,12 +174,16 @@ namespace OPUA
 			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成GRB模型对象
 			void solve(); // 执行求解
 			void setParam(const OpConfig& cfg); // 设置配置
-			OpLInt getStatus(); // 获取求解状态
-			OpFloat getValue(Variable::OpVar var); // 获取变量的解
-			OpFloat getValue(const Expression::OpLinExpr& expr); // 获取表达式的解(速度较慢)
-			OpFloat getValue(const Expression::OpQuadExpr& expr); // 获取表达式的解(速度较慢)
-			OpFloat getValue(Objective::OpObj obj); // 获取目标函数解(速度较慢)
-			OpFloat getDual(Constraint::OpLinCon con); // 获取对偶解
+			OpLInt getStatus() const; // 获取求解状态
+			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpGRBSolI* getImpl() const; // 获取Impl
+		public:
+			OpBool operator==(const OpGRBSol& sol) const;
+			OpBool operator!=(const OpGRBSol& sol) const;
 		public:
 			OpGRBSol(); // 默认构造函数(默认为空)
 			OpGRBSol(OpGRBSolI* impl); // 从impl构造

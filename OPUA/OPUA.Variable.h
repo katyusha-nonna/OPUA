@@ -43,8 +43,8 @@ namespace OPUA
 			OpStr getName() const; // 获取变量名称
 			OpVarI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpVar& var);
-			OpBool operator!=(const OpVar& var);
+			OpBool operator==(const OpVar& var) const;
+			OpBool operator!=(const OpVar& var) const;
 		public:
 			OpVar(); // 默认构造函数(默认为空)
 			OpVar(OpVarI* impl); // 从impl构造

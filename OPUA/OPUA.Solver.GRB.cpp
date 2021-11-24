@@ -528,12 +528,15 @@ void Solver::OpGRBSolI::solve()
 
 void Solver::OpGRBSolI::setParam(const OpConfig& cfg)
 {
-	for (const auto& key : cfg.icfg_)
-		gmdl_->set(cfgcvt_.getIntParam(key.first), key.second);
-	for (const auto& key : cfg.fcfg_)
-		gmdl_->set(cfgcvt_.getDoubleParam(key.first), key.second);
-	for (const auto& key : cfg.scfg_)
-		gmdl_->set(cfgcvt_.getStringParam(key.first), key.second);
+	for (auto iter = cfg.getCBegin<OpLInt>("OPUA.GRB"); iter != cfg.getCEnd<OpLInt>("OPUA.GRB"); ++iter)
+		if (iter.ok())
+			gmdl_->set(cfgcvt_.getIntParam(iter.getKey()), iter.getVal());
+	for (auto iter = cfg.getCBegin<OpFloat>("OPUA.GRB"); iter != cfg.getCEnd<OpFloat>("OPUA.GRB"); ++iter)
+		if (iter.ok())
+			gmdl_->set(cfgcvt_.getDoubleParam(iter.getKey()), iter.getVal());
+	for (auto iter = cfg.getCBegin<OpStr>("OPUA.GRB"); iter != cfg.getCEnd<OpStr>("OPUA.GRB"); ++iter)
+		if (iter.ok())
+			gmdl_->set(cfgcvt_.getStringParam(iter.getKey()), iter.getVal());
 }
 
 OpLInt Solver::OpGRBSolI::getStatus()
@@ -609,39 +612,54 @@ void Solver::OpGRBSol::solve()
 	static_cast<OpGRBSolI*>(impl_)->solve();
 }
 
-void OPUA::Solver::OpGRBSol::setParam(const OpConfig& cfg)
+void Solver::OpGRBSol::setParam(const OpConfig& cfg)
 {
 	static_cast<OpGRBSolI*>(impl_)->setParam(cfg);
 }
 
-OpLInt OPUA::Solver::OpGRBSol::getStatus()
+OpLInt Solver::OpGRBSol::getStatus() const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getStatus();
 }
 
-OpFloat Solver::OpGRBSol::getValue(Variable::OpVar var)
+OpFloat Solver::OpGRBSol::getValue(Variable::OpVar var) const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getValue(var);
 }
 
-OpFloat Solver::OpGRBSol::getValue(const Expression::OpLinExpr& expr)
+OpFloat Solver::OpGRBSol::getValue(const Expression::OpLinExpr& expr) const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getValue(expr);
 }
 
-OpFloat Solver::OpGRBSol::getValue(const Expression::OpQuadExpr& expr)
+OpFloat Solver::OpGRBSol::getValue(const Expression::OpQuadExpr& expr) const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getValue(expr);
 }
 
-OpFloat OPUA::Solver::OpGRBSol::getValue(Objective::OpObj obj)
+OpFloat Solver::OpGRBSol::getValue(Objective::OpObj obj) const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getValue(obj);
 }
 
-OpFloat Solver::OpGRBSol::getDual(Constraint::OpLinCon con)
+OpFloat Solver::OpGRBSol::getDual(Constraint::OpLinCon con) const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getDual(con);
+}
+
+Solver::OpGRBSolI* Solver::OpGRBSol::getImpl() const
+{
+	return static_cast<OpGRBSolI*>(impl_);
+}
+
+OpBool Solver::OpGRBSol::operator==(const OpGRBSol& sol) const
+{
+	return impl_ == sol.impl_;
+}
+
+OpBool Solver::OpGRBSol::operator!=(const OpGRBSol& sol) const
+{
+	return impl_ != sol.impl_;
 }
 
 Solver::OpGRBSol::OpGRBSol()

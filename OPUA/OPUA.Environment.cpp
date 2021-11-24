@@ -112,9 +112,19 @@ void OPUA::OpEnv::init(OpStr name)
 	impl_ = new OpEnvI(name);
 }
 
-OPUA::OpEnvI* OPUA::OpEnv::getImpl()
+OPUA::OpEnvI* OPUA::OpEnv::getImpl() const
 {
 	return impl_;
+}
+
+OPUA::OpBool OPUA::OpEnv::operator==(const OpEnv& env) const
+{
+	return impl_ == env.impl_;
+}
+
+OPUA::OpBool OPUA::OpEnv::operator!=(const OpEnv& env) const
+{
+	return impl_ != env.impl_;
 }
 
 OPUA::OpEnv::OpEnv()

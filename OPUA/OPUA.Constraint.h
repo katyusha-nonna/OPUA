@@ -97,8 +97,8 @@ namespace OPUA
 			OpBool isStandard() const; // 是否为标注化约束
 			OpLinConI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpLinCon& con);
-			OpBool operator!=(const OpLinCon& con);
+			OpBool operator==(const OpLinCon& con) const;
+			OpBool operator!=(const OpLinCon& con) const;
 		public:
 			OpLinCon(); // 默认构造函数(默认为空)
 			OpLinCon(OpLinConI* impl); // 从impl构造
@@ -125,8 +125,8 @@ namespace OPUA
 			OpBool isStandard() const; // 是否为标注化约束
 			OpQuadConI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpQuadCon& con);
-			OpBool operator!=(const OpQuadCon& con);
+			OpBool operator==(const OpQuadCon& con) const;
+			OpBool operator!=(const OpQuadCon& con) const;
 		public:
 			OpQuadCon(); // 默认构造函数(默认为空)
 			OpQuadCon(OpQuadConI* impl); // 从impl构造
@@ -153,8 +153,8 @@ namespace OPUA
 			void removeVar(Variable::OpVar var);  // 从SOS中移除一个变量
 			OpSOSConI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpSOSCon& con);
-			OpBool operator!=(const OpSOSCon& con);
+			OpBool operator==(const OpSOSCon& con) const;
+			OpBool operator!=(const OpSOSCon& con) const;
 		public:
 			OpSOSCon(); // 默认构造函数(默认为空)
 			OpSOSCon(OpSOSConI* impl); // 从impl构造
@@ -183,8 +183,8 @@ namespace OPUA
 			OpStr getName() const; // 获取约束名称
 			OpNLConI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpNLCon& con);
-			OpBool operator!=(const OpNLCon& con);
+			OpBool operator==(const OpNLCon& con) const;
+			OpBool operator!=(const OpNLCon& con) const;
 		public:
 			OpNLCon(); // 默认构造函数(默认为空)
 			OpNLCon(OpNLConI* impl); // 从impl构造
@@ -213,8 +213,8 @@ namespace OPUA
 			void lock();  // 锁定条件约束(和普通的lock不同，会同时锁定con或con1&con2)
 			void unlock();// 解锁条件约束(和普通的lock不同，会同时解锁con或con1&con2)
 		public:
-			OpBool operator==(const OpCdtCon& con);
-			OpBool operator!=(const OpCdtCon& con);
+			OpBool operator==(const OpCdtCon& con) const;
+			OpBool operator!=(const OpCdtCon& con) const;
 		public:
 			OpCdtCon(); // 默认构造函数(默认为空)
 			OpCdtCon(OpCdtConI* impl); // 从impl构造

@@ -745,14 +745,14 @@ Constraint::OpLinConI* Constraint::OpLinCon::getImpl() const
 	return static_cast<OpLinConI*>(impl_);
 }
 
-OpBool Constraint::OpLinCon::operator==(const OpLinCon& con)
+OpBool Constraint::OpLinCon::operator==(const OpLinCon& con) const
 {
-	return impl_ == con.getImpl();
+	return impl_ == con.impl_;
 }
 
-OpBool Constraint::OpLinCon::operator!=(const OpLinCon& con)
+OpBool Constraint::OpLinCon::operator!=(const OpLinCon& con) const
 {
-	return impl_ != con.getImpl();
+	return impl_ != con.impl_;
 }
 
 Constraint::OpLinCon::OpLinCon()
@@ -837,14 +837,14 @@ Constraint::OpQuadConI* Constraint::OpQuadCon::getImpl() const
 	return static_cast<OpQuadConI*>(impl_);
 }
 
-OpBool Constraint::OpQuadCon::operator==(const OpQuadCon& con)
+OpBool Constraint::OpQuadCon::operator==(const OpQuadCon& con) const
 {
-	return impl_ == con.getImpl();
+	return impl_ == con.impl_;
 }
 
-OpBool Constraint::OpQuadCon::operator!=(const OpQuadCon& con)
+OpBool Constraint::OpQuadCon::operator!=(const OpQuadCon& con) const
 {
-	return impl_ != con.getImpl();
+	return impl_ != con.impl_;
 }
 
 Constraint::OpQuadCon::OpQuadCon()
@@ -919,14 +919,14 @@ Constraint::OpSOSConI* Constraint::OpSOSCon::getImpl() const
 	return static_cast<OpSOSConI*>(impl_);
 }
 
-OpBool Constraint::OpSOSCon::operator==(const OpSOSCon& con)
+OpBool Constraint::OpSOSCon::operator==(const OpSOSCon& con) const
 {
-	return impl_ == con.getImpl();
+	return impl_ == con.impl_;
 }
 
-OpBool Constraint::OpSOSCon::operator!=(const OpSOSCon& con)
+OpBool Constraint::OpSOSCon::operator!=(const OpSOSCon& con) const
 {
-	return impl_ != con.getImpl();
+	return impl_ != con.impl_;
 }
 
 Constraint::OpSOSCon::OpSOSCon()
@@ -1016,14 +1016,14 @@ Constraint::OpNLConI* Constraint::OpNLCon::getImpl() const
 	return static_cast<OpNLConI*>(impl_);
 }
 
-OpBool Constraint::OpNLCon::operator==(const OpNLCon& con)
+OpBool Constraint::OpNLCon::operator==(const OpNLCon& con) const
 {
-	return impl_ == con.getImpl();
+	return impl_ == con.impl_;
 }
 
-OpBool Constraint::OpNLCon::operator!=(const OpNLCon& con)
+OpBool Constraint::OpNLCon::operator!=(const OpNLCon& con) const
 {
-	return impl_ != con.getImpl();
+	return impl_ != con.impl_;
 }
 
 Constraint::OpNLCon::OpNLCon()
@@ -1108,14 +1108,14 @@ void OPUA::Constraint::OpCdtCon::unlock()
 	static_cast<OpCdtConI*>(impl_)->unlock();
 }
 
-OpBool Constraint::OpCdtCon::operator==(const OpCdtCon& con)
+OpBool Constraint::OpCdtCon::operator==(const OpCdtCon& con) const
 {
-	return impl_ == con.getImpl();
+	return impl_ == con.impl_;
 }
 
-OpBool Constraint::OpCdtCon::operator!=(const OpCdtCon& con)
+OpBool Constraint::OpCdtCon::operator!=(const OpCdtCon& con) const
 {
-	return impl_ != con.getImpl();
+	return impl_ != con.impl_;
 }
 
 Constraint::OpCdtCon::OpCdtCon()

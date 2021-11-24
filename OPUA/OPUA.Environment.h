@@ -17,7 +17,10 @@ namespace OPUA
 	public:
 		void release(); // 释放所有模型组件(必须要手动执行)
 		void init(OpStr name); // 初始化(初始不为空先自动执行释放)
-		OpEnvI* getImpl(); // 获取Impl
+		OpEnvI* getImpl() const; // 获取Impl
+	public:
+		OpBool operator==(const OpEnv& env) const;
+		OpBool operator!=(const OpEnv& env) const;
 	public:
 		OpEnv(); // 默认构造函数(默认为空)
 		OpEnv(OpEnvI* impl); // 从Impl构造

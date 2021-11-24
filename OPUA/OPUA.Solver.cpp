@@ -87,3 +87,43 @@ OpStr Solver::OpConfig::getCfg(OpStr key, OpStr flag) const
 	removeStrSpace(key);
 	return scfg_.at(key);
 }
+
+Solver::OpConfig::OpCfgCIter<OpBool> Solver::OpConfig::getCBegin(OpStr prefix, OpBool flag) const
+{
+	return OpCfgCIter<OpBool>(bcfg_.cbegin(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpLInt> Solver::OpConfig::getCBegin(OpStr prefix, OpLInt flag) const
+{
+	return OpCfgCIter<OpLInt>(icfg_.cbegin(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpFloat> Solver::OpConfig::getCBegin(OpStr prefix, OpFloat flag) const
+{
+	return OpCfgCIter<OpFloat>(fcfg_.cbegin(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpStr> Solver::OpConfig::getCBegin(OpStr prefix, OpStr flag) const
+{
+	return OpCfgCIter<OpStr>(scfg_.cbegin(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpBool> Solver::OpConfig::getCEnd(OpStr prefix, OpBool flag) const
+{
+	return OpCfgCIter<OpBool>(bcfg_.cend(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpLInt> Solver::OpConfig::getCEnd(OpStr prefix, OpLInt flag) const
+{
+	return OpCfgCIter<OpLInt>(icfg_.cend(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpFloat> Solver::OpConfig::getCEnd(OpStr prefix, OpFloat flag) const
+{
+	return OpCfgCIter<OpFloat>(fcfg_.cend(), prefix);
+}
+
+Solver::OpConfig::OpCfgCIter<OpStr> Solver::OpConfig::getCEnd(OpStr prefix, OpStr flag) const
+{
+	return OpCfgCIter<OpStr>(scfg_.cend(), prefix);
+}

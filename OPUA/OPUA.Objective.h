@@ -45,8 +45,8 @@ namespace OPUA
 			OpBool isQuad() const; // 是否为二次目标函数
 			OpObjI* getImpl() const; // 获取impl
 		public:
-			OpBool operator==(const OpObj& obj);
-			OpBool operator!=(const OpObj& obj);
+			OpBool operator==(const OpObj& obj) const;
+			OpBool operator!=(const OpObj& obj) const;
 		public:
 			OpObj(); // 默认构造函数(默认为空)
 			OpObj(OpObjI* impl); // 从impl构造

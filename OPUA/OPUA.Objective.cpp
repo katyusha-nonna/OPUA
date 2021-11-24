@@ -242,14 +242,14 @@ Objective::OpObjI* Objective::OpObj::getImpl() const
 	return static_cast<OpObjI*>(impl_);
 }
 
-OpBool Objective::OpObj::operator==(const OpObj& obj)
+OpBool Objective::OpObj::operator==(const OpObj& obj) const
 {
-	return impl_ == obj.getImpl();
+	return impl_ == obj.impl_;
 }
 
-OpBool Objective::OpObj::operator!=(const OpObj& obj)
+OpBool Objective::OpObj::operator!=(const OpObj& obj) const
 {
-	return impl_ != obj.getImpl();
+	return impl_ != obj.impl_;
 }
 
 Objective::OpObj::OpObj()
