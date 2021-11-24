@@ -7,6 +7,7 @@ namespace OPUA
 	namespace Solver
 	{
 		class OpConfig;
+		class OpCPXCfgCvt;
 		class OpGRBCfgCvt;
 
 		class OpCPXSolI;
@@ -87,6 +88,36 @@ namespace OPUA
 			OpCfgCIter<OpFloat> getCEnd(OpStr prefix, OpFloat flag) const;
 			OpCfgCIter<OpStr> getCEnd(OpStr prefix, OpStr flag) const;
 			template<typename T> inline auto getCEnd(OpStr prefix) const { return getCEnd(prefix, T()); }
+		};
+
+		/*
+			OpCPXBSol：求解器Cplex的接口类
+			求解参数说明：
+		*/
+		class OpCPXSol
+			: public OpBase
+		{
+		public:
+			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成CPX模型对象
+			void solve(); // 执行求解
+			void setParam(const OpConfig& cfg); // 设置配置
+			OpLInt getStatus() const; // 获取求解状态
+			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpCPXSolI* getImpl() const; // 获取Impl
+		public:
+			OpBool operator==(const OpCPXSol& sol) const;
+			OpBool operator!=(const OpCPXSol& sol) const;
+		public:
+			OpCPXSol(); // 默认构造函数(默认为空)
+			OpCPXSol(OpCPXSolI* impl); // 从impl构造
+			OpCPXSol(OpEnv env); // 从env构造
+			OpCPXSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
+		public:
+			virtual ~OpCPXSol();
 		};
 
 		/*

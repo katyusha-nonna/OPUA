@@ -1,5 +1,5 @@
 #include "OPUA.Solver.h"
-#include <Gurobi/include/gurobi_c++.h>
+#include <gurobi_c++.h>
 
 using namespace OPUA;
 
