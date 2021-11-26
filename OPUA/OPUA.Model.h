@@ -54,6 +54,7 @@ namespace OPUA
 			void setName(OpStr name); // 设置名称
 			OpStr getName() const; // 获取模型名称
 			OpModelI* getImpl() const; // 获取impl
+			void release(); // 释放内存
 		public:
 			Variable::OpVarIdxDict::OpDictCIter getCBegin(Variable::OpVar flag) const; // 获取变量字典的首端常量迭代器
 			Constraint::OpLCIdxDict::OpDictCIter getCBegin(Constraint::OpLinCon flag) const; // 获取线性约束字典的首端常量迭代器

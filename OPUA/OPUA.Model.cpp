@@ -65,6 +65,7 @@ protected:
 	void setName(OpStr name); // 设置名称
 	OpStr getName() const; // 获取名称
 	void write(OpStr path) const; // 输出模型
+	void preRelease(); // 释放前准备
 protected:
 	OpModelI(OpEnvI* env);
 	OpModelI(OpEnvI* env, OpStr name);
@@ -464,6 +465,19 @@ void Model::OpModelI::write(OpStr path) const
 	}
 }
 
+void Model::OpModelI::preRelease()
+{
+	OpEnv localEnv(env_);
+	localEnv.removeManagement(mvars_.getImpl());
+	localEnv.removeManagement(mvrc_.getImpl());
+	localEnv.removeManagement(mlcs_.getImpl());
+	localEnv.removeManagement(mqcs_.getImpl());
+	localEnv.removeManagement(mscs_.getImpl());
+	localEnv.removeManagement(mnlcs_.getImpl());
+	localEnv.removeManagement(mccs_.getImpl());
+	localEnv.removeManagement(mobjs_.getImpl());
+}
+
 Model::OpModelI::OpModelI(OpEnvI* env)
 	: OpImplBase('M', env),
 	mname_("Model_" + std::to_string(idx_))
@@ -613,6 +627,18 @@ OpStr Model::OpModel::getName() const
 Model::OpModelI* Model::OpModel::getImpl() const
 {
 	return static_cast<OpModelI*>(impl_);
+}
+
+void Model::OpModel::release()
+{
+	// 这里重写了release()方法，因为OpModelI中包含了OPUA组件
+	// 必须先执行preRelease()减少这些组件的引用计数，保证OpModelI调用析构函数时，能正常释放这些组件
+	if (impl_)
+	{
+		static_cast<OpModelI*>(impl_)->preRelease();
+		static_cast<OpModelI*>(impl_)->release();
+		impl_ = nullptr;
+	}	
 }
 
 Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getCBegin(Variable::OpVar flag) const
