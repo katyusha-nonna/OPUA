@@ -556,7 +556,7 @@ void Expression::OpQuadExpr::simplify(OpFloat zero)
 		else
 			++it;
 	}
-	linexpr_.simplify();
+	linexpr_.simplify(zero);
 }
 
 Expression::OpQuadExpr& Expression::OpQuadExpr::operator+=(const OpQuadExpr& expr)
@@ -701,6 +701,11 @@ Expression::OpNLFunc Expression::OpNLExpr::getFunction() const
 OpFloat OPUA::Expression::OpNLExpr::getParam() const
 {
 	return param_;
+}
+
+Variable::OpVar OPUA::Expression::OpNLExpr::getVar(OpULInt order) const
+{
+	return Variable::OpVar(nlterm_.at(order));
 }
 
 void Expression::OpNLExpr::setFunction(OpNLFunc func)

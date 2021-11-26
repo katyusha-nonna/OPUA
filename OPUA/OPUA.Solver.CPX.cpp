@@ -75,12 +75,13 @@ protected:
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
 	void setParam(const OpConfig& cfg); // 设置配置
-	OpLInt getStatus(); // 获取求解状态
-	OpFloat getValue(Variable::OpVar var); // 获取变量的解
-	OpFloat getValue(const Expression::OpLinExpr& expr); // 获取表达式的解(速度较慢)
-	OpFloat getValue(const Expression::OpQuadExpr& expr); // 获取表达式的解(速度较慢)
-	OpFloat getValue(Objective::OpObj obj); // 获取目标函数解(速度较慢)
-	OpFloat getDual(Constraint::OpLinCon con); // 获取对偶解
+	OpLInt getStatus() const; // 获取求解状态
+	OpFloat getObjValue() const; // 获取目标函数解
+	OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+	OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 protected:
 	OpCPXSolI(OpEnvI* env);
 	OpCPXSolI(OpEnvI* env, Model::OpModel mdl);
@@ -274,7 +275,7 @@ IloConstraint Solver::OpCPXSolI::addCPXSum(Constraint::OpNLCon con)
 
 IloConstraint Solver::OpCPXSolI::addCPXAbs(Constraint::OpNLCon con)
 {
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloAbs(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex())));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloAbs(vardict_.at(con.getExpr().getVar(0).getIndex())));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
@@ -311,14 +312,14 @@ IloConstraint Solver::OpCPXSolI::addCPXMin(Constraint::OpNLCon con)
 
 IloConstraint Solver::OpCPXSolI::addCPXSquare(Constraint::OpNLCon con)
 {
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloSquare(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex())));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloSquare(vardict_.at(con.getExpr().getVar(0).getIndex())));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
 
 IloConstraint Solver::OpCPXSolI::addCPXSqrt(Constraint::OpNLCon con)
 {
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloPower(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()), 0.5));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloPower(vardict_.at(con.getExpr().getVar(0).getIndex()), 0.5));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
@@ -326,21 +327,21 @@ IloConstraint Solver::OpCPXSolI::addCPXSqrt(Constraint::OpNLCon con)
 IloConstraint Solver::OpCPXSolI::addCPXPower(Constraint::OpNLCon con)
 {
 	auto& expr(con.getExpr());
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloPower(vardict_.at(expr.getNLBegin().getVar().getIndex()), expr.getParam()));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloPower(vardict_.at(expr.getVar(0).getIndex()), expr.getParam()));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
 
 IloConstraint Solver::OpCPXSolI::addCPXExp(Constraint::OpNLCon con)
 {
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloExponent(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex())));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloExponent(vardict_.at(con.getExpr().getVar(0).getIndex())));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
 
 IloConstraint Solver::OpCPXSolI::addCPXLog(Constraint::OpNLCon con)
 {
-	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloLog(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex())));
+	IloConstraint tmp(vardict_.at(con.getVar().getIndex()) == IloLog(vardict_.at(con.getExpr().getVar(0).getIndex())));
 	tmp.setName(con.getName().c_str());
 	return tmp;
 }
@@ -446,17 +447,22 @@ void Solver::OpCPXSolI::setParam(const OpConfig& cfg)
 	}
 }
 
-OpLInt Solver::OpCPXSolI::getStatus()
+OpLInt Solver::OpCPXSolI::getStatus() const
 {
 	return csol_.getStatus();
 }
 
-OpFloat Solver::OpCPXSolI::getValue(Variable::OpVar var)
+OpFloat Solver::OpCPXSolI::getObjValue() const
+{
+	return csol_.getObjValue();
+}
+
+OpFloat Solver::OpCPXSolI::getValue(Variable::OpVar var) const
 {
 	return csol_.getValue(vardict_.at(var.getIndex()));
 }
 
-OpFloat Solver::OpCPXSolI::getValue(const Expression::OpLinExpr& expr)
+OpFloat Solver::OpCPXSolI::getValue(const Expression::OpLinExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -464,7 +470,7 @@ OpFloat Solver::OpCPXSolI::getValue(const Expression::OpLinExpr& expr)
 	return result;
 }
 
-OpFloat Solver::OpCPXSolI::getValue(const Expression::OpQuadExpr& expr)
+OpFloat Solver::OpCPXSolI::getValue(const Expression::OpQuadExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -474,12 +480,12 @@ OpFloat Solver::OpCPXSolI::getValue(const Expression::OpQuadExpr& expr)
 	return result;
 }
 
-OpFloat Solver::OpCPXSolI::getValue(Objective::OpObj obj)
+OpFloat Solver::OpCPXSolI::getValue(Objective::OpObj obj) const
 {
 	return getValue(obj.getLinExpr()) + getValue(obj.getQuadExpr());
 }
 
-OpFloat Solver::OpCPXSolI::getDual(Constraint::OpLinCon con)
+OpFloat Solver::OpCPXSolI::getDual(Constraint::OpLinCon con) const
 {
 	return csol_.getDual(lcdict_.at(con.getIndex()));
 }
@@ -528,6 +534,11 @@ void Solver::OpCPXSol::setParam(const OpConfig& cfg)
 OpLInt Solver::OpCPXSol::getStatus() const
 {
 	return static_cast<OpCPXSolI*>(impl_)->getStatus();
+}
+
+OpFloat Solver::OpCPXSol::getObjValue() const
+{
+	return static_cast<OpCPXSolI*>(impl_)->getObjValue();
 }
 
 OpFloat Solver::OpCPXSol::getValue(Variable::OpVar var) const

@@ -306,6 +306,7 @@ namespace OPUA
 			OpEnv getEnv() const; // 获取环境变量(默认返回非线性项中第一个变量的环境变量，否则为空环境变量)
 			OpNLFunc getFunction() const;  // 获取非线性函数
 			OpFloat getParam() const; // 获取非线性函数参数
+			Variable::OpVar getVar(OpULInt order) const; // 获取序号为order的变量
 			void setFunction(OpNLFunc func); // 设置非线性函数		
 			void setParam(OpFloat param); // 设置非线性函数参数
 			void addVar(Variable::OpVar var);  // 向变量表中追加一个变量

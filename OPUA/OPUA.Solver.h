@@ -102,6 +102,7 @@ namespace OPUA
 			void solve(); // 执行求解
 			void setParam(const OpConfig& cfg); // 设置配置
 			OpLInt getStatus() const; // 获取求解状态
+			OpFloat getObjValue() const; // 获取目标函数解
 			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
 			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
 			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
@@ -206,6 +207,7 @@ namespace OPUA
 			void solve(); // 执行求解
 			void setParam(const OpConfig& cfg); // 设置配置
 			OpLInt getStatus() const; // 获取求解状态
+			OpFloat getObjValue() const; // 获取目标函数解
 			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
 			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
 			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)

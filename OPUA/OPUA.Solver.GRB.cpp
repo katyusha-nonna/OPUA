@@ -166,12 +166,13 @@ protected:
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
 	void setParam(const OpConfig& cfg); // 设置配置
-	OpLInt getStatus(); // 获取求解状态
-	OpFloat getValue(Variable::OpVar var); // 获取变量的解
-	OpFloat getValue(const Expression::OpLinExpr& expr); // 获取表达式的解(速度较慢)
-	OpFloat getValue(const Expression::OpQuadExpr& expr); // 获取表达式的解(速度较慢)
-	OpFloat getValue(Objective::OpObj obj); // 获取目标函数解(速度较慢)
-	OpFloat getDual(Constraint::OpLinCon con); // 获取对偶解
+	OpLInt getStatus() const; // 获取求解状态
+	OpFloat getObjValue() const; // 获取目标函数解
+	OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+	OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 protected:
 	OpGRBSolI(OpEnvI* env);
 	OpGRBSolI(OpEnvI* env, Model::OpModel mdl);
@@ -371,84 +372,84 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenMin(Constraint::OpNLCon con)
 GRBGenConstr Solver::OpGRBSolI::addGRBGenAbs(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrAbs(var0, var1, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenExp(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrExp(var1, var0, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenExpA(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrExpA(var1, var0, con.getExpr().getParam(), con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenLog(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrLog(var1, var0, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenLn(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrLogA(var1, var0, Constant::NL, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenLogA(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrLogA(var1, var0, con.getExpr().getParam(), con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenSquare(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrPow(var1, var0, 2.0, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenSqrt(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrPow(var1, var0, 0.5, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenPow(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrPow(var1, var0, con.getExpr().getParam(), con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenSin(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrSin(var1, var0, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenCos(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrCos(var1, var0, con.getName());
 }
 
 GRBGenConstr Solver::OpGRBSolI::addGRBGenTan(Constraint::OpNLCon con)
 {
 	GRBVar var0(vardict_.at(con.getVar().getIndex()));
-	GRBVar var1(vardict_.at(con.getExpr().getNLBegin().getVar().getIndex()));
+	GRBVar var1(vardict_.at(con.getExpr().getVar(0).getIndex()));
 	return gmdl_->addGenConstrTan(var1, var0, con.getName());
 }
 
@@ -518,7 +519,15 @@ void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 	for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
 		if (iter.getVal().isIndicator())
 			nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(iter.getVal()));
-	gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
+	switch (mdl.getObj().getSense())
+	{
+	case Objective::OpObjSense::Min:
+		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()), GRB_MINIMIZE);
+	case Objective::OpObjSense::Max:
+		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()), GRB_MAXIMIZE);
+	default:
+		break;
+	}
 }
 
 void Solver::OpGRBSolI::solve()
@@ -539,17 +548,22 @@ void Solver::OpGRBSolI::setParam(const OpConfig& cfg)
 			gmdl_->set(cfgcvt_.getStringParam(iter.getKey()), iter.getVal());
 }
 
-OpLInt Solver::OpGRBSolI::getStatus()
+OpLInt Solver::OpGRBSolI::getStatus() const
 {
 	return gmdl_->get(GRB_IntAttr_Status);
 }
 
-OpFloat Solver::OpGRBSolI::getValue(Variable::OpVar var)
+OpFloat Solver::OpGRBSolI::getObjValue() const
+{
+	return gmdl_->get(GRB_DoubleAttr_ObjVal);
+}
+
+OpFloat Solver::OpGRBSolI::getValue(Variable::OpVar var) const
 {
 	return vardict_.at(var.getIndex()).get(GRB_DoubleAttr::GRB_DoubleAttr_X);
 }
 
-OpFloat Solver::OpGRBSolI::getValue(const Expression::OpLinExpr& expr)
+OpFloat Solver::OpGRBSolI::getValue(const Expression::OpLinExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -557,7 +571,7 @@ OpFloat Solver::OpGRBSolI::getValue(const Expression::OpLinExpr& expr)
 	return result;
 }
 
-OpFloat Solver::OpGRBSolI::getValue(const Expression::OpQuadExpr& expr)
+OpFloat Solver::OpGRBSolI::getValue(const Expression::OpQuadExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -567,12 +581,12 @@ OpFloat Solver::OpGRBSolI::getValue(const Expression::OpQuadExpr& expr)
 	return result;
 }
 
-OpFloat Solver::OpGRBSolI::getValue(Objective::OpObj obj)
+OpFloat Solver::OpGRBSolI::getValue(Objective::OpObj obj) const
 {
 	return getValue(obj.getLinExpr()) + getValue(obj.getQuadExpr());
 }
 
-OpFloat Solver::OpGRBSolI::getDual(Constraint::OpLinCon con)
+OpFloat Solver::OpGRBSolI::getDual(Constraint::OpLinCon con) const
 {
 	return lcdict_.at(con.getIndex()).get(GRB_DoubleAttr::GRB_DoubleAttr_Pi);
 }
@@ -620,6 +634,11 @@ void Solver::OpGRBSol::setParam(const OpConfig& cfg)
 OpLInt Solver::OpGRBSol::getStatus() const
 {
 	return static_cast<OpGRBSolI*>(impl_) ->getStatus();
+}
+
+OpFloat Solver::OpGRBSol::getObjValue() const
+{
+	return static_cast<OpGRBSolI*>(impl_)->getObjValue();
 }
 
 OpFloat Solver::OpGRBSol::getValue(Variable::OpVar var) const

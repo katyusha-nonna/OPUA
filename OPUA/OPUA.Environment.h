@@ -15,6 +15,8 @@ namespace OPUA
 	protected:
 		OpEnvI* impl_;
 	public:
+		OpULInt addManagement(OpImplBase* impl); // 添加内存管理(并增加引用计数)
+		OpULInt removeManagement(OpImplBase* impl); // 移除内存管理(并减少引用计数，引用计数归零真正移除管理)
 		void release(); // 释放所有模型组件(必须要手动执行)
 		void init(OpStr name); // 初始化(初始不为空先自动执行释放)
 		OpEnvI* getImpl() const; // 获取Impl

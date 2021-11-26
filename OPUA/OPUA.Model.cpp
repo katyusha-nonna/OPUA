@@ -76,13 +76,21 @@ void Model::OpModelI::init()
 {
 	OpEnv localEnv(env_);
 	mvars_= Variable::OpVarIdxDict(localEnv);
+	localEnv.addManagement(mvars_.getImpl());
 	mvrc_ = Container::OpDict<OpLInt, OpULInt>(localEnv);
+	localEnv.addManagement(mvrc_.getImpl());
 	mlcs_ = Constraint::OpLCIdxDict(localEnv);
+	localEnv.addManagement(mlcs_.getImpl());
 	mqcs_ = Constraint::OpQCIdxDict(localEnv);
+	localEnv.addManagement(mqcs_.getImpl());
 	mscs_ = Constraint::OpSOSIdxDict(localEnv);
+	localEnv.addManagement(mscs_.getImpl());
 	mnlcs_ = Constraint::OpNLCIdxDict(localEnv);
+	localEnv.addManagement(mnlcs_.getImpl());
 	mccs_ = Constraint::OpCCIdxDict(localEnv);
+	localEnv.addManagement(mccs_.getImpl());
 	mobjs_ = Objective::OpObjIdxDict(localEnv);
+	localEnv.addManagement(mobjs_.getImpl());
 }
 
 void Model::OpModelI::clear()
