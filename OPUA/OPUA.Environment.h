@@ -2,6 +2,8 @@
 
 #include "OPUA.Type.h"
 
+#define implbase_cast(impl) (OpImplBase*)(impl)
+
 namespace OPUA
 {
 	class OpEnvI;

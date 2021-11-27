@@ -42,12 +42,16 @@ namespace OPUA
 		// 警告，创建线性/二次约束时，不允许“常数 <=/>=/== 常数”，否则将返回空约束
 		std::ostream& operator<<(std::ostream& stream, OpLinCon con);
 		OpLinCon operator<=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs);
+		OpLinCon operator<=(OpLinCon lhs, double rhs);
 		OpLinCon operator>=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs);
+		OpLinCon operator>=(OpLinCon lhs, double rhs);
 		OpLinCon operator==(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs);
 
 		std::ostream& operator<<(std::ostream& stream, OpQuadCon con);
 		OpQuadCon operator<=(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs);
+		OpQuadCon operator<=(OpQuadCon lhs, double rhs);
 		OpQuadCon operator>=(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs);
+		OpQuadCon operator>=(OpQuadCon lhs, double rhs);
 		OpQuadCon operator==(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs);
 
 		std::ostream& operator<<(std::ostream& stream, OpSOSCon con);
@@ -85,16 +89,14 @@ namespace OPUA
 			: public OpBase
 		{
 		public:
-			void setSense(OpConSense sense); // 设置(改变)约束的符号
 			void setName(OpStr name); // 设置约束名称
-			void setExpr(const Expression::OpLinExpr& expr, OpBool lhs); // 设置约束左/右表达式
-			void standardize(OpBool simplify = true); // 约束标准化
-
-			OpConSense getSense() const; // 获取约束的符号
+			void setExpr(const Expression::OpLinExpr& expr); // 设置约束表达式
+			void setLb(OpFloat lb); // 设置约束下限
+			void setUb(OpFloat ub); // 设置约束上限
 			OpStr getName() const; // 获取约束名称
-			const Expression::OpLinExpr& getExpr(OpBool lhs) const; // 获取约束左/右表达式
-			OpFloat getRHS() const; // 获取约束右操作数(仅标准化约束下有效)
-			OpBool isStandard() const; // 是否为标注化约束
+			const Expression::OpLinExpr& getExpr() const; // 获取约束表达式
+			OpFloat getLb() const; // 获取约束下限
+			OpFloat getUb() const; // 获取约束上限
 			OpLinConI* getImpl() const; // 获取impl
 		public:
 			OpBool operator==(const OpLinCon& con) const;
@@ -103,8 +105,8 @@ namespace OPUA
 			OpLinCon(); // 默认构造函数(默认为空)
 			OpLinCon(OpLinConI* impl); // 从impl构造
 			OpLinCon(OpEnv env); // 从env构造
-			OpLinCon(OpEnv env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs); // 从env构造并指定部分参数
-			OpLinCon(OpEnv env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs, OpStr name); // 从env构造并指定部分参数
+			OpLinCon(OpEnv env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub); // 从env构造并指定部分参数
+			OpLinCon(OpEnv env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub, OpStr name); // 从env构造并指定部分参数
 		public:
 			virtual ~OpLinCon();
 		};
@@ -113,16 +115,14 @@ namespace OPUA
 			: public OpBase
 		{
 		public:
-			void setSense(OpConSense sense); // 设置(改变)约束的符号
 			void setName(OpStr name); // 设置约束名称
-			void setExpr(const Expression::OpQuadExpr& expr, OpBool lhs); // 设置约束左/右表达式
-			void standardize(OpBool simplify = true); // 约束标准化
-
-			OpConSense getSense() const; // 获取约束的符号
+			void setExpr(const Expression::OpQuadExpr& expr); // 设置约束表达式
+			void setLb(OpFloat lb); // 设置约束下限
+			void setUb(OpFloat ub); // 设置约束上限
 			OpStr getName() const; // 获取约束名称
-			const Expression::OpQuadExpr& getExpr(OpBool lhs) const; // 获取约束左/右表达式
-			OpFloat getRHS() const; // 获取约束右操作数(仅标准化约束下有效)
-			OpBool isStandard() const; // 是否为标注化约束
+			const Expression::OpQuadExpr& getExpr() const; // 获取约束表达式
+			OpFloat getLb() const; // 获取约束下限
+			OpFloat getUb() const; // 获取约束上限
 			OpQuadConI* getImpl() const; // 获取impl
 		public:
 			OpBool operator==(const OpQuadCon& con) const;
@@ -131,8 +131,8 @@ namespace OPUA
 			OpQuadCon(); // 默认构造函数(默认为空)
 			OpQuadCon(OpQuadConI* impl); // 从impl构造
 			OpQuadCon(OpEnv env); // 从env构造
-			OpQuadCon(OpEnv env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs); // 从env构造并指定部分参数
-			OpQuadCon(OpEnv env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs, OpStr name); // 从env构造并指定部分参数
+			OpQuadCon(OpEnv env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub); // 从env构造并指定部分参数
+			OpQuadCon(OpEnv env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub, OpStr name); // 从env构造并指定部分参数
 		public:
 			virtual ~OpQuadCon();
 		};

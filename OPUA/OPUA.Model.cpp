@@ -183,9 +183,7 @@ void Model::OpModelI::addLinCon(Constraint::OpLinCon con)
 	auto idx(con.getIndex());
 	if (!mlcs_.has(idx))
 	{
-		addVarsFromLE(con.getExpr(true));
-		if (!con.isStandard())
-			addVarsFromLE(con.getExpr(false));
+		addVarsFromLE(con.getExpr());
 		mlcs_.add(idx, con);
 		con.lock();
 	}
@@ -202,9 +200,7 @@ void Model::OpModelI::addQuadCon(Constraint::OpQuadCon con)
 	auto idx(con.getIndex());
 	if (!mqcs_.has(idx))
 	{
-		addVarsFromQE(con.getExpr(true));
-		if (!con.isStandard())
-			addVarsFromQE(con.getExpr(false));
+		addVarsFromQE(con.getExpr());
 		mqcs_.add(idx, con);
 		con.lock();
 	}
@@ -263,14 +259,10 @@ void Model::OpModelI::addCdtCon(Constraint::OpCdtCon con)
 		else
 		{
 			auto con1(con.getCon(true));
-			addVarsFromLE(con1.getExpr(true));
-			if (!con1.isStandard())
-				addVarsFromLE(con1.getExpr(false));
+			addVarsFromLE(con1.getExpr());
 		}
 		auto con2(con.getCon(false));
-		addVarsFromLE(con2.getExpr(true));
-		if (!con2.isStandard())
-			addVarsFromLE(con2.getExpr(false));
+		addVarsFromLE(con2.getExpr());
 		mccs_.add(idx, con);
 		con.lock();
 	}
@@ -324,9 +316,7 @@ void Model::OpModelI::removeLinCon(Constraint::OpLinCon con)
 	{
 		con.unlock();
 		mlcs_.remove(idx);
-		removeVarsFromLE(con.getExpr(true));
-		if (!con.isStandard())
-			removeVarsFromLE(con.getExpr(false));
+		removeVarsFromLE(con.getExpr());
 	}
 }
 
@@ -343,9 +333,7 @@ void Model::OpModelI::removeQuadCon(Constraint::OpQuadCon con)
 	{
 		con.unlock();
 		mqcs_.remove(idx);
-		removeVarsFromQE(con.getExpr(true));
-		if (!con.isStandard())
-			removeVarsFromQE(con.getExpr(false));
+		removeVarsFromQE(con.getExpr());
 	}
 }
 
@@ -398,9 +386,7 @@ void Model::OpModelI::removeCdtCon(Constraint::OpCdtCon con)
 		con.unlock();
 		mccs_.remove(idx);
 		auto con2(con.getCon(false));
-		removeVarsFromLE(con2.getExpr(true));
-		if (!con2.isStandard())
-			removeVarsFromLE(con2.getExpr(false));
+		removeVarsFromLE(con2.getExpr());
 		if (con.isIndicator())
 		{
 			removeVar(con.getVar());
@@ -408,9 +394,7 @@ void Model::OpModelI::removeCdtCon(Constraint::OpCdtCon con)
 		else
 		{
 			auto con1(con.getCon(true));
-			removeVarsFromLE(con1.getExpr(true));
-			if (!con1.isStandard())
-				removeVarsFromLE(con1.getExpr(false));
+			removeVarsFromLE(con1.getExpr());
 		}
 	}
 }

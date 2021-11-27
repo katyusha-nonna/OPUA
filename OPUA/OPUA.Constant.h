@@ -11,5 +11,8 @@ namespace OPUA
 		constexpr OpFloat Infinity = 1e100; /*无穷大*/
 		constexpr OpFloat AbsEpsilon = 1e-10; /*绝对极小值(近似为0)*/
 		constexpr OpFloat RelEpsilon = 1e-80; /*相对极小值(近似为0)*/
+
+		OpBool IsInfinity(OpFloat val); // 是否为无穷大数
+		OpBool IsEqual(OpFloat val1, OpFloat val2); // 是否相等
 	}
 }

@@ -111,7 +111,9 @@ IloNumVar::Type Solver::OpCPXSolI::typeConvert(Variable::OpVarType type)
 
 IloNumVar Solver::OpCPXSolI::addCPXVar(Variable::OpVar var)
 {
-	return IloNumVar(cenv_, var.getLb(), var.getUb(), typeConvert(var.getType()), var.getName().c_str());
+	IloNum lb(Constant::IsInfinity(var.getLb()) ? -IloInfinity : var.getLb());
+	IloNum ub(Constant::IsInfinity(var.getUb()) ? IloInfinity : var.getUb());
+	return IloNumVar(cenv_, lb, ub, typeConvert(var.getType()), var.getName().c_str());
 }
 
 IloNumExpr Solver::OpCPXSolI::addCPXLE(const Expression::OpLinExpr& expr)
@@ -135,48 +137,22 @@ IloNumExpr Solver::OpCPXSolI::addCPXQE(const Expression::OpQuadExpr& expr)
 IloRange Solver::OpCPXSolI::addCPXLC(Constraint::OpLinCon con)
 {
 	IloRange tmp(nullptr);
-	IloNumExpr lhs(addCPXLE(con.getExpr(true)));
-	IloNumExpr rhs(con.isStandard() ? IloNumExpr(cenv_, con.getRHS()) : addCPXLE(con.getExpr(false)));
-	switch (con.getSense())
-	{
-	case Constraint::OpConSense::Equal:
-		tmp = IloRange(cenv_, 0.0, lhs - rhs, 0.0, con.getName().c_str());
-		break;
-	case Constraint::OpConSense::LessEqual:
-		tmp = IloRange(cenv_, -IloInfinity, lhs - rhs, 0.0, con.getName().c_str());
-		break;
-	case Constraint::OpConSense::GreatEqual:
-		tmp = IloRange(cenv_, 0.0, lhs - rhs, IloInfinity, con.getName().c_str());
-		break;
-	default:
-		break;
-	}
-	lhs.end();
-	rhs.end();
+	IloNum lb(Constant::IsInfinity(con.getLb()) ? -IloInfinity : con.getLb());
+	IloNum ub(Constant::IsInfinity(con.getUb()) ? IloInfinity : con.getUb());
+	IloNumExpr expr(addCPXLE(con.getExpr()));
+	tmp = IloRange(cenv_, lb, expr, ub, con.getName().c_str());
+	expr.end();
 	return tmp;
 }
 
 IloRange Solver::OpCPXSolI::addCPXQC(Constraint::OpQuadCon con)
 {
 	IloRange tmp(nullptr);
-	IloNumExpr lhs(addCPXQE(con.getExpr(true)));
-	IloNumExpr rhs(con.isStandard() ? IloNumExpr(cenv_, con.getRHS()) : addCPXQE(con.getExpr(false)));
-	switch (con.getSense())
-	{
-	case Constraint::OpConSense::Equal:
-		tmp = IloRange(cenv_, 0.0, lhs - rhs, 0.0, con.getName().c_str());
-		break;
-	case Constraint::OpConSense::LessEqual:
-		tmp = IloRange(cenv_, -IloInfinity, lhs - rhs, 0.0, con.getName().c_str());
-		break;
-	case Constraint::OpConSense::GreatEqual:
-		tmp = IloRange(cenv_, 0.0, lhs - rhs, IloInfinity, con.getName().c_str());
-		break;
-	default:
-		break;
-	}
-	lhs.end();
-	rhs.end();
+	IloNum lb(Constant::IsInfinity(con.getLb()) ? -IloInfinity : con.getLb());
+	IloNum ub(Constant::IsInfinity(con.getUb()) ? IloInfinity : con.getUb());
+	IloNumExpr expr(addCPXQE(con.getExpr()));
+	tmp = IloRange(cenv_, lb, expr, ub, con.getName().c_str());
+	expr.end();
 	return tmp;
 }
 

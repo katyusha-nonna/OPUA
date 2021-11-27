@@ -9,88 +9,50 @@ class Constraint::OpLinConI
 	: public OpImplBase
 {
 protected:
-	OpBool cstd_; // 是否为标准化的约束(expr <=/== rhs)
-	OpConSense csense_; // 约束符号
-	OpFloat crval_; // 约束右操作数(化简后有效)
-	Expression::OpLinExpr clexpr_; // 约束左操作表达式
-	Expression::OpLinExpr crexpr_; // 约束右操作表达式
+	OpFloat clb_;
+	OpFloat cub_;
+	Expression::OpLinExpr cexpr_;
 	OpStr cname_;
 
 	friend class OpLinCon;
 protected:
-	void setSense(OpConSense sense); // 设置(改变)约束的符号
 	void setName(OpStr name); // 设置约束名称
-	void setExpr(const Expression::OpLinExpr& expr, OpBool lhs); // 设置约束左/右表达式
-	void standardize(OpBool simplify); // 约束标准化
-
-	OpConSense getSense() const; // 获取约束的符号
+	void setExpr(const Expression::OpLinExpr& expr); // 设置约束表达式
+	void setLb(OpFloat lb); // 设置约束下限
+	void setUb(OpFloat ub); // 设置约束上限
 	OpStr getName() const; // 获取约束名称
-	const Expression::OpLinExpr& getExpr(OpBool lhs) const; // 获取约束左/右表达式
-	OpFloat getRHS() const; // 获取约束右操作数(仅标准化约束下有效)
-	OpBool isStandard() const; // 是否为标注化约束
+	const Expression::OpLinExpr& getExpr() const; // 获取约束表达式
+	OpFloat getLb() const; // 获取约束下限
+	OpFloat getUb() const; // 获取约束上限
 protected:
 	OpLinConI(OpEnvI* env);
-	OpLinConI(OpEnvI* env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs);
-	OpLinConI(OpEnvI* env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs, OpStr name);
+	OpLinConI(OpEnvI* env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub);
+	OpLinConI(OpEnvI* env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub, OpStr name);
 public:
 	virtual ~OpLinConI();
 };
-
-void Constraint::OpLinConI::setSense(OpConSense sense)
-{
-	if (!locked_)
-		csense_ = sense;
-}
 
 void Constraint::OpLinConI::setName(OpStr name)
 {
 	cname_ = name;
 }
 
-void Constraint::OpLinConI::setExpr(const Expression::OpLinExpr& expr, OpBool lhs)
+void Constraint::OpLinConI::setExpr(const Expression::OpLinExpr& expr)
 {
 	if (!locked_)
-	{
-		if (lhs)
-			clexpr_ = expr;
-		else
-			crexpr_ = expr;
-	}
+		cexpr_ = expr;
 }
 
-void Constraint::OpLinConI::standardize(OpBool simplify)
+void Constraint::OpLinConI::setLb(OpFloat lb)
 {
 	if (!locked_)
-	{
-		if (csense_ == OpConSense::Equal || csense_ == OpConSense::LessEqual)
-		{
-			crval_ = crexpr_.getConstant() - clexpr_.getConstant();
-			clexpr_ -= crexpr_;
-			clexpr_.setLinTerm(0.0);
-			crexpr_.clear();
-			if (simplify)
-				clexpr_.simplify(std::abs(crval_ * Constant::RelEpsilon));
-			cstd_ = true;
-		}
-		else if (csense_ == OpConSense::GreatEqual)
-		{
-			crval_ = clexpr_.getConstant() - crexpr_.getConstant();
-			//clexpr_ = (crexpr_ -= clexpr_).getLinTerm();
-			crexpr_ -= clexpr_;
-			crexpr_.setLinTerm(0.0);
-			std::swap(clexpr_, crexpr_);
-			crexpr_.clear();
-			if (simplify)
-				clexpr_.simplify(std::abs(crval_ * Constant::RelEpsilon));
-			csense_ = OpConSense::LessEqual;
-			cstd_ = true;
-		}
-	}
+		clb_ = lb;
 }
 
-Constraint::OpConSense Constraint::OpLinConI::getSense() const
+void Constraint::OpLinConI::setUb(OpFloat ub)
 {
-	return csense_;
+	if (!locked_)
+		cub_ = ub;
 }
 
 OpStr Constraint::OpLinConI::getName() const
@@ -98,52 +60,46 @@ OpStr Constraint::OpLinConI::getName() const
 	return cname_;
 }
 
-const Expression::OpLinExpr& Constraint::OpLinConI::getExpr(OpBool lhs) const
+const Expression::OpLinExpr& Constraint::OpLinConI::getExpr() const
 {
-	return lhs ? clexpr_ : crexpr_;
+	return cexpr_;
 }
 
-OpFloat Constraint::OpLinConI::getRHS() const
+OpFloat Constraint::OpLinConI::getLb() const
 {
-	return crval_;
+	return clb_;
 }
 
-OpBool Constraint::OpLinConI::isStandard() const
+OpFloat Constraint::OpLinConI::getUb() const
 {
-	return cstd_;
+	return cub_;
 }
 
 Constraint::OpLinConI::OpLinConI(OpEnvI* env)
-	: OpImplBase('C', env), 
-	cstd_(false), 
-	csense_(OpConSense::LessEqual), 
-	crval_(0.0), 
-	clexpr_(0.0), 
-	crexpr_(0.0), 
+	: OpImplBase('C', env),
+	clb_(-Constant::Infinity),
+	cub_(Constant::Infinity),
+	cexpr_(0.0), 
 	cname_("lc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpLinConI::OpLinConI(OpEnvI* env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs)
+Constraint::OpLinConI::OpLinConI(OpEnvI* env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub)
 	: OpImplBase('C', env),
-	cstd_(false),
-	csense_(sense),
-	crval_(0.0),
-	clexpr_(lhs),
-	crexpr_(rhs),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
 	cname_("lc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpLinConI::OpLinConI(OpEnvI* env, const Expression::OpLinExpr& lhs, OpConSense sense, const Expression::OpLinExpr& rhs, OpStr name)
+Constraint::OpLinConI::OpLinConI(OpEnvI* env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub, OpStr name)
 	: OpImplBase('C', env),
-	cstd_(false),
-	csense_(sense),
-	crval_(0.0),
-	clexpr_(lhs),
-	crexpr_(rhs),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
 	cname_(name)
 {
 
@@ -160,88 +116,50 @@ class Constraint::OpQuadConI
 	: public OpImplBase
 {
 protected:
-	OpBool cstd_; // 是否为标准化的约束(expr <=/== rhs)
-	OpConSense csense_; // 约束符号
-	OpFloat crval_; // 约束右操作数(化简后有效)
-	Expression::OpQuadExpr clexpr_; // 约束左操作表达式
-	Expression::OpQuadExpr crexpr_; // 约束右操作表达式
+	OpFloat clb_;
+	OpFloat cub_;
+	Expression::OpQuadExpr cexpr_;
 	OpStr cname_;
 
 	friend class OpQuadCon;
 protected:
-	void setSense(OpConSense sense); // 设置(改变)约束的符号
 	void setName(OpStr name); // 设置约束名称
-	void setExpr(const Expression::OpQuadExpr& expr, OpBool lhs); // 设置约束左/右表达式
-	void standardize(OpBool simplify); // 约束标准化
-
-	OpConSense getSense() const; // 获取约束的符号
+	void setExpr(const Expression::OpQuadExpr& expr); // 设置约束表达式
+	void setLb(OpFloat lb); // 设置约束下限
+	void setUb(OpFloat ub); // 设置约束上限
 	OpStr getName() const; // 获取约束名称
-	const Expression::OpQuadExpr& getExpr(OpBool lhs) const; // 获取约束左/右表达式
-	OpFloat getRHS() const; // 获取约束右操作数(仅标准化约束下有效)
-	OpBool isStandard() const; // 是否为标注化约束
+	const Expression::OpQuadExpr& getExpr() const; // 获取约束表达式
+	OpFloat getLb() const; // 获取约束下限
+	OpFloat getUb() const; // 获取约束上限
 protected:
 	OpQuadConI(OpEnvI* env);
-	OpQuadConI(OpEnvI* env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs);
-	OpQuadConI(OpEnvI* env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs, OpStr name);
+	OpQuadConI(OpEnvI* env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub);
+	OpQuadConI(OpEnvI* env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub, OpStr name);
 public:
 	virtual ~OpQuadConI();
 };
-
-void Constraint::OpQuadConI::setSense(OpConSense sense)
-{
-	if (!locked_)
-		csense_ = sense;
-}
 
 void Constraint::OpQuadConI::setName(OpStr name)
 {
 	cname_ = name;
 }
 
-void Constraint::OpQuadConI::setExpr(const Expression::OpQuadExpr& expr, OpBool lhs)
+void Constraint::OpQuadConI::setExpr(const Expression::OpQuadExpr& expr)
 {
 	if (!locked_)
-	{
-		if (lhs)
-			clexpr_ = expr;
-		else
-			crexpr_ = expr;
-	}
+		cexpr_ = expr;
 }
 
-void Constraint::OpQuadConI::standardize(OpBool simplify)
+void Constraint::OpQuadConI::setLb(OpFloat lb)
 {
 	if (!locked_)
-	{
-		if (csense_ == OpConSense::Equal || csense_ == OpConSense::LessEqual)
-		{
-			crval_ = crexpr_.getConstant() - clexpr_.getConstant();
-			clexpr_ -= crexpr_;
-			clexpr_.setLinTerm(0.0);
-			crexpr_.clear();
-			if (simplify)
-				clexpr_.simplify(std::abs(crval_ * Constant::RelEpsilon));
-			cstd_ = true;
-		}
-		else if (csense_ == OpConSense::GreatEqual)
-		{
-			crval_ = clexpr_.getConstant() - crexpr_.getConstant();
-			//clexpr_ = (crexpr_ -= clexpr_).getLinTerm();
-			crexpr_ -= clexpr_;
-			crexpr_.setLinTerm(0.0);
-			std::swap(clexpr_, crexpr_);
-			crexpr_.clear();
-			if (simplify)
-				clexpr_.simplify(std::abs(crval_ * Constant::RelEpsilon));
-			csense_ = OpConSense::LessEqual;
-			cstd_ = true;
-		}
-	}
+		clb_ = lb;
 }
 
-Constraint::OpConSense Constraint::OpQuadConI::getSense() const
+void Constraint::OpQuadConI::setUb(OpFloat ub)
 {
-	return csense_;
+	if (!locked_)
+		cub_ = ub;
 }
 
 OpStr Constraint::OpQuadConI::getName() const
@@ -249,52 +167,46 @@ OpStr Constraint::OpQuadConI::getName() const
 	return cname_;
 }
 
-const Expression::OpQuadExpr& Constraint::OpQuadConI::getExpr(OpBool lhs) const
+const Expression::OpQuadExpr& Constraint::OpQuadConI::getExpr() const
 {
-	return lhs ? clexpr_ : crexpr_;
+	return cexpr_;
 }
 
-OpFloat Constraint::OpQuadConI::getRHS() const
+OpFloat Constraint::OpQuadConI::getLb() const
 {
-	return crval_;
+	return clb_;
 }
 
-OpBool Constraint::OpQuadConI::isStandard() const
+OpFloat Constraint::OpQuadConI::getUb() const
 {
-	return cstd_;
+	return cub_;
 }
 
 Constraint::OpQuadConI::OpQuadConI(OpEnvI* env)
 	: OpImplBase('C', env),
-	cstd_(false),
-	csense_(OpConSense::LessEqual),
-	crval_(0.0),
-	clexpr_(0.0),
-	crexpr_(0.0),
+	clb_(-Constant::Infinity),
+	cub_(Constant::Infinity),
+	cexpr_(0.0),
 	cname_("qc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpQuadConI::OpQuadConI(OpEnvI* env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs)
+Constraint::OpQuadConI::OpQuadConI(OpEnvI* env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub)
 	: OpImplBase('C', env),
-	cstd_(false),
-	csense_(sense),
-	crval_(0.0),
-	clexpr_(lhs),
-	crexpr_(rhs),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
 	cname_("qc_" + std::to_string(idx_))
 {
 
 }
 
-Constraint::OpQuadConI::OpQuadConI(OpEnvI* env, const Expression::OpQuadExpr& lhs, OpConSense sense, const Expression::OpQuadExpr& rhs, OpStr name)
+Constraint::OpQuadConI::OpQuadConI(OpEnvI* env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub, OpStr name)
 	: OpImplBase('C', env),
-	cstd_(false),
-	csense_(sense),
-	crval_(0.0),
-	clexpr_(lhs),
-	crexpr_(rhs),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
 	cname_(name)
 {
 
@@ -695,29 +607,24 @@ Constraint::OpCdtConI::~OpCdtConI()
 
 /* OPUA::Constraint::OpLinCon */
 
-void Constraint::OpLinCon::setSense(OpConSense sense)
-{
-	static_cast<OpLinConI*>(impl_)->setSense(sense);
-}
-
 void Constraint::OpLinCon::setName(OpStr name)
 {
 	static_cast<OpLinConI*>(impl_)->setName(name);
 }
 
-void Constraint::OpLinCon::setExpr(const Expression::OpLinExpr& expr, OpBool lhs)
+void Constraint::OpLinCon::setExpr(const Expression::OpLinExpr& expr)
 {
-	static_cast<OpLinConI*>(impl_)->setExpr(expr, lhs);
+	static_cast<OpLinConI*>(impl_)->setExpr(expr);
 }
 
-void Constraint::OpLinCon::standardize(OpBool simplify)
+void Constraint::OpLinCon::setLb(OpFloat lb)
 {
-	static_cast<OpLinConI*>(impl_)->standardize(simplify);
+	static_cast<OpLinConI*>(impl_)->setLb(lb);
 }
 
-Constraint::OpConSense Constraint::OpLinCon::getSense() const
+void Constraint::OpLinCon::setUb(OpFloat ub)
 {
-	return static_cast<OpLinConI*>(impl_)->getSense();
+	static_cast<OpLinConI*>(impl_)->setUb(ub);
 }
 
 OpStr Constraint::OpLinCon::getName() const
@@ -725,19 +632,19 @@ OpStr Constraint::OpLinCon::getName() const
 	return static_cast<OpLinConI*>(impl_)->getName();
 }
 
-const Expression::OpLinExpr& Constraint::OpLinCon::getExpr(OpBool lhs) const
+const Expression::OpLinExpr& Constraint::OpLinCon::getExpr() const
 {
-	return static_cast<OpLinConI*>(impl_)->getExpr(lhs);
+	return static_cast<OpLinConI*>(impl_)->getExpr();
 }
 
-OpFloat Constraint::OpLinCon::getRHS() const
+OpFloat Constraint::OpLinCon::getLb() const
 {
-	return static_cast<OpLinConI*>(impl_)->getRHS();
+	return static_cast<OpLinConI*>(impl_)->getLb();
 }
 
-OpBool Constraint::OpLinCon::isStandard() const
+OpFloat Constraint::OpLinCon::getUb() const
 {
-	return static_cast<OpLinConI*>(impl_)->isStandard();
+	return static_cast<OpLinConI*>(impl_)->getUb();
 }
 
 Constraint::OpLinConI* Constraint::OpLinCon::getImpl() const
@@ -770,14 +677,14 @@ Constraint::OpLinCon::OpLinCon(OpEnv env)
 	impl_ = new OpLinConI(env.getImpl());
 }
 
-Constraint::OpLinCon::OpLinCon(OpEnv env, const Expression::OpLinExpr& lhs, Constraint::OpConSense sense, const Expression::OpLinExpr& rhs)
+Constraint::OpLinCon::OpLinCon(OpEnv env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub)
 {
-	impl_ = new OpLinConI(env.getImpl(), lhs, sense, rhs);
+	impl_ = new OpLinConI(env.getImpl(), lb, expr, ub);
 }
 
-Constraint::OpLinCon::OpLinCon(OpEnv env, const Expression::OpLinExpr& lhs, Constraint::OpConSense sense, const Expression::OpLinExpr& rhs, OpStr name)
+Constraint::OpLinCon::OpLinCon(OpEnv env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub, OpStr name)
 {
-	impl_ = new OpLinConI(env.getImpl(), lhs, sense, rhs, name);
+	impl_ = new OpLinConI(env.getImpl(), lb, expr, ub, name);
 }
 
 OPUA::Constraint::OpLinCon::~OpLinCon()
@@ -787,29 +694,24 @@ OPUA::Constraint::OpLinCon::~OpLinCon()
 
 /* OPUA::Constraint::OpQuadCon */
 
-void Constraint::OpQuadCon::setSense(OpConSense sense)
-{
-	static_cast<OpQuadConI*>(impl_)->setSense(sense);
-}
-
 void Constraint::OpQuadCon::setName(OpStr name)
 {
 	static_cast<OpQuadConI*>(impl_)->setName(name);
 }
 
-void Constraint::OpQuadCon::setExpr(const Expression::OpQuadExpr& expr, OpBool lhs)
+void Constraint::OpQuadCon::setExpr(const Expression::OpQuadExpr& expr)
 {
-	static_cast<OpQuadConI*>(impl_)->setExpr(expr, lhs);
+	static_cast<OpQuadConI*>(impl_)->setExpr(expr);
 }
 
-void Constraint::OpQuadCon::standardize(OpBool simplify)
+void Constraint::OpQuadCon::setLb(OpFloat lb)
 {
-	static_cast<OpQuadConI*>(impl_)->standardize(simplify);
+	static_cast<OpQuadConI*>(impl_)->setLb(lb);
 }
 
-Constraint::OpConSense Constraint::OpQuadCon::getSense() const
+void Constraint::OpQuadCon::setUb(OpFloat ub)
 {
-	return static_cast<OpQuadConI*>(impl_)->getSense();
+	static_cast<OpQuadConI*>(impl_)->setUb(ub);
 }
 
 OpStr Constraint::OpQuadCon::getName() const
@@ -817,19 +719,19 @@ OpStr Constraint::OpQuadCon::getName() const
 	return static_cast<OpQuadConI*>(impl_)->getName();
 }
 
-const Expression::OpQuadExpr& Constraint::OpQuadCon::getExpr(OpBool lhs) const
+const Expression::OpQuadExpr& Constraint::OpQuadCon::getExpr() const
 {
-	return static_cast<OpQuadConI*>(impl_)->getExpr(lhs);
+	return static_cast<OpQuadConI*>(impl_)->getExpr();
 }
 
-OpFloat Constraint::OpQuadCon::getRHS() const
+OpFloat Constraint::OpQuadCon::getLb() const
 {
-	return static_cast<OpQuadConI*>(impl_)->getRHS();
+	return static_cast<OpQuadConI*>(impl_)->getLb();
 }
 
-OpBool Constraint::OpQuadCon::isStandard() const
+OpFloat Constraint::OpQuadCon::getUb() const
 {
-	return static_cast<OpQuadConI*>(impl_)->isStandard();
+	return static_cast<OpQuadConI*>(impl_)->getUb();
 }
 
 Constraint::OpQuadConI* Constraint::OpQuadCon::getImpl() const
@@ -862,14 +764,14 @@ Constraint::OpQuadCon::OpQuadCon(OpEnv env)
 	impl_ = new OpQuadConI(env.getImpl());
 }
 
-Constraint::OpQuadCon::OpQuadCon(OpEnv env, const Expression::OpQuadExpr& lhs, Constraint::OpConSense sense, const Expression::OpQuadExpr& rhs)
+Constraint::OpQuadCon::OpQuadCon(OpEnv env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub)
 {
-	impl_ = new OpQuadConI(env.getImpl(), lhs, sense, rhs);
+	impl_ = new OpQuadConI(env.getImpl(), lb, expr, ub);
 }
 
-Constraint::OpQuadCon::OpQuadCon(OpEnv env, const Expression::OpQuadExpr& lhs, Constraint::OpConSense sense, const Expression::OpQuadExpr& rhs, OpStr name)
+Constraint::OpQuadCon::OpQuadCon(OpEnv env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub, OpStr name)
 {
-	impl_ = new OpQuadConI(env.getImpl(), lhs, sense, rhs, name);
+	impl_ = new OpQuadConI(env.getImpl(), lb, expr, ub, name);
 }
 
 OPUA::Constraint::OpQuadCon::~OpQuadCon()
@@ -1178,119 +1080,161 @@ OpStr Constraint::ConSense2Str(OpConSense sense)
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpLinCon con)
 {
-	stream << con.getExpr(true);
-	stream << ConSense2Str(con.getSense());
-	if (con.isStandard())
-		stream << con.getRHS();
-	else
-		stream << con.getExpr(false);
+	stream << con.getLb() << " <= " << con.getExpr() << " <= " << con.getUb();
 	return stream;
 }
 
 Constraint::OpLinCon Constraint::operator<=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs)
 {
 	OpLinCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(Constant::Infinity);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpLinCon(OpEnv(lenv), lhs, OpConSense::LessEqual, rhs);
+			con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpLinCon(OpEnv(renv), lhs, OpConSense::LessEqual, rhs);
+		con = OpLinCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpLinCon(OpEnv(lenv), lhs, OpConSense::LessEqual, rhs);
+		con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	return con;
+}
+
+Constraint::OpLinCon Constraint::operator<=(OpLinCon lhs, double rhs)
+{
+	if (lhs.getImpl())
+		lhs.setUb(rhs);
+	return lhs;
 }
 
 Constraint::OpLinCon Constraint::operator>=(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs)
 {
 	OpLinCon con(nullptr);
+	OpFloat lb(-Constant::Infinity);
+	OpFloat ub(lhs.getConstant() - rhs.getConstant());
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpLinCon(OpEnv(lenv), lhs, OpConSense::GreatEqual, rhs);
+			con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpLinCon(OpEnv(renv), lhs, OpConSense::GreatEqual, rhs);
+		con = OpLinCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpLinCon(OpEnv(lenv), lhs, OpConSense::GreatEqual, rhs);
+		con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	return con;
+}
+
+Constraint::OpLinCon Constraint::operator>=(OpLinCon lhs, double rhs)
+{
+	if (lhs.getImpl())
+		lhs.setLb(rhs);
+	return lhs;
 }
 
 Constraint::OpLinCon Constraint::operator==(const Expression::OpLinExpr& lhs, const Expression::OpLinExpr& rhs)
 {
 	OpLinCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(lb);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpLinCon(OpEnv(lenv), lhs, OpConSense::Equal, rhs);
+			con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpLinCon(OpEnv(renv), lhs, OpConSense::Equal, rhs);
+		con = OpLinCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpLinCon(OpEnv(lenv), lhs, OpConSense::Equal, rhs);
+		con = OpLinCon(OpEnv(lenv), lb, expr, ub);
 	return con;
 }
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpQuadCon con)
 {
-	stream << con.getExpr(true);
-	stream << ConSense2Str(con.getSense());
-	if (con.isStandard())
-		stream << con.getRHS();
-	else
-		stream << con.getExpr(false);
+	stream << con.getLb() << " <= " << con.getExpr() << " <= " << con.getUb();
 	return stream;
 }
 
 Constraint::OpQuadCon Constraint::operator<=(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs)
 {
 	OpQuadCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(Constant::Infinity);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::LessEqual, rhs);
+			con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpQuadCon(OpEnv(renv), lhs, OpConSense::LessEqual, rhs);
+		con = OpQuadCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::LessEqual, rhs);
+		con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	return con;
+}
+
+Constraint::OpQuadCon Constraint::operator<=(OpQuadCon lhs, double rhs)
+{
+	if (lhs.getImpl())
+		lhs.setUb(rhs);
+	return lhs;
 }
 
 Constraint::OpQuadCon Constraint::operator>=(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs)
 {
 	OpQuadCon con(nullptr);
+	OpFloat lb(-Constant::Infinity);
+	OpFloat ub(lhs.getConstant() - rhs.getConstant());
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::GreatEqual, rhs);
+			con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpQuadCon(OpEnv(renv), lhs, OpConSense::GreatEqual, rhs);
+		con = OpQuadCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::GreatEqual, rhs);
+		con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	return con;
+}
+
+Constraint::OpQuadCon Constraint::operator>=(OpQuadCon lhs, double rhs)
+{
+	if (lhs.getImpl())
+		lhs.setLb(rhs);
+	return lhs;
 }
 
 Constraint::OpQuadCon Constraint::operator==(const Expression::OpQuadExpr& lhs, const Expression::OpQuadExpr& rhs)
 {
 	OpQuadCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(lb);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
 	if (lenv && renv)
 	{
 		if (lenv == renv)
-			con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::Equal, rhs);
+			con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	}
 	else if (!lenv && renv)
-		con = OpQuadCon(OpEnv(renv), lhs, OpConSense::Equal, rhs);
+		con = OpQuadCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
-		con = OpQuadCon(OpEnv(lenv), lhs, OpConSense::Equal, rhs);
+		con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
 	return con;
 }
 

@@ -9,6 +9,7 @@ namespace OPUA
 		class OpConfig;
 		class OpCPXCfgCvt;
 		class OpGRBCfgCvt;
+		class OpSCIPCfgCvt;
 
 		class OpCPXSolI;
 		class OpCPXSol;
@@ -224,6 +225,37 @@ namespace OPUA
 			OpGRBSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
 		public:
 			virtual ~OpGRBSol();
+		};
+
+		/*
+			OpSCIPBSol：求解器SCIP的接口类
+			求解参数说明：
+		*/
+		class OpSCIPSol
+			: public OpBase
+		{
+		public:
+			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成SCIP模型对象
+			void solve(); // 执行求解
+			void setParam(const OpConfig& cfg); // 设置配置
+			OpLInt getStatus() const; // 获取求解状态
+			OpFloat getObjValue() const; // 获取目标函数解
+			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpSCIPSolI* getImpl() const; // 获取Impl
+		public:
+			OpBool operator==(const OpSCIPSol& sol) const;
+			OpBool operator!=(const OpSCIPSol& sol) const;
+		public:
+			OpSCIPSol(); // 默认构造函数(默认为空)
+			OpSCIPSol(OpSCIPSolI* impl); // 从impl构造
+			OpSCIPSol(OpEnv env); // 从env构造
+			OpSCIPSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
+		public:
+			virtual ~OpSCIPSol();
 		};
 	}
 }

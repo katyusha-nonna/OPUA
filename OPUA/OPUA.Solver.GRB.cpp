@@ -141,8 +141,11 @@ private:
 	int senseConvert2(Constraint::OpConSense sense); // 将OPUA约束类型转换为GRB约束类型
 	GRBLinExpr addGRBLE(const Expression::OpLinExpr& expr); // 由OPUA线性表达式创建一个GRB线性表达式
 	GRBQuadExpr addGRBQE(const Expression::OpQuadExpr& expr); // 由OPUA二次表达式创建一个GRB二次表达式
+	GRBConstr addGRBRange(Constraint::OpLinCon con); // 从OPUA线性约束创建一个GRB线性约束
 	GRBConstr addGRBLC(Constraint::OpLinCon con); // 从OPUA线性约束创建一个GRB线性约束
+	GRBConstr addGRBLC(Constraint::OpLinCon con, OpBool lb); // 从OPUA线性约束创建一个GRB线性约束
 	GRBQConstr addGRBQC(Constraint::OpQuadCon con); // 从OPUA二次约束创建一个GRB二次约束
+	GRBQConstr addGRBQC(Constraint::OpQuadCon con, OpBool lb); // 从OPUA二次约束创建一个GRB二次约束
 	GRBSOS addGRBSOS(Constraint::OpSOSCon con); // 从OPUASOS约束创建一个GRBSOS约束
 	GRBGenConstr addGRBGen(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
 	GRBGenConstr addGRBGenMax(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Max约束
@@ -160,6 +163,7 @@ private:
 	GRBGenConstr addGRBGenCos(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Cos约束
 	GRBGenConstr addGRBGenTan(Constraint::OpNLCon con); // 从OPUA非线性约束创建一个GRB非线性Tan约束
 	GRBGenConstr addGRBGenIndicator(Constraint::OpCdtCon con); // 从OPUA条件约束创建一个GRB指示器约束
+	GRBGenConstr addGRBGenIndicator(Constraint::OpCdtCon con, OpBool lb); // 从OPUA条件约束创建一个GRB指示器约束
 protected:
 	void init(); // 初始化
 	void clear(); // 清除所有组件与映射信息
@@ -182,6 +186,8 @@ public:
 
 GRBVar Solver::OpGRBSolI::addGRBVar(Variable::OpVar var)
 {
+	double lb(Constant::IsInfinity(var.getLb()) ? -GRB_INFINITY : var.getLb());
+	double ub(Constant::IsInfinity(var.getUb()) ? GRB_INFINITY : var.getUb());
 	char vtype(GRB_CONTINUOUS);
 	switch (var.getType())
 	{
@@ -200,7 +206,7 @@ GRBVar Solver::OpGRBSolI::addGRBVar(Variable::OpVar var)
 	default:
 		break;
 	}
-	return gmdl_->addVar(var.getLb(), var.getUb(), 0.0, vtype, var.getName());
+	return gmdl_->addVar(lb, ub, 0.0, vtype, var.getName());
 }
 
 char Solver::OpGRBSolI::senseConvert1(Constraint::OpConSense sense)
@@ -258,18 +264,37 @@ GRBQuadExpr Solver::OpGRBSolI::addGRBQE(const Expression::OpQuadExpr& expr)
 	return tmp;
 }
 
+GRBConstr Solver::OpGRBSolI::addGRBRange(Constraint::OpLinCon con)
+{
+	double lb(Constant::IsInfinity(con.getLb()) ? -GRB_INFINITY : con.getLb());
+	double ub(Constant::IsInfinity(con.getUb()) ? GRB_INFINITY : con.getUb());
+	return gmdl_->addRange(addGRBLE(con.getExpr()), lb, ub, con.getName());
+}
+
 GRBConstr Solver::OpGRBSolI::addGRBLC(Constraint::OpLinCon con)
 {
-	GRBLinExpr lhs(addGRBLE(con.getExpr(true)));
-	GRBLinExpr rhs(con.isStandard() ? con.getRHS() : addGRBLE(con.getExpr(false)));
-	return gmdl_->addConstr(lhs, senseConvert1(con.getSense()), rhs, con.getName());
+	return gmdl_->addConstr(addGRBLE(con.getExpr()), GRB_EQUAL, con.getUb(), con.getName());
+}
+
+GRBConstr Solver::OpGRBSolI::addGRBLC(Constraint::OpLinCon con, OpBool lb)
+{
+	if (lb)
+		return gmdl_->addConstr(addGRBLE(con.getExpr()), GRB_GREATER_EQUAL, con.getLb(), con.getName());
+	else
+		return gmdl_->addConstr(addGRBLE(con.getExpr()), GRB_LESS_EQUAL, con.getUb(), con.getName());
 }
 
 GRBQConstr Solver::OpGRBSolI::addGRBQC(Constraint::OpQuadCon con)
 {
-	GRBQuadExpr lhs(addGRBQE(con.getExpr(true)));
-	GRBQuadExpr rhs(con.isStandard() ? con.getRHS() : addGRBQE(con.getExpr(false)));
-	return gmdl_->addQConstr(lhs, senseConvert1(con.getSense()), rhs, con.getName());
+	return gmdl_->addQConstr(addGRBQE(con.getExpr()), GRB_EQUAL, con.getUb(), con.getName());;
+}
+
+GRBQConstr Solver::OpGRBSolI::addGRBQC(Constraint::OpQuadCon con, OpBool lb)
+{
+	if (lb)
+		return gmdl_->addQConstr(addGRBQE(con.getExpr()), GRB_GREATER_EQUAL, con.getLb(), con.getName());
+	else
+		return gmdl_->addQConstr(addGRBQE(con.getExpr()), GRB_LESS_EQUAL, con.getUb(), con.getName());
 }
 
 GRBSOS Solver::OpGRBSolI::addGRBSOS(Constraint::OpSOSCon con)
@@ -457,24 +482,17 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGenIndicator(Constraint::OpCdtCon con)
 {
 	GRBVar ind(vardict_.at(con.getVar().getIndex()));
 	auto con2(con.getCon(false));
-	GRBLinExpr lhs(addGRBLE(con2.getExpr(true)));
-	GRBLinExpr rhs(con2.isStandard() ? con2.getRHS() : addGRBLE(con2.getExpr(false)));
-	GRBTempConstr tmp;
-	switch (con2.getSense())
-	{
-	case Constraint::OpConSense::Equal:
-		tmp = lhs == rhs;
-		break;
-	case Constraint::OpConSense::LessEqual:
-		tmp = lhs <= rhs;
-		break;
-	case Constraint::OpConSense::GreatEqual:
-		tmp = lhs >= rhs;
-		break;
-	default:
-		break;
-	}
-	return gmdl_->addGenConstrIndicator(ind, 1, tmp, con.getName());
+	return gmdl_->addGenConstrIndicator(ind, 1, addGRBLE(con2.getExpr()), GRB_EQUAL, con2.getUb(), con.getName());
+}
+
+GRBGenConstr Solver::OpGRBSolI::addGRBGenIndicator(Constraint::OpCdtCon con, OpBool lb)
+{
+	GRBVar ind(vardict_.at(con.getVar().getIndex()));
+	auto con2(con.getCon(false));
+	if (lb)
+		return gmdl_->addGenConstrIndicator(ind, 1, addGRBLE(con2.getExpr()), GRB_GREATER_EQUAL, con2.getLb(), con.getName());
+	else
+		return gmdl_->addGenConstrIndicator(ind, 1, addGRBLE(con2.getExpr()), GRB_LESS_EQUAL, con2.getUb(), con.getName());
 }
 
 void Solver::OpGRBSolI::init()
@@ -509,16 +527,51 @@ void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
 		vardict_.emplace(iter.getKey(), addGRBVar(iter.getVal()));
 	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
-		lcdict_.emplace(iter.getKey(), addGRBLC(iter.getVal()));
+	{
+		auto& con(iter.getVal());
+		if (Constant::IsEqual(con.getLb(), con.getUb()))
+			lcdict_.emplace(iter.getKey(), addGRBLC(con));
+		else
+			lcdict_.emplace(iter.getKey(), addGRBRange(con));
+	}	
 	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
-		qcdict_.emplace(iter.getKey(), addGRBQC(iter.getVal()));
+	{
+		auto& con(iter.getVal());
+		if (Constant::IsEqual(con.getLb(), con.getUb()))
+		{
+			qcdict_.emplace(iter.getKey(), addGRBQC(con));
+		}
+		else
+		{
+			if (!Constant::IsInfinity(con.getLb()))
+				qcdict_.emplace(iter.getKey(), addGRBQC(con, true));
+			if (!Constant::IsInfinity(con.getUb()))
+			qcdict_.emplace(iter.getKey(), addGRBQC(con, false));
+		}
+	}
 	for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
 		scdict_.emplace(iter.getKey(), addGRBSOS(iter.getVal()));
 	for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
 		nlcdict_.emplace(iter.getKey(), addGRBGen(iter.getVal()));
 	for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
-		if (iter.getVal().isIndicator())
-			nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(iter.getVal()));
+	{
+		auto& con(iter.getVal());
+		if (con.isIndicator())
+		{
+			auto& con2(con.getCon(false));
+			if (Constant::IsEqual(con2.getLb(), con2.getUb()))
+			{
+				nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con));
+			}
+			else
+			{
+				if (!Constant::IsInfinity(con2.getLb()))
+					nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, true));
+				if (!Constant::IsInfinity(con2.getUb()))
+					nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, false));
+			}
+		}		
+	}		
 	switch (mdl.getObj().getSense())
 	{
 	case Objective::OpObjSense::Min:
