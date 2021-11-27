@@ -428,24 +428,32 @@ OpStr Model::OpModelI::getName() const
 
 void Model::OpModelI::write(OpStr path) const
 {
-	auto& stream(std::cout);
-	stream << "Name: " << mname_ << std::endl;
-	stream << mobj0_ << std::endl;
-	for (auto iter = mlcs_.getCBegin(); iter != mlcs_.getCEnd(); ++iter)
-		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	for (auto iter = mqcs_.getCBegin(); iter != mqcs_.getCEnd(); ++iter)
-		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	for (auto iter = mnlcs_.getCBegin(); iter != mnlcs_.getCEnd(); ++iter)
-		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	for (auto iter = mscs_.getCBegin(); iter != mscs_.getCEnd(); ++iter)
-		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	for (auto iter = mccs_.getCBegin(); iter != mccs_.getCEnd(); ++iter)
-		stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
-	stream << "Bounds: " << std::endl;
-	for (auto iter = mvars_.getCBegin(); iter != mvars_.getCEnd(); ++iter)
+	if (path.size())
 	{
-		auto& var(iter.getVal());
-		stream << var.getName() << ":\t" << var.getLb() << " <= " << var.getUb() << std::endl;
+		// 输出到文件
+	}
+	else
+	{
+		// 输出到控制台
+		auto& stream(std::cout);
+		stream << "Name: " << mname_ << std::endl;
+		stream << mobj0_ << std::endl;
+		for (auto iter = mlcs_.getCBegin(); iter != mlcs_.getCEnd(); ++iter)
+			stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+		for (auto iter = mqcs_.getCBegin(); iter != mqcs_.getCEnd(); ++iter)
+			stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+		for (auto iter = mnlcs_.getCBegin(); iter != mnlcs_.getCEnd(); ++iter)
+			stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+		for (auto iter = mscs_.getCBegin(); iter != mscs_.getCEnd(); ++iter)
+			stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+		for (auto iter = mccs_.getCBegin(); iter != mccs_.getCEnd(); ++iter)
+			stream << iter.getVal().getName() << ":\t" << iter.getVal() << std::endl;
+		stream << "Bounds: " << std::endl;
+		for (auto iter = mvars_.getCBegin(); iter != mvars_.getCEnd(); ++iter)
+		{
+			auto& var(iter.getVal());
+			stream << var.getName() << ":\t" << var.getLb() << " <= " << var.getUb() << std::endl;
+		}
 	}
 }
 

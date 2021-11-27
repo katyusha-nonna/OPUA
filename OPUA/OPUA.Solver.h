@@ -1,6 +1,9 @@
 #pragma once
 
 #include "OPUA.Model.h"
+#define OPUA_CPX_VERSION_128
+#define OPUA_GRB_VERSION_912
+#define OPUA_SCIP_VERSION_701
 
 namespace OPUA
 {
@@ -21,14 +24,16 @@ namespace OPUA
 		class OpMSKSol;
 
 		// 通用配置器
-		// 只接受四种类型(布尔、整数、浮点和字符串)
+		// 只接受六种类型(布尔、整型、长整型、浮点和字符和字符串)
 		// 在注册/查询键值时，自动去除两侧的空白字符段
 		class OpConfig
 		{
 		protected:
 			std::unordered_map<OpStr, OpBool> bcfg_;
-			std::unordered_map<OpStr, OpLInt> icfg_;
+			std::unordered_map<OpStr, OpInt> icfg_;
+			std::unordered_map<OpStr, OpLInt> lcfg_;
 			std::unordered_map<OpStr, OpFloat> fcfg_;
+			std::unordered_map<OpStr, OpChar> ccfg_;
 			std::unordered_map<OpStr, OpStr> scfg_;
 
 		protected:
@@ -36,20 +41,26 @@ namespace OPUA
 		public:
 			// 注册配置(配置存在则覆盖旧配置)
 			void regCfg(OpStr key, OpBool val);
+			void regCfg(OpStr key, OpInt val);
 			void regCfg(OpStr key, OpLInt val);
 			void regCfg(OpStr key, OpFloat val);
+			void regCfg(OpStr key, OpChar val);
 			void regCfg(OpStr key, OpStr val);
 			// 清除配置
 			void clrCfg(OpStr key, OpBool flag);
+			void clrCfg(OpStr key, OpInt flag);
 			void clrCfg(OpStr key, OpLInt flag);
 			void clrCfg(OpStr key, OpFloat flag);
+			void clrCfg(OpStr key, OpChar flag);
 			void clrCfg(OpStr key, OpStr flag);
 			template<typename T> inline void clrCfg(OpStr key) { clrCfg(key, T()); }
 			void clrAll();
 			// 获取配置
 			OpBool getCfg(OpStr key, OpBool flag) const;
-			OpLInt getCfg(OpStr key, OpLInt flag) const;
+			OpInt getCfg(OpStr key, OpInt flag) const;
+			OpInt getCfg(OpStr key, OpLInt flag) const;
 			OpFloat getCfg(OpStr key, OpFloat flag) const;
+			OpInt getCfg(OpStr key, OpChar flag) const;
 			OpStr getCfg(OpStr key, OpStr flag) const;
 			template<typename T> inline auto getCfg(OpStr key) const { return getCfg(key, T()); }
 		public:
@@ -79,14 +90,18 @@ namespace OPUA
 
 			// 迭代配置
 			OpCfgCIter<OpBool> getCBegin(OpStr prefix, OpBool flag) const;
+			OpCfgCIter<OpInt> getCBegin(OpStr prefix, OpInt flag) const;
 			OpCfgCIter<OpLInt> getCBegin(OpStr prefix, OpLInt flag) const;
 			OpCfgCIter<OpFloat> getCBegin(OpStr prefix, OpFloat flag) const;
+			OpCfgCIter<OpChar> getCBegin(OpStr prefix, OpChar flag) const;
 			OpCfgCIter<OpStr> getCBegin(OpStr prefix, OpStr flag) const;
 			template<typename T> inline auto getCBegin(OpStr prefix) const { return getCBegin(prefix, T()); }
 
 			OpCfgCIter<OpBool> getCEnd(OpStr prefix, OpBool flag) const;
+			OpCfgCIter<OpInt> getCEnd(OpStr prefix, OpInt flag) const;
 			OpCfgCIter<OpLInt> getCEnd(OpStr prefix, OpLInt flag) const;
 			OpCfgCIter<OpFloat> getCEnd(OpStr prefix, OpFloat flag) const;
+			OpCfgCIter<OpChar> getCEnd(OpStr prefix, OpChar flag) const;
 			OpCfgCIter<OpStr> getCEnd(OpStr prefix, OpStr flag) const;
 			template<typename T> inline auto getCEnd(OpStr prefix) const { return getCEnd(prefix, T()); }
 		};
@@ -94,6 +109,26 @@ namespace OPUA
 		/*
 			OpCPXBSol：求解器Cplex的接口类
 			求解参数说明：
+				OPUA.CPX.Advance / OpInt / 0 / [0, 3] / 注释：?
+				OPUA.CPX.Barrier.Algorithm / OpInt / 0 / [0, 3] / 注释：1|2-初始不可行(速度较慢) / 3-标准内点法(速度较快)
+				OPUA.CPX.Barrier.ColNonzeros / OpInt / 0 / [0, INF] / 注释：?
+				OPUA.CPX.Barrier.ConvergeTol / OpFloat / 0.00000001 / [0.000000000001, INF] / 注释：对于LP和QP问题的收敛判据
+				OPUA.CPX.Barrier.Crossover / OpInt / 0 / [-1, 2] / 注释：?
+				OPUA.CPX.Barrier.Display / OpInt / 1 / [0, 2] / 注释：内点法计算过程中输出信息类型
+				OPUA.CPX.Barrier.Limits.Corrections / OpLInt / 0 / [-1, INF] / 注释：?
+				OPUA.CPX.Barrier.Limits.Growth / OpFloat / 1000000000000 / [1, INF] / 注释：?
+				OPUA.CPX.Barrier.Limits.Iteration / OpLInt / 9223372036800000000 / [0, INF] / 注释：内点法迭代次数限制
+				OPUA.CPX.Barrier.Limits.ObjRange / OpFloat / 1E+20 / [0, INF] / 注释：unbounded问题判据
+				OPUA.CPX.Barrier.Ordering / OpInt / 0 / [0, 3] / 注释：?
+				OPUA.CPX.Barrier.QCPConvergeTol / OpFloat / 0.0000001 / [0.000000000001, INF] / 注释：对于QCP问题的收敛判据
+				OPUA.CPX.Barrier.StartAlg / OpInt / 1 / [1, 4] / 注释：初始内点选择方式
+				OPUA.CPX.Simplex.Crash / OpInt / 0 / [-1, 1] / 注释：?
+				OPUA.CPX.Simplex.Dgradient / OpInt / 0 / [0, 5] / 注释：?
+				OPUA.CPX.Simplex.Display / OpInt / 1 / [0, 2] / 注释：单纯形法计算过程中输出信息类型
+				OPUA.CPX.Simplex.Limits.Iterations / OpLInt / 9223372036800000000 / [0, INF] / 注释：单纯形法最大迭代次数
+
+				...未完待续
+
 		*/
 		class OpCPXSol
 			: public OpBase
@@ -110,6 +145,7 @@ namespace OPUA
 			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpCPXSolI* getImpl() const; // 获取Impl
+			void write(OpStr path) const; // 将模型写入文件
 		public:
 			OpBool operator==(const OpCPXSol& sol) const;
 			OpBool operator!=(const OpCPXSol& sol) const;
@@ -215,6 +251,7 @@ namespace OPUA
 			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpGRBSolI* getImpl() const; // 获取Impl
+			void write(OpStr path) const; // 将模型写入文件
 		public:
 			OpBool operator==(const OpGRBSol& sol) const;
 			OpBool operator!=(const OpGRBSol& sol) const;
@@ -246,6 +283,7 @@ namespace OPUA
 			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpSCIPSolI* getImpl() const; // 获取Impl
+			void write(OpStr path) const; // 将模型写入文件
 		public:
 			OpBool operator==(const OpSCIPSol& sol) const;
 			OpBool operator!=(const OpSCIPSol& sol) const;

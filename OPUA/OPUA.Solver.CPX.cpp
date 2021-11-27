@@ -8,9 +8,19 @@ using namespace OPUA;
 class Solver::OpCPXCfgCvt
 {
 protected:
-	
+	std::unordered_map<OpStr, IloCplex::NumParam> npdict_;
+	std::unordered_map<OpStr, IloCplex::BoolParam> bpdict_;
+	std::unordered_map<OpStr, IloCplex::IntParam> ipdict_;
+	std::unordered_map<OpStr, IloCplex::LongParam> lpdict_;
+	std::unordered_map<OpStr, IloCplex::StringParam> spdict_;
+
 public:
 	void init();
+	IloCplex::NumParam getNumParam(OpStr key);
+	IloCplex::BoolParam getBoolParam(OpStr key);
+	IloCplex::IntParam getIntParam(OpStr key);
+	IloCplex::LongParam getLongParam(OpStr key);
+	IloCplex::StringParam getStringParam(OpStr key);
 	
 public:
 	OpCPXCfgCvt();
@@ -18,7 +28,52 @@ public:
 
 void Solver::OpCPXCfgCvt::init()
 {
+#ifdef OPUA_CPX_VERSION_128
+	// CPX版本：12.8
+	// 加载Barrier参数
+	ipdict_.emplace("OPUA.CPX.Advance", IloCplex::Param::Advance);
+	ipdict_.emplace("OPUA.CPX.Barrier.Algorithm", IloCplex::Param::Barrier::Algorithm);
+	ipdict_.emplace("OPUA.CPX.Barrier.ColNonzeros", IloCplex::Param::Barrier::ColNonzeros);
+	npdict_.emplace("OPUA.CPX.Barrier.ConvergeTol", IloCplex::Param::Barrier::ConvergeTol);
+	ipdict_.emplace("OPUA.CPX.Barrier.Crossover", IloCplex::Param::Barrier::Crossover);
+	ipdict_.emplace("OPUA.CPX.Barrier.Display", IloCplex::Param::Barrier::Display);
+	lpdict_.emplace("OPUA.CPX.Barrier.Limits.Corrections", IloCplex::Param::Barrier::Limits::Corrections);
+	npdict_.emplace("OPUA.CPX.Barrier.Limits.Growth", IloCplex::Param::Barrier::Limits::Growth);
+	lpdict_.emplace("OPUA.CPX.Barrier.Limits.Iteration", IloCplex::Param::Barrier::Limits::Iteration);
+	npdict_.emplace("OPUA.CPX.Barrier.Limits.ObjRange", IloCplex::Param::Barrier::Limits::ObjRange);
+	ipdict_.emplace("OPUA.CPX.Barrier.Ordering", IloCplex::Param::Barrier::Ordering);
+	npdict_.emplace("OPUA.CPX.Barrier.QCPConvergeTol", IloCplex::Param::Barrier::QCPConvergeTol);
+	ipdict_.emplace("OPUA.CPX.Barrier.StartAlg", IloCplex::Param::Barrier::StartAlg);
+	ipdict_.emplace("OPUA.CPX.Simplex.Crash", IloCplex::Param::Simplex::Crash);
+	ipdict_.emplace("OPUA.CPX.Simplex.Dgradient", IloCplex::Param::Simplex::DGradient);
+	ipdict_.emplace("OPUA.CPX.Simplex.Display", IloCplex::Param::Simplex::Display);
+	lpdict_.emplace("OPUA.CPX.Simplex.Limits.Iterations", IloCplex::Param::Simplex::Limits::Iterations);
+#endif
+}
 
+IloCplex::NumParam Solver::OpCPXCfgCvt::getNumParam(OpStr key)
+{
+	return npdict_.at(key);
+}
+
+IloCplex::BoolParam Solver::OpCPXCfgCvt::getBoolParam(OpStr key)
+{
+	return bpdict_.at(key);
+}
+
+IloCplex::IntParam Solver::OpCPXCfgCvt::getIntParam(OpStr key)
+{
+	return ipdict_.at(key);
+}
+
+IloCplex::LongParam Solver::OpCPXCfgCvt::getLongParam(OpStr key)
+{
+	return lpdict_.at(key);
+}
+
+IloCplex::StringParam Solver::OpCPXCfgCvt::getStringParam(OpStr key)
+{
+	return spdict_.at(key);
 }
 
 Solver::OpCPXCfgCvt::OpCPXCfgCvt()
@@ -82,6 +137,7 @@ protected:
 	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
 	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+	void write(OpStr path) const; // 将模型写入文件
 protected:
 	OpCPXSolI(OpEnvI* env);
 	OpCPXSolI(OpEnvI* env, Model::OpModel mdl);
@@ -419,7 +475,21 @@ void Solver::OpCPXSolI::setParam(const OpConfig& cfg)
 {
 	if (csol_.getImpl())
 	{
-
+		for (auto iter = cfg.getCBegin<OpBool>("OPUA.CPX"); iter != cfg.getCEnd<OpBool>("OPUA.CPX"); ++iter)
+			if (iter.ok())
+				csol_.setParam(cfgcvt_.getBoolParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpInt>("OPUA.CPX"); iter != cfg.getCEnd<OpInt>("OPUA.CPX"); ++iter)
+			if (iter.ok())
+				csol_.setParam(cfgcvt_.getIntParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpLInt>("OPUA.CPX"); iter != cfg.getCEnd<OpLInt>("OPUA.CPX"); ++iter)
+			if (iter.ok())
+				csol_.setParam(cfgcvt_.getLongParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpFloat>("OPUA.CPX"); iter != cfg.getCEnd<OpFloat>("OPUA.CPX"); ++iter)
+			if (iter.ok())
+				csol_.setParam(cfgcvt_.getNumParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpStr>("OPUA.CPX"); iter != cfg.getCEnd<OpStr>("OPUA.CPX"); ++iter)
+			if (iter.ok())
+				csol_.setParam(cfgcvt_.getStringParam(iter.getKey()), iter.getVal().c_str());
 	}
 }
 
@@ -464,6 +534,18 @@ OpFloat Solver::OpCPXSolI::getValue(Objective::OpObj obj) const
 OpFloat Solver::OpCPXSolI::getDual(Constraint::OpLinCon con) const
 {
 	return csol_.getDual(lcdict_.at(con.getIndex()));
+}
+
+void Solver::OpCPXSolI::write(OpStr path) const
+{
+	if (path.size())
+	{
+		// 无法输出到控制台
+	}
+	else
+	{
+		csol_.exportModel(path.c_str());
+	}
 }
 
 Solver::OpCPXSolI::OpCPXSolI(OpEnvI* env)
@@ -545,6 +627,11 @@ OpFloat Solver::OpCPXSol::getDual(Constraint::OpLinCon con) const
 Solver::OpCPXSolI* Solver::OpCPXSol::getImpl() const
 {
 	return static_cast<OpCPXSolI*>(impl_);
+}
+
+void OPUA::Solver::OpCPXSol::write(OpStr path) const
+{
+	static_cast<OpCPXSolI*>(impl_)->write(path);
 }
 
 OpBool Solver::OpCPXSol::operator==(const OpCPXSol& sol) const

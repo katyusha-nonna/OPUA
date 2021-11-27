@@ -530,6 +530,11 @@ Solver::OpSCIPSolI* Solver::OpSCIPSol::getImpl() const
 	return static_cast<OpSCIPSolI*>(impl_);
 }
 
+void Solver::OpSCIPSol::write(OpStr path) const
+{
+	static_cast<OpSCIPSolI*>(impl_)->write(path);
+}
+
 OpBool Solver::OpSCIPSol::operator==(const OpSCIPSol& sol) const
 {
 	return impl_ == sol.impl_;

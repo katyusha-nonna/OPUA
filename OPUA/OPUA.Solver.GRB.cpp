@@ -23,6 +23,8 @@ public:
 
 void Solver::OpGRBCfgCvt::init()
 {
+#ifdef OPUA_GRB_VERSION_912
+	// 配置对应版本：9.12
 	// 加载OPUA.GRB.Termination(终止条件)
 	ipdict_.emplace("OPUA.GRB.Termination.BarIterLimit", GRB_IntParam_BarIterLimit);
 	dpdict_.emplace("OPUA.GRB.Termination.BestBdStop", GRB_DoubleParam_BestBdStop);
@@ -91,6 +93,7 @@ void Solver::OpGRBCfgCvt::init()
 	ipdict_.emplace("OPUA.GRB.MIP.Symmetry", GRB_IntParam_Symmetry);
 	ipdict_.emplace("OPUA.GRB.MIP.VarBranch", GRB_IntParam_VarBranch);
 	ipdict_.emplace("OPUA.GRB.MIP.ZeroObjNodes", GRB_IntParam_ZeroObjNodes);
+#endif
 }
 
 GRB_DoubleParam Solver::OpGRBCfgCvt::getDoubleParam(OpStr key)
@@ -177,6 +180,7 @@ protected:
 	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
 	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+	void write(OpStr path) const; // 将模型写入文件
 protected:
 	OpGRBSolI(OpEnvI* env);
 	OpGRBSolI(OpEnvI* env, Model::OpModel mdl);
@@ -590,15 +594,18 @@ void Solver::OpGRBSolI::solve()
 
 void Solver::OpGRBSolI::setParam(const OpConfig& cfg)
 {
-	for (auto iter = cfg.getCBegin<OpLInt>("OPUA.GRB"); iter != cfg.getCEnd<OpLInt>("OPUA.GRB"); ++iter)
-		if (iter.ok())
-			gmdl_->set(cfgcvt_.getIntParam(iter.getKey()), iter.getVal());
-	for (auto iter = cfg.getCBegin<OpFloat>("OPUA.GRB"); iter != cfg.getCEnd<OpFloat>("OPUA.GRB"); ++iter)
-		if (iter.ok())
-			gmdl_->set(cfgcvt_.getDoubleParam(iter.getKey()), iter.getVal());
-	for (auto iter = cfg.getCBegin<OpStr>("OPUA.GRB"); iter != cfg.getCEnd<OpStr>("OPUA.GRB"); ++iter)
-		if (iter.ok())
-			gmdl_->set(cfgcvt_.getStringParam(iter.getKey()), iter.getVal());
+	if (gmdl_)
+	{
+		for (auto iter = cfg.getCBegin<OpInt>("OPUA.GRB"); iter != cfg.getCEnd<OpInt>("OPUA.GRB"); ++iter)
+			if (iter.ok())
+				gmdl_->set(cfgcvt_.getIntParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpFloat>("OPUA.GRB"); iter != cfg.getCEnd<OpFloat>("OPUA.GRB"); ++iter)
+			if (iter.ok())
+				gmdl_->set(cfgcvt_.getDoubleParam(iter.getKey()), iter.getVal());
+		for (auto iter = cfg.getCBegin<OpStr>("OPUA.GRB"); iter != cfg.getCEnd<OpStr>("OPUA.GRB"); ++iter)
+			if (iter.ok())
+				gmdl_->set(cfgcvt_.getStringParam(iter.getKey()), iter.getVal());
+	}
 }
 
 OpLInt Solver::OpGRBSolI::getStatus() const
@@ -642,6 +649,18 @@ OpFloat Solver::OpGRBSolI::getValue(Objective::OpObj obj) const
 OpFloat Solver::OpGRBSolI::getDual(Constraint::OpLinCon con) const
 {
 	return lcdict_.at(con.getIndex()).get(GRB_DoubleAttr::GRB_DoubleAttr_Pi);
+}
+
+void Solver::OpGRBSolI::write(OpStr path) const
+{
+	if (path.size())
+	{
+		// 不支持输出到控制台
+	}
+	else
+	{
+		gmdl_->write(path);
+	}
 }
 
 Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env)
@@ -722,6 +741,11 @@ OpFloat Solver::OpGRBSol::getDual(Constraint::OpLinCon con) const
 Solver::OpGRBSolI* Solver::OpGRBSol::getImpl() const
 {
 	return static_cast<OpGRBSolI*>(impl_);
+}
+
+void Solver::OpGRBSol::write(OpStr path) const
+{
+	static_cast<OpGRBSolI*>(impl_)->write(path);
 }
 
 OpBool Solver::OpGRBSol::operator==(const OpGRBSol& sol) const

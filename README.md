@@ -6,7 +6,7 @@ OPUA(Optimization Program Universal API)是一套优化求解器通用接口工�
 * IBM ILOG CPLEX(已支持)
 * Gurobi(已支持)
 * Mosek
-* SCIP
+* SCIP(已支持)
 
 <p align="right">
 By: Katyusha
