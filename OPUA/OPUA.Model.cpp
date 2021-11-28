@@ -452,7 +452,17 @@ void Model::OpModelI::write(OpStr path) const
 		for (auto iter = mvars_.getCBegin(); iter != mvars_.getCEnd(); ++iter)
 		{
 			auto& var(iter.getVal());
-			stream << var.getName() << ":\t" << var.getLb() << " <= " << var.getUb() << std::endl;
+			stream << var.getName() << ":\t[";
+			if (Constant::IsInfinity(var.getLb()))
+				stream << "-inf";
+			else
+				stream << var.getLb();
+			stream << ", ";
+			if (Constant::IsInfinity(var.getUb()))
+				stream << "inf";
+			else
+				stream << var.getUb();
+			stream << "]" << std::endl;
 		}
 	}
 }

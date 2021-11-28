@@ -1080,7 +1080,15 @@ OpStr Constraint::ConSense2Str(OpConSense sense)
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpLinCon con)
 {
-	stream << con.getLb() << " <= " << con.getExpr() << " <= " << con.getUb();
+	if (!Constant::IsInfinity(con.getLb()))
+		stream << con.getLb() << " <= ";
+	else
+		stream << "-inf <= ";
+	stream << con.getExpr();
+	if (!Constant::IsInfinity(con.getUb()))
+		stream << " <= " << con.getUb();
+	else
+		stream << " <= inf";
 	return stream;
 }
 
@@ -1160,7 +1168,15 @@ Constraint::OpLinCon Constraint::operator==(const Expression::OpLinExpr& lhs, co
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpQuadCon con)
 {
-	stream << con.getLb() << " <= " << con.getExpr() << " <= " << con.getUb();
+	if (!Constant::IsInfinity(con.getLb()))
+		stream << con.getLb() << " <= ";
+	else
+		stream << "-inf <= ";
+	stream << con.getExpr();
+	if (!Constant::IsInfinity(con.getUb()))
+		stream << " <= " << con.getUb();
+	else
+		stream << " <= inf";
 	return stream;
 }
 

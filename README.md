@@ -218,6 +218,8 @@ int main
         obj += x[i][j];
     mdl.setObj(OpMaximize(env, obj));
   }
+  // 输出模型
+	mdl.write("");
   // 创建求解器对象并抽取模型
   OpGRBSol solver(env, mdl);
   // 创建配置器并配置求解参数
