@@ -9,13 +9,21 @@
 		用户可以使用统一的接口进行优化模型的数学建模，以及根据需求选择多种求解器进行求解(类似于Yalmip)。
 
 			计划支持的求解器：
-				1. IBM CPLEX
-				2. Gurobi
+				1. IBM CPLEX(已支持)
+				2. Gurobi(已支持)
 				3. Mosek
-				4. SCIP
+				4. SCIP(已支持)
 																																					By: Katyusha
 *																																					2021/11/07@XJTU
 */
+
+
+
+/*
+	OPUA的自定义通用工具模块
+		提供通用的I/O工具、计时工具等
+*/
+#include "OPUA.Common.h"
 
 /*
 	OPUA的自定义常数模块

@@ -23,8 +23,8 @@ protected:
 	friend class OpModel;
 	friend class OpMdlCIter;
 private:
-	void init(); // 初始化
-	void clear(); // 清空模型
+	void init(); // 初始化(仅允许构造函数使用)
+	void clear(); // 清空模型(仅允许析构函数使用)
 	void addVar(Variable::OpVar var); // 添加变量
 	void removeVar(Variable::OpVar var); // 移除变量(引用计数归零才真正删除)
 	void addVarsFromLE(const Expression::OpLinExpr& expr); // 通过表达式添加变量(用于添加约束条件/目标函数时检查变量添加)
@@ -109,7 +109,7 @@ void Model::OpModelI::clear()
 void Model::OpModelI::addVar(Variable::OpVar var)
 {
 	auto idx(var.getIndex());
-	mvars_.add(idx, var);
+	mvars_.tryAdd(idx, var);
 	mvrc_[idx]++;
 	var.lock();
 }
@@ -640,7 +640,7 @@ void Model::OpModel::release()
 		static_cast<OpModelI*>(impl_)->preRelease();
 		static_cast<OpModelI*>(impl_)->release();
 		impl_ = nullptr;
-	}	
+	}
 }
 
 Variable::OpVarIdxDict::OpDictCIter Model::OpModel::getCBegin(Variable::OpVar flag) const
@@ -743,7 +743,7 @@ Model::OpModel::OpModel(OpEnv env, OpStr name)
 	impl_ = new OpModelI(env.getImpl(), name);
 }
 
-OPUA::Model::OpModel::~OpModel()
+Model::OpModel::~OpModel()
 {
 
 }

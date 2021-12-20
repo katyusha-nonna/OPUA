@@ -12,6 +12,7 @@ namespace OPUA
 		class OpVar;
 
 		typedef Container::OpArray<OpVar> OpVarArr; // 决策变量数组
+		typedef Container::OpArray<OpVarArr> OpVarMat; // 决策变量矩阵
 		typedef Container::OpDict<OpLInt, OpVar> OpVarIdxDict; // 决策变量索引字典
 
 		// OpVarType：变量类型

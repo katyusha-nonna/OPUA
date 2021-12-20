@@ -23,8 +23,8 @@ public:
 
 void Solver::OpGRBCfgCvt::init()
 {
-#ifdef OPUA_GRB_VERSION_912
-	// 配置对应版本：9.12
+#ifdef OPUA_GRB_VERSION_95
+	// 配置对应版本：9.5
 	// 加载OPUA.GRB.Termination(终止条件)
 	ipdict_.emplace("OPUA.GRB.Termination.BarIterLimit", GRB_IntParam_BarIterLimit);
 	dpdict_.emplace("OPUA.GRB.Termination.BestBdStop", GRB_DoubleParam_BestBdStop);

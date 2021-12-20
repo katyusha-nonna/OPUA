@@ -47,7 +47,15 @@ namespace OPUA
 				return (iter == elements_.end()) ?
 					size_ : iter - elements_.begin(); // 不存在返回size
 			}
+			OpBool idxValid(OpULInt i) const
+			{
+				return i < size_;
+			}
 			T& getElement(OpULInt i)
+			{
+				return elements_.at(i);
+			}
+			const T& getElement(OpULInt i) const
 			{
 				return elements_.at(i);
 			}
@@ -92,12 +100,15 @@ namespace OPUA
 		{
 		public:
 			OpULInt getSize() const { return static_cast<OpArrayI<T>*>(impl_)->getSize(); } // 获取当前数组大小
-			void add(OpArray arr) { static_cast<OpArrayI<T>*>(impl_)->add(arr->getImpl()); } // 插入元素
+			T& getVal(OpULInt i) { return static_cast<OpArrayI<T>*>(impl_) ->getElement(); }
+			const T& getVal(OpULInt i) const { return static_cast<OpArrayI<T>*>(impl_)->getElement(); }
+			void add(OpArray arr) { static_cast<OpArrayI<T>*>(impl_)->add(arr.getImpl()); } // 插入元素
 			template<class... ArgTy>
 			void add(ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(std::forward<ArgTy>(arg)...); } // 加入元素
 			template<class... ArgTy>
 			void add(OpULInt n, ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(n, arg); } // 加入元素	
 			OpULInt find(const T& e)  const { return static_cast<OpArrayI<T>*>(impl_)->find(e); } // 查找元素
+			OpBool idxValid(OpULInt i) const { return static_cast<OpArrayI<T>*>(impl_)->idxValid(i); } // 判断索引是否有效
 			void remove(const T& e) { static_cast<OpArrayI<T>*>(impl_)->remove(e); } // 移除元素
 			void remove(OpULInt from, OpULInt to) { static_cast<OpArrayI<T>*>(impl_)->remove(from, to); } // 移除元素
 			void clear() { static_cast<OpArrayI<T>*>(impl_)->clear(); } // 清空数组(不释放内存)
@@ -150,6 +161,7 @@ namespace OPUA
 			OpBool operator==(const OpArray<T>& arr) { return impl_ == arr.getImpl(); } /*判断是否为同一数组*/
 			OpBool operator!=(const OpArray<T>& arr) { return impl_ != arr.getImpl(); } /*判断是否非同一数组*/
 			T& operator[](OpULInt i) { return static_cast<OpArrayI<T>*>(impl_)->getElement(i); } // 访问元素
+			const T& operator[](OpULInt i) const { return static_cast<OpArrayI<T>*>(impl_)->getElement(i); } // 访问元素
 		public:
 			OpArray()
 			{
@@ -188,10 +200,14 @@ namespace OPUA
 			friend class OpDict<TK, TV>;
 		protected:
 			OpULInt getSize() const { return size_; }
-			TV& getElement(const TK& key) { return elements_[key]; }
-			OpBool has(const TK& key) { return elements_.find(key) != elements_.end(); }
+			TV& getElement1(const TK& key) { return elements_[key]; }
+			TV& getElement2(const TK& key) { return elements_.at(key); }
+			const TV& getElement2(const TK& key) const { return elements_.at(key); }
+			OpBool has(const TK& key) const { return elements_.find(key) != elements_.end(); }
 			template<class... ArgTy>
-			void add(const TK& key, ArgTy&&... arg) { elements_.try_emplace(key, std::forward<ArgTy>(arg)...), size_ = elements_.size(); }
+			void add(const TK& key, ArgTy&&... arg) { elements_.emplace(key, std::forward<ArgTy>(arg)...), size_ = elements_.size(); }
+			template<class... ArgTy>
+			void tryAdd(const TK& key, ArgTy&&... arg) { elements_.try_emplace(key, std::forward<ArgTy>(arg)...), size_ = elements_.size(); }
 			void remove(const TK& key) { elements_.erase(key), size_ = elements_.size(); }
 			void clear() { elements_.clear(), size_ = elements_.size(); }
 			void releaseElements() // 非built-in类型才有，且需要定义release函数
@@ -213,9 +229,13 @@ namespace OPUA
 		{
 		public:
 			OpULInt getSize() const { return static_cast<OpDictI<TK, TV>*>(impl_)->getSize(); } // 获取字典大小
-			OpBool has(const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->has(key); } // 是否存在元素
+			TV& getVal(const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->getElement2(key); } // 访问元素(必须已存在)
+			const TV& getVal(const TK& key) const { return static_cast<OpDictI<TK, TV>*>(impl_)->getElement2(key); } // 访问元素(必须已存在)
+			OpBool has(const TK& key) const{ return static_cast<OpDictI<TK, TV>*>(impl_)->has(key); } // 是否存在元素
 			template<class... ArgTy>
-			void add(const TK& key, ArgTy&&... arg) { static_cast<OpDictI<TK, TV>*>(impl_)->add(key, std::forward<ArgTy>(arg)...); } // 添加元素
+			void add(const TK& key, ArgTy&&... arg) { static_cast<OpDictI<TK, TV>*>(impl_)->add(key, std::forward<ArgTy>(arg)...); } // 添加元素(如果存在则覆盖)
+			template<class... ArgTy>
+			void tryAdd(const TK& key, ArgTy&&... arg) { static_cast<OpDictI<TK, TV>*>(impl_)->tryAdd(key, std::forward<ArgTy>(arg)...); } // 尝试添加元素(如果存在不会覆盖)
 			void remove(const TK& key) { static_cast<OpDictI<TK, TV>*>(impl_)->remove(key); } // 移除元素
 			void clear() { static_cast<OpDictI<TK, TV>*>(impl_)->clear(); } // 清空字典
 			void releaseElements() { static_cast<OpDictI<TK, TV>*>(impl_)->releaseElements(); } // 释放字典中元素(需要元素自定义release)
@@ -268,7 +288,7 @@ namespace OPUA
 		public:
 			OpBool operator==(const OpDict<TK, TV>& dict) { return impl_ == dict.getImpl(); } /*判断是否为同一字典*/
 			OpBool operator!=(const OpDict<TK, TV>& dict) { return impl_ != dict.getImpl(); } /*判断是否非同一字典*/
-			TV& operator[](const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->getElement(key); } // 访问元素(如果不存在则原地创建)
+			TV& operator[](const TK& key) { return static_cast<OpDictI<TK, TV>*>(impl_)->getElement1(key); } // 访问元素(如果不存在则原地创建)
 		public:
 			OpDict()
 			{

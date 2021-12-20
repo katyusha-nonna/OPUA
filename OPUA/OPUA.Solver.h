@@ -2,7 +2,7 @@
 
 #include "OPUA.Model.h"
 #define OPUA_CPX_VERSION_128
-#define OPUA_GRB_VERSION_912
+#define OPUA_GRB_VERSION_95
 #define OPUA_SCIP_VERSION_701
 
 namespace OPUA

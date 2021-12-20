@@ -26,6 +26,7 @@ protected:
 	OpULInt getIndexNum(OpChar cls); // 获取一类组件总数
 	OpULInt addManagement(OpImplBase* impl); // 添加内存管理
 	OpULInt removeManagement(OpImplBase* impl); // 删除内存管理
+	OpULInt getMemoryUsage(); // 获取内存使用情况
 public:
 	OpEnvI(OpStr name);
 };
@@ -83,6 +84,12 @@ OPUA::OpULInt OPUA::OpEnvI::removeManagement(OpImplBase* impl)
 	return refcount;
 }
 
+OPUA::OpULInt OPUA::OpEnvI::getMemoryUsage()
+{
+	// TODO：暂时未实现
+	return 0;
+}
+
 OPUA::OpEnvI::OpEnvI(OpStr name)
 	: name_(name)
 {
@@ -99,6 +106,11 @@ OPUA::OpULInt OPUA::OpEnv::addManagement(OpImplBase* impl)
 OPUA::OpULInt OPUA::OpEnv::removeManagement(OpImplBase* impl)
 {
 	return impl_->removeManagement(impl);
+}
+
+OPUA::OpULInt OPUA::OpEnv::getMemoryUsage()
+{
+	return impl_->getMemoryUsage();
 }
 
 void OPUA::OpEnv::release()
