@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <functional>
+#include <chrono>
 
 namespace OPUA
 {
@@ -46,6 +47,28 @@ namespace OPUA
 			: file(ifile), files(nullptr) {}
 		OpDisplay(std::ofstream& ifiles)
 			: files(&ifiles), file("") {}
+	};
+
+	// 计时器(支持中途暂停计时和恢复计时)
+	// 关于STL库中chrono的用法，详见 https://en.cppreference.com/w/cpp/header/chrono
+	class OpTimer
+	{
+	protected:
+		using TClock = std::chrono::high_resolution_clock;
+
+		std::chrono::time_point<TClock> start_;
+		OpFloat es_;
+		OpBool startup_;
+	public:
+		OpBool startup() const; // 是否启动
+		void start(); // 启动计时/恢复计时
+		void reset(); // 重置计时
+		void pause(); // 暂停计时
+		void restart(); // 重启计时(=reset+start)
+		OpFloat msecond() const; // 时长(毫秒计)
+		OpFloat second() const; // 时长(秒计)
+	public:
+		OpTimer(OpBool startup = true); // 构造函数(默认自动计时)
 	};
 
 	// 离开作用域时自动清理内存

@@ -66,6 +66,7 @@ protected:
 	OpStr getName() const; // 获取名称
 	void write(OpStr path) const; // 输出模型
 	void preRelease(); // 释放前准备
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpModelI(OpEnvI* env);
 	OpModelI(OpEnvI* env, OpStr name);
@@ -478,6 +479,11 @@ void Model::OpModelI::preRelease()
 	localEnv.removeManagement(mnlcs_.getImpl());
 	localEnv.removeManagement(mccs_.getImpl());
 	localEnv.removeManagement(mobjs_.getImpl());
+}
+
+OpULInt Model::OpModelI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Model::OpModelI::OpModelI(OpEnvI* env)

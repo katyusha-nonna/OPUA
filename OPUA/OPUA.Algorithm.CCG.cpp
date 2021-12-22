@@ -1,9 +1,12 @@
 #include "OPUA.Common.h"
 #include "OPUA.Algorithm.h"
 #include "OPUA.Math.h"
+#include "OPUA.Exception.h"
 #include <thread>
 #include <set>
-
+#include <map>
+#include <algorithm>
+#include <sstream>
 using namespace OPUA;
 
 /* OPUA::Algorithm::OpRobustModelI */
@@ -72,6 +75,7 @@ protected:
 	OpFloat ssos_;
 
 	friend class Algorithm::OpRobustModel;
+	friend class Algorithm::OpAlgoCCG;
 protected:
 	// 初始化(仅允许构造函数使用)
 	void init();
@@ -81,6 +85,10 @@ protected:
 	void autoDual();
 	// 自动推导变量的上下界
 	void autoBound();
+	// 更新模型(初始化解集等)
+	void update();
+	// 初始化解数组
+	void initSolution(RobustStageType type);
 	// 添加变量&约束
 	void add(Variable::OpVarArr vars, RobustStageType type, OpBool flag);
 	void add(Variable::OpVar var, RobustStageType type, OpBool flag);
@@ -98,6 +106,8 @@ protected:
 	void setBound(Variable::OpVar var, RobustStageType type, OpFloat lbVal, OpFloat ubVal);
 	// 获取解
 	OpFloat getValue(Variable::OpVar var, RobustStageType type) const;
+	// 获取目标函数解
+	OpFloat getObjValue(RobustStageType type) const;
 	// 获取变量&约束数目
 	OpULInt getSize(RobustStageType type, OpBool isVar) const;
 	// 获取边界
@@ -106,6 +116,8 @@ protected:
 	void write(OpStr root);
 	// 释放前准备
 	void preRelease();
+	// 获取内存占用
+	virtual OpULInt getMemoryUsage() const;
 protected:
 	// 构造函数
 	OpRobustModelI(OpEnvI* env);
@@ -394,6 +406,28 @@ void Algorithm::OpRobustModelI::autoBound()
 	findBound(uc_);
 }
 
+void Algorithm::OpRobustModelI::update()
+{
+	initSolution(RobustStageType::FirstStage);
+	initSolution(RobustStageType::SecondStagePrimal);
+	initSolution(RobustStageType::SecondStageDual);
+	initSolution(RobustStageType::Uncertainty);
+}
+
+void Algorithm::OpRobustModelI::initSolution(RobustStageType type)
+{
+	if (type == RobustStageType::FirstStage)
+		fss_.setSize(fsv_.getSize());
+	else if (type == RobustStageType::SecondStagePrimal)
+		ssps_.setSize(sspv_.getSize());
+	else if (type == RobustStageType::SecondStageDual)
+		ssds_.setSize(ssdv_.getSize());
+	else if (type == RobustStageType::Uncertainty)
+		us_.setSize(uv_.getSize());
+	else
+		return;
+}
+
 void Algorithm::OpRobustModelI::add(Variable::OpVarArr vars, RobustStageType type, OpBool flag)
 {
 	if (type == RobustStageType::FirstStage)
@@ -407,13 +441,13 @@ void Algorithm::OpRobustModelI::add(Variable::OpVarArr vars, RobustStageType typ
 	else if (type == RobustStageType::SecondStagePrimal)
 	{
 		sspv_.add(vars);
-		for (int i = 0; i < vars.getSize(); i++)
+		for (OpULInt i = 0; i < vars.getSize(); i++)
 			sspfv_.add(vars[i].getImpl(), flag);
 	}
 	else if (type == RobustStageType::SecondStageDual)
 	{
 		ssdv_.add(vars);
-		for (int i = 0; i < vars.getSize(); i++)
+		for (OpULInt i = 0; i < vars.getSize(); i++)
 			ssdfv_.add(vars[i].getImpl(), flag);
 	}
 	else if (type == RobustStageType::Uncertainty)
@@ -465,13 +499,13 @@ void Algorithm::OpRobustModelI::add(Constraint::OpLCArr cons, RobustStageType ty
 	else if (type == RobustStageType::SecondStagePrimal)
 	{
 		sspc_.add(cons);
-		for (int i = 0; i < cons.getSize(); i++)
+		for (OpULInt i = 0; i < cons.getSize(); i++)
 			sspfc_.add(cons[i].getImpl(), flag);
 	}
 	else if (type == RobustStageType::SecondStageDual)
 	{
 		ssdc_.add(cons);
-		for (int i = 0; i < cons.getSize(); i++)
+		for (OpULInt i = 0; i < cons.getSize(); i++)
 			ssdfc_.add(cons[i].getImpl(), flag);
 	}
 	else if (type == RobustStageType::Uncertainty)
@@ -621,6 +655,18 @@ OpFloat Algorithm::OpRobustModelI::getValue(Variable::OpVar var, RobustStageType
 	return result;
 }
 
+OpFloat Algorithm::OpRobustModelI::getObjValue(RobustStageType type) const
+{
+	OpFloat result(NAN);
+	if (type == RobustStageType::Unknown)
+		result = fsos_ + ssos_;
+	else if (type == RobustStageType::FirstStage)
+		result = fsos_;
+	else if (type == RobustStageType::SecondStagePrimal)
+		result = ssos_;
+	return result;
+}
+
 OpULInt Algorithm::OpRobustModelI::getSize(RobustStageType type, OpBool isVar) const
 {
 	OpULInt result(0);
@@ -730,6 +776,11 @@ void Algorithm::OpRobustModelI::preRelease()
 	localEnv.removeManagement(us_.getImpl());
 }
 
+OpULInt Algorithm::OpRobustModelI::getMemoryUsage() const
+{
+	return sizeof(*this);
+}
+
 Algorithm::OpRobustModelI::OpRobustModelI(OpEnvI* env)
 	: OpImplBase('M', env),
 	mname_("RobustModel_" + std::to_string(idx_)),
@@ -761,6 +812,11 @@ void Algorithm::OpRobustModel::autoDual()
 void Algorithm::OpRobustModel::autoBound()
 {
 	static_cast<OpRobustModelI*>(impl_)->autoBound();
+}
+
+void Algorithm::OpRobustModel::update()
+{
+	static_cast<OpRobustModelI*>(impl_)->update();
 }
 
 void Algorithm::OpRobustModel::add(Variable::OpVarArr vars, RobustStageType type, OpBool flag)
@@ -821,6 +877,11 @@ void Algorithm::OpRobustModel::setBound(Variable::OpVar var, RobustStageType typ
 OpFloat Algorithm::OpRobustModel::getValue(Variable::OpVar var, RobustStageType type) const
 {
 	return static_cast<OpRobustModelI*>(impl_)->getValue(var, type);
+}
+
+OpFloat OPUA::Algorithm::OpRobustModel::getObjValue(RobustStageType type) const
+{
+	return static_cast<OpRobustModelI*>(impl_)->getObjValue(type);
 }
 
 OpULInt Algorithm::OpRobustModel::getSize(RobustStageType type, OpBool isVar) const
@@ -888,4 +949,932 @@ Algorithm::OpRobustModel::OpRobustModel(OpEnv env, OpStr name)
 Algorithm::OpRobustModel::~OpRobustModel()
 {
 
+}
+
+/* OPUA::Algorithm::OpAlgoCCG */
+
+struct Algorithm::OpAlgoCCG::OpCCGIterInfo
+{
+	OpBool needSolveRobust; // 是否需要求解鲁棒问题(False-视为确定性问题进行求解)
+	Solver::OpSolType solverMode; // 求解器模式
+	Solver::OpSolStatus masterStatus; // 主问题求解状态
+	Solver::OpSolStatus subStatus; // 子问题求解状态
+	Solver::OpSolStatus deterministicStatus; // 确定性问题求解状态
+	OpLInt initMode; // 初始化模式选择
+	OpLInt subProbSolveMode; // 子问题求解模式选择(暂时不起作用，固定使用OA)
+	OpLInt iter; // 当前迭代次数
+	OpLInt iterMax; // 最大迭代次数
+	OpLInt iterNoImpr; // 无改善的累计迭代次数
+	OpLInt iterNoImprLimt; // 无改善的最大累计迭代次数
+	OpFloat etaVal; // 主问题辅助变量解(子问题最优解)
+	OpFloat lb; // 问题下界
+	OpFloat ub; // 问题上界
+	OpFloat epsilon; //  收敛阈值
+	OpFloat prevLb; // 上一次迭代的问题下界
+	OpFloat prevUb; // 上一次迭代的问题上界
+	OpFloat lbEpsilon; // 问题下界收敛阈值
+	OpFloat ubEpsilon; // 问题上界收敛阈值
+
+	Variable::OpVar eta; // 主问题辅助变量(子问题最优解)(需要释放)
+	Variable::OpVarArr masterAddVars; // 主问题在迭代中动态生成的变量(需要释放)
+	Constraint::OpLCArr masterAddCons; // 主问题在迭代中动态生成的约束(需要释放)
+	Objective::OpObj masterObj; // 基本主问题的目标函数(需要释放)
+	Model::OpModel masterModel; // 基本主问题模型对象(需要释放)
+	Constraint::OpLCArr deterministicAddCons; // 确定性问题动态生成的约束(需要释放)
+	Objective::OpObj deterministicObj; // 确定性问题的目标函数(需要释放)
+	Model::OpModel deterministicModel; // 确定性问题模型对象(需要释放)
+
+	void init(const OpRobustModelI* mdl, const Solver::OpConfig& config); // 初始化
+	void clear(); // 清理
+	void printIterInfo(std::ostream& stream, const std::thread::id& tid); // 打印迭代信息
+};
+
+void Algorithm::OpAlgoCCG::OpCCGIterInfo::init(const OpRobustModelI* mdl, const Solver::OpConfig& config)
+{
+	OpEnv localEnv(mdl->env_);
+	needSolveRobust = (mdl->uc_.getSize()) && (!config.getCfg<OpBool>("OPUA.Algorithm.CCG.GetDeterministicSolution"));
+	masterStatus = Solver::OpSolStatus::Unknown;
+	subStatus = Solver::OpSolStatus::Unknown;
+	deterministicStatus = Solver::OpSolStatus::Unknown;
+	initMode = config.getCfg<OpLInt>("OPUA.Algorithm.CCG.FirstStageInitMode");
+	subProbSolveMode = config.getCfg<OpLInt>("OPUA.Algorithm.CCG.SubProbSolveMode"); // 这项配置暂时不起作用
+	iter = 0;
+	iterMax = config.getCfg<OpLInt>("OPUA.Algorithm.CCG.IterMax");
+	iterNoImpr = 0;
+	iterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	etaVal = 0.0;
+	lb = -Constant::Infinity;
+	ub = Constant::Infinity;
+	epsilon = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGGap");
+	prevLb = -Constant::Infinity;
+	prevUb = Constant::Infinity;
+	lbEpsilon = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGLBGap");
+	ubEpsilon = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGUBGap");
+
+	eta = Variable::OpVar(localEnv, Variable::OpVarType::Con, 0, Constant::Infinity, "eta");
+	masterAddVars = Variable::OpVarArr(localEnv);
+	masterAddCons = Constraint::OpLCArr(localEnv);
+	masterObj = Objective::OpMinimize(localEnv, mdl->fso_ + eta);
+	masterModel = Model::OpModel(localEnv, "CCG_Master_Prob");
+	deterministicAddCons = Constraint::OpLCArr(localEnv);
+	deterministicObj = Objective::OpObj(localEnv, Objective::OpObjSense::Min);
+	deterministicModel = Model::OpModel(localEnv, "CCG_Deterministic_Prob");
+
+	switch (config.getCfg<OpChar>("OPUA.Algorithm.CCG.MIPSolverMode"))
+	{
+	case 'C':
+		solverMode = Solver::OpSolType::CPX;
+		break;
+	case 'G':
+		solverMode = Solver::OpSolType::GRB;
+		break;
+	case 'S':
+		solverMode = Solver::OpSolType::SCIP;
+		break;
+	case 'M':
+		solverMode = Solver::OpSolType::MSK;
+		break;
+	default:
+		solverMode = Solver::OpSolType::GRB;
+		break;
+	}
+}
+
+void Algorithm::OpAlgoCCG::OpCCGIterInfo::clear()
+{
+	// 释放主问题OPUA组件
+	deterministicModel.release();
+	deterministicObj.release();
+	deterministicAddCons.releaseElements(); // 这部分是CCG迭代产生的变量，需要进行释放
+	deterministicAddCons.release();
+	masterModel.release();
+	masterObj.release();
+	masterAddCons.releaseElements(); // 这部分是CCG迭代产生的变量，需要进行释放
+	masterAddCons.release();
+	masterAddVars.releaseElements(); // 这部分是CCG迭代产生的变量，需要进行释放
+	masterAddVars.release();
+	eta.release();
+}
+
+void Algorithm::OpAlgoCCG::OpCCGIterInfo::printIterInfo(std::ostream& stream, const std::thread::id& tid)
+{
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")ITER\tLB\tUB\tGAP" << std::endl;
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")"
+		<< iter << '\t'
+		<< lb << '\t'
+		<< ub << '\t'
+		<< ub - lb << std::endl;
+}
+
+struct Algorithm::OpAlgoCCG::OpOAIterInfo
+{
+	Solver::OpSolStatus oaSubStatus; // OA子问题求解状态
+	Solver::OpSolStatus oaMasterStatus; // OA主问题求解状态
+	OpLInt oaIter; // OA迭代次数
+	OpLInt oaIterMax; // OA迭代次数上限
+	OpLInt oaIterNoImpr; // OA无改善累计迭代次数
+	OpLInt oaIterNoImprLimt; // OA无改善累计迭代次数上限
+	OpFloat oaGap; // OA相对收敛间隙
+	OpFloat oaLbGap; // OA下界相对收敛间隙(无改善判据)
+	OpFloat oaUbGap; // OA上界相对收敛间隙(无改善判据)
+	OpFloat oaUb; // 当前OA上界
+	OpFloat oaLb; // 当前OA下界
+	OpFloat oaPrevUb; // 上一次迭代的OA上界
+	OpFloat oaPrevLb; // 上一次迭代的OA下界
+	OpFloat betaVal; // OA主问题目标函数中子问题目标函数解
+
+	Expression::OpLinExpr oaSubBasicObjExpr; // OA子问题基本目标函数表达式(不含双线性项的部分)
+	Constraint::OpLCArr oaSubAddCons; // OA子问题中的动态生成的约束(需要释放)
+	Objective::OpObj oaSubObj; // OA子问题目标函数对象(需要释放)
+	Objective::OpObj oaSubTmpObj;  // OA子问题临时目标函数对象(用于中途更换目标函数)(需要释放)
+	Model::OpModel oaSubModel; // OA子问题模型对象(需要释放)
+	Variable::OpVar beta; // OA主问题目标函数中子问题估计值(需要释放)
+	Constraint::OpLCArr oaMasterAddCons; // OA主问题中的动态生成的约束(需要释放)
+	Objective::OpObj oaMasterObj; // OA主问题目标函数对象(需要释放)
+	Model::OpModel oaMasterModel; // OA主问题模型对象(需要释放)
+
+	void init(const OpRobustModelI* mdl, const Solver::OpConfig& config); // 初始化
+	void clear(); // 清理
+	void printIterInfo(std::ostream& stream, const std::thread::id& tid); // 打印迭代信息
+};
+
+
+void Algorithm::OpAlgoCCG::OpOAIterInfo::init(const OpRobustModelI* mdl, const Solver::OpConfig& config)
+{
+	// TODO：将OA与CCG分离，OA拥有自己单独的配置前缀
+	OpEnv localEnv(mdl->env_);
+	oaSubStatus = Solver::OpSolStatus::Unknown;
+	oaMasterStatus = Solver::OpSolStatus::Unknown;
+	oaIter = 1;
+	oaIterMax = 100;
+	oaIterNoImpr = 0;
+	oaIterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	oaGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGGap");
+	oaLbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGLBGap");
+	oaUbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGUBGap");
+	oaUb = Constant::Infinity;
+	oaLb = -Constant::Infinity;
+	oaPrevUb = Constant::Infinity;
+	oaPrevLb = -Constant::Infinity;
+	betaVal = 0.0;
+
+	oaSubBasicObjExpr = Expression::OpLinExpr(0.0);
+	oaSubAddCons = Constraint::OpLCArr(localEnv);
+	oaSubObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	oaSubTmpObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	oaSubModel = Model::OpModel(localEnv);
+	beta = Variable::OpVar(localEnv);
+	oaMasterAddCons = Constraint::OpLCArr(localEnv);
+	oaMasterObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	oaMasterModel = Model::OpModel(localEnv);
+}
+
+void Algorithm::OpAlgoCCG::OpOAIterInfo::clear()
+{
+	oaSubModel.release();
+	oaSubTmpObj.release();
+	oaSubObj.release();
+	oaSubAddCons.releaseElements();
+	oaSubAddCons.release();
+	oaSubBasicObjExpr.clear();
+
+	oaMasterModel.release();
+	oaMasterObj.release();
+	oaMasterAddCons.releaseElements();
+	oaMasterAddCons.release();
+	beta.release();
+}
+
+void Algorithm::OpAlgoCCG::OpOAIterInfo::printIterInfo(std::ostream& stream, const std::thread::id& tid)
+{
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")OA: ITER\tLB\tUB\tGAP" << std::endl;
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")OA: "
+		<< oaIter << '\t'
+		<< oaLb << '\t'
+		<< oaUb << '\t'
+		<< oaUb - oaLb << std::endl;
+}
+
+void Algorithm::OpAlgoCCG::extract(OpRobustModel model)
+{
+	mdl_ = model.getImpl();
+}
+
+OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
+{
+	using namespace Container;
+	using namespace Variable;
+	using namespace Expression;
+	using namespace Constraint;
+	using namespace Model;
+	using namespace Solver;
+
+	// 计算成功的标志
+	OpBool successful = false;
+	// 环境变量
+	OpEnv localEnv(mdl_->env_);
+	std::thread::id tid = std::this_thread::get_id();
+	std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")MemoryUsage(start): " << localEnv.getMemoryUsage() << std::endl;
+	// 基本迭代信息
+	OpCCGIterInfo info;
+	info.init(mdl_, config);
+	// 守护对象
+	OpAutoFree guard([&]() {
+		try
+		{
+			info.clear();
+			std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")MemoryUsage(end): " << localEnv.getMemoryUsage() << std::endl;
+		}
+		catch (std::exception& ex)
+		{
+			std::cerr << ex.what() << std::endl;
+		}
+	});
+
+	// lambda对象，用途：初始化
+	auto init = [&]() {
+		if (info.needSolveRobust)
+		{
+			switch (info.initMode)
+			{
+			case 0:
+				mdl_->fss_.setSize(mdl_->fsv_.getSize());
+				break;
+			case 1:
+				break;
+			case 2:
+				mdl_->fss_.setSize(mdl_->fsv_.getSize());
+				break;
+			default:
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: wrong init mode";
+				throw OpExcBase(msg.str());
+				break;
+			}
+			mdl_->ssds_.setSize(mdl_->ssdv_.getSize());
+			mdl_->ssps_.setSize(mdl_->sspv_.getSize());
+			//mdl_->us_.setSize(mdl_->uc_.getSize());
+			info.iter++;
+		}
+		else
+		{
+			mdl_->fss_.setSize(mdl_->fsv_.getSize());
+			mdl_->ssps_.setSize(mdl_->sspv_.getSize());
+		}
+	};
+	// lambda对象，用途：生成基本主问题
+	auto createBasicMasterModel = [&]() {
+		// 加入主问题目标函数
+		info.masterModel.setObj(info.masterObj);
+		// 加入主问题约束条件(变量自动加入)
+		info.masterModel.add(mdl_->fsc_);
+	};
+	// lambda对象，用途：固定不确定集，求解一阶段+二阶段原问题，生成确定性解
+	auto createDeterministicSol1 = [&]() {
+
+	};
+	// lambda对象，用途：固定一阶段变量和不确定集，求解二阶段原问题，生成确定性解
+	// 警告：不可反复调用(因为obj重复设置无效)
+	auto createDeterministicSol2 = [&]() {
+		auto deterministicSolver = OpAdapSol(info.solverMode, localEnv);
+		OpAutoFree localGuard([&]() {
+			try
+			{
+				deterministicSolver.release();
+			}
+			catch (std::exception& ex)
+			{
+				std::cerr << ex.what() << std::endl;
+			}
+		});
+		// 统计一阶段变量/不确定集解
+		std::unordered_map<OpVarI*, OpFloat> firstVarSols;
+		for (OpULInt i = 0; i < mdl_->fsv_.getSize(); i++)
+			firstVarSols.emplace(mdl_->fsv_[i].getImpl(), mdl_->fss_[i]);
+		for (OpULInt i = 0; i < mdl_->uv_.getSize(); i++)
+			firstVarSols.emplace(mdl_->uv_[i].getImpl(), mdl_->us_[i]);
+		// 创建固定一阶段变量&不确定集变量的二阶段原问题约束条件
+		for (OpULInt i = 0; i < mdl_->sspc_.getSize(); i++)
+		{
+			const auto& con = mdl_->sspc_[i];
+			OpLinExpr expr(con.getExpr().getConstant());
+			for (auto it = con.getExpr().getLBegin(); it != con.getExpr().getLEnd(); ++it)
+			{
+				auto iter = firstVarSols.find(it.getVar().getImpl());
+				if (iter != firstVarSols.end())
+					expr.addLinTerm(iter->second * it.getCoeff());
+				else
+					expr.addLinTerm(it.getVar(), it.getCoeff());
+			}
+			if (expr.getSize())
+			{
+				auto newCon = OpLinCon(localEnv, con.getLb(), expr, con.getUb());
+				if (newCon.getImpl())
+				{
+					info.deterministicAddCons.add(newCon);
+					info.deterministicModel.add(newCon);
+				}
+			}
+		}
+		// 形成固定一阶段变量&不确定集变量的二阶段目标函数
+		{
+			OpLinExpr newObjExpr(mdl_->sspo_.getConstant());
+			for (auto it = mdl_->sspo_.getLBegin(); it != mdl_->sspo_.getLEnd(); ++it)
+			{
+				auto iter = firstVarSols.find(it.getVar().getImpl());
+				if (iter != firstVarSols.end())
+					newObjExpr.addLinTerm(iter->second * it.getCoeff());
+				else
+					newObjExpr.addLinTerm(it.getVar(), it.getCoeff());
+			}
+			info.deterministicObj.setLinExpr(newObjExpr);
+			info.deterministicModel.setObj(info.deterministicObj);
+		}
+		// 求解固定一阶段变量&不确定集变量的二阶段模型
+		deterministicSolver.extract(info.deterministicModel);
+		deterministicSolver.setParam(config);
+		deterministicSolver.solve();
+		info.deterministicStatus = IntStatus2OpStatus(info.solverMode, deterministicSolver.getStatus());
+		// 取值
+		if (info.deterministicStatus == OpSolStatus::Optimal)
+		{
+			for (OpULInt i = 0; i < mdl_->sspv_.getSize(); i++)
+				mdl_->ssps_[i] = deterministicSolver.getValue(mdl_->sspv_[i]);
+		}
+		else
+		{
+			std::stringstream msg;
+			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: resolve sub primal model failed";
+			throw OpExcBase(msg.str());
+		}
+		std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")resolve sub primal model finished" << std::endl;
+	};
+	// lambda对象，用途：更新主问题特殊变量集的解
+	auto updateMasterSpecialSolution = [&](OpLInt k) {
+		if (!mdl_->fssv_.getSize())
+			return;
+		// 特殊变量的模型
+		auto specialCons = OpLCArr(localEnv);
+		auto specialQCons = OpQCArr(localEnv);
+		auto specialModel = OpModel(localEnv);
+		auto specialSolver = OpAdapSol(info.solverMode, localEnv);
+		OpAutoFree localGuard([&]() {
+			try
+			{
+				specialSolver.release();
+				specialModel.release();
+				specialQCons.releaseElements();
+				specialQCons.release();
+				specialCons.releaseElements();
+				specialCons.release();
+			}
+			catch (std::exception& ex)
+			{
+				std::cerr << ex.what() << std::endl;
+			}
+		});
+		// 统计一阶段变量解
+		std::unordered_map<OpVarI*, OpFloat> firstVarSols;
+		for (OpULInt i = 0; i < mdl_->fsv_.getSize(); i++)
+			firstVarSols.emplace(mdl_->fsv_[i].getImpl(), mdl_->fss_[i]);
+		for (OpULInt i = 0; i < mdl_->fssv_.getSize(); i++)
+			firstVarSols.erase(mdl_->fssv_[i].getImpl());
+		// 创建并加入一阶段特殊线性约束(变量自动加入)
+		for (OpULInt i = 0; i < mdl_->fssc_.getSize(); i++)
+		{
+			const auto& con = mdl_->fssc_[i];
+			OpLinExpr expr(con.getExpr().getConstant());
+			for (auto it = con.getExpr().getLBegin(); it != con.getExpr().getLEnd(); ++it)
+			{
+				auto iter = firstVarSols.find(it.getVar().getImpl());
+				if (iter != firstVarSols.end())
+					expr += iter->second * it.getCoeff();
+				else
+					expr += it.getVar() * it.getCoeff();
+			}
+			if (expr.getSize())
+				specialCons.add(OpLinCon(localEnv, con.getLb(), expr, con.getUb()));
+		}
+		specialModel.add(specialCons);
+		// 创建并加入一阶段特殊二次约束(变量自动加入)
+		for (OpULInt i = 0; i < mdl_->fssqc_.getSize(); i++)
+		{
+			const auto& con = mdl_->fssqc_[i];
+			OpQuadExpr expr(con.getExpr().getConstant());
+			for (auto it = con.getExpr().getLBegin(); it != con.getExpr().getLEnd(); ++it)
+			{
+				auto iter = firstVarSols.find(it.getVar().getImpl());
+				if (iter != firstVarSols.end())
+					expr.addLinTerm(iter->second * it.getCoeff());
+				else
+					expr.addLinTerm(it.getVar(), it.getCoeff());
+			}
+			for (auto it = con.getExpr().getQBegin(); it != con.getExpr().getQEnd(); ++it)
+			{
+				auto var1 = it.getVar1(), var2 = it.getVar2();
+				auto iter1 = firstVarSols.find(var1.getImpl()), iter2 = firstVarSols.find(var2.getImpl());
+				if (iter1 == firstVarSols.end() && iter2 == firstVarSols.end())
+					expr.addQuadTerm(var1, var2, it.getCoeff());
+				else if (iter1 == firstVarSols.end() && iter2 != firstVarSols.end())
+					expr.addLinTerm(var1, iter2->second * it.getCoeff());
+				else if (iter1 != firstVarSols.end() && iter2 == firstVarSols.end())
+					expr.addLinTerm(var2, iter1->second * it.getCoeff());
+				else if (iter1 != firstVarSols.end() && iter2 != firstVarSols.end())
+					expr.addLinTerm(iter1->second * iter2->second * it.getCoeff());
+			}
+			if (expr.getSize())
+				specialQCons.add(OpQuadCon(localEnv, con.getLb(), expr, con.getUb()));
+		}
+		specialModel.add(specialQCons);
+		// 求解&取值
+		specialSolver.extract(specialModel);
+		specialSolver.setParam(config);
+		specialSolver.solve();
+		auto specialStatus = IntStatus2OpStatus(info.solverMode, specialSolver.getStatus());
+		if (specialStatus == OpSolStatus::Optimal)
+		{
+			for (OpULInt i = 0; i < mdl_->fssv_.getSize(); i++)
+				mdl_->fss_[mdl_->fsv_.find(mdl_->fssv_[i])] = specialSolver.getValue(mdl_->fssv_[i]);
+		}
+		else
+		{
+			std::stringstream msg;
+			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: re-solve special cons failed";
+			throw OpExcBase(msg.str());
+		}
+		std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")re-solve special cons finished" << std::endl;
+	};
+	// lambda对象，用途：更新主问题的解
+	auto updateMasterSolution = [&](OpLInt k) {
+		if (k > 1)
+		{
+			auto masterSolver = OpAdapSol(info.solverMode, localEnv);
+			OpAutoFree localGuard([&]() {
+				try
+				{
+					masterSolver.release();
+				}
+				catch (std::exception& ex)
+				{
+					std::cerr << ex.what() << std::endl;
+				}
+			});
+
+			masterSolver.extract(info.masterModel);
+			masterSolver.setParam(config);
+			masterSolver.solve();
+			auto masterStatus = IntStatus2OpStatus(info.solverMode, masterSolver.getStatus());
+			if (masterStatus == OpSolStatus::Optimal)
+			{
+				info.masterStatus = OpSolStatus::Optimal;
+				info.prevLb = info.lb;
+				info.lb = masterSolver.getValue(info.masterObj);
+				info.etaVal = masterSolver.getValue(info.eta);
+				for (OpULInt i = 0; i < mdl_->fsv_.getSize(); i++)
+					mdl_->fss_[i] = masterSolver.getValue(mdl_->fsv_[i]);
+				updateMasterSpecialSolution(k);
+			}
+			else
+			{
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve master model failed";
+				throw OpExcBase(msg.str());
+			}
+		}
+		else
+		{
+			switch (info.initMode)
+			{
+			case 0:
+				for (int i = 0; i < mdl_->fss_.getSize(); i++)
+					mdl_->fss_[i] = 0; // 以0值作为初始解
+				updateMasterSpecialSolution(k);
+				break;
+			case 1:
+				break; // 使用自定义解
+			case 2:
+				createDeterministicSol1(); // 使用确定性解
+				updateMasterSpecialSolution(k);
+				break;
+			}
+		}
+	};
+	// lambda对象，用途：更新子问题的解(OA迭代)
+	auto updateSubSolution = [&](OpLInt k) {
+		// 创建并初始化OA迭代的基本信息
+		OpOAIterInfo oaInfo;
+		oaInfo.init(mdl_, config);
+		Solver::OpAdapSol oaSubSolver(info.solverMode, localEnv); // OA子问题求解器(需要释放)
+		Solver::OpAdapSol oaMasterSolver(info.solverMode, localEnv); // OA主问题求解器(需要释放)
+		// 一些统计变量
+		std::unordered_map<OpVarI*, OpFloat> firstVarSols; // 一阶段变量解
+		std::unordered_map<OpVarI*, OpFloat> unSetSol; // (双线性项中)不确定集变量解 
+		std::unordered_map<OpVarI*, OpFloat> dualSetSol; // (双线性项中)对偶变量解
+		std::unordered_map<OpVarI*, OpVar> oaSubVars; // OA子问题变量集
+		std::unordered_map<OpVarI*, OpVar> oaMasterVars; // OA主问题变量集
+		std::vector<std::tuple<OpVarI*, OpVarI*, OpFloat> > bilinears; // 双线性项({不确定变量, 对偶变量, 系数})
+		std::vector<std::pair<OpVarI*, OpFloat> > linears; // 线性项({不确定变量, 系数})
+		// 自动释放内存
+		OpAutoFree localGuard([&]() {
+			try
+			{
+				oaSubSolver.release();
+				oaMasterSolver.release();
+				oaInfo.clear();
+			}
+			catch (std::exception& ex)
+			{
+				std::cerr << ex.what() << std::endl;
+			}
+		});
+
+		// 统计一阶段变量解
+		for (OpULInt i = 0; i < mdl_->fsv_.getSize(); i++)
+			firstVarSols.emplace(mdl_->fsv_[i].getImpl(), mdl_->fss_[i]);
+		// 一些通用的函数
+		auto createOAVars = [&](OpVarArr& varArr, std::unordered_map<OpVarI*, OpVar>& vars) { /* 从鲁棒模型中抽取OA变量集合(便于统计) */
+			for (OpULInt i = 0; i < varArr.getSize(); i++)
+				vars.emplace(varArr[i].getImpl(), varArr[i]);
+		};
+		auto createOACons = [&](OpLCArr& conArr, OpModel& model, OpLCArr& conSave) { /* 创建OA迭代主子问题的约束 */
+			for (OpULInt i = 0; i < conArr.getSize(); i++)
+			{
+				const auto& con = conArr[i];
+				OpLinExpr expr(con.getExpr().getConstant());
+				for (auto it = con.getExpr().getLBegin(); it != con.getExpr().getLEnd(); ++it)
+				{
+					auto iter = firstVarSols.find(it.getVar().getImpl());
+					if (iter != firstVarSols.end())
+						expr.addLinTerm(iter->second * it.getCoeff());
+					else
+						expr.addLinTerm(it.getVar(), it.getCoeff());
+				}
+				if (expr.getSize())
+				{
+					auto newCon = OpLinCon(localEnv, con.getLb(), expr, con.getUb());
+					if (newCon.getImpl())
+					{
+						conSave.add(newCon);
+						model.add(newCon);
+					}
+				}			
+			}
+		};
+		auto oaQuit = [&]() { /* 判定OA迭代的退出条件 */
+			if (oaInfo.oaIter > 1 ?  /* 非第一次迭代：需要统计上下界累计无改善的次数 */
+				(std::abs(oaInfo.oaLb - oaInfo.oaPrevLb) / std::abs(oaInfo.oaPrevLb) <= oaInfo.oaLbGap /* 下界无改善判据 */
+					&& std::abs(oaInfo.oaUb - oaInfo.oaPrevUb) / std::abs(oaInfo.oaPrevUb) <= oaInfo.oaUbGap) /* 上界无改善判据 */
+				: false /* 第一次迭代：不对上下界是否各有所改善进行统计 */)
+				oaInfo.oaIterNoImpr++;
+			else
+				oaInfo.oaIterNoImpr = 0;
+			return (oaInfo.oaIter > oaInfo.oaIterMax
+				|| oaInfo.oaIterNoImpr > oaInfo.oaIterNoImprLimt
+				|| std::abs(oaInfo.oaUb - oaInfo.oaLb) / std::abs(oaInfo.oaUb) < oaInfo.oaGap);
+		};
+		// 为子问题创建变量(只是抽取并形成集合，方便统计，并非重新创建变量)
+		createOAVars(mdl_->ssdv_, oaSubVars);
+		// 为子问题添加约束条件(变量自动加入)
+		createOACons(mdl_->ssdc_, oaInfo.oaSubModel, oaInfo.oaSubAddCons);
+		// 为子问题创建基本目标函数
+		for (auto it = mdl_->ssdo_.getLBegin(); it != mdl_->ssdo_.getLEnd(); ++it)
+		{
+			auto iter1 = firstVarSols.find(it.getVar().getImpl());
+			auto iter2 = oaSubVars.find(it.getVar().getImpl());
+			if (iter1 != firstVarSols.end() && iter2 == oaSubVars.end())
+				oaInfo.oaSubBasicObjExpr.addLinTerm(iter1->second * it.getCoeff());
+			else if (iter1 == firstVarSols.end() && iter2 != oaSubVars.end())
+				oaInfo.oaSubBasicObjExpr.addLinTerm(iter2->second, it.getCoeff());
+			else
+				linears.emplace_back(it.getVar().getImpl(), it.getCoeff());
+		}
+		for (auto it = mdl_->ssdo_.getQBegin(); it != mdl_->ssdo_.getQEnd(); ++it)
+		{
+			auto var1Ptr = it.getVar1().getImpl(), var2Ptr = it.getVar2().getImpl();
+			auto iter1 = firstVarSols.find(var1Ptr), iter2 = firstVarSols.find(var2Ptr);
+			if (iter1 != firstVarSols.end() && iter2 == firstVarSols.end())
+				oaInfo.oaSubBasicObjExpr.addLinTerm(oaSubVars.at(var2Ptr), iter1->second * it.getCoeff()); /*线性项*/
+			else if (iter1 == firstVarSols.end() && iter2 != firstVarSols.end())
+				oaInfo.oaSubBasicObjExpr.addLinTerm(oaSubVars.at(var1Ptr), iter2->second * it.getCoeff()); /*线性项*/
+			else /* 双线性项*/
+			{
+				if (oaSubVars.find(var1Ptr) == oaSubVars.end())
+					bilinears.emplace_back(var1Ptr, var2Ptr, it.getCoeff());
+				else
+					bilinears.emplace_back(var2Ptr, var1Ptr, it.getCoeff());
+			}
+		}
+		// 形成不确定集初值
+		//mdl_->autoBound();
+		//for (auto& l : linears)
+		//	unSetSol.try_emplace(l.first, mdl_->getBound(l.first, RobustStageType::Uncertainty, true)); // 不确定集的初值统一使用变量下限
+		//for (auto& bl : bilinears)
+		//	unSetSol.try_emplace(std::get<0>(bl), mdl_->getBound(std::get<0>(bl), RobustStageType::Uncertainty, true)); // 不确定集的初值统一使用变量下限
+		for (auto& l : linears)
+			unSetSol.try_emplace(l.first, mdl_->getValue(l.first, RobustStageType::Uncertainty));
+		for (auto& bl : bilinears)
+			unSetSol.try_emplace(std::get<0>(bl), mdl_->getValue(std::get<0>(bl), RobustStageType::Uncertainty));
+		// 为主问题创建变量(只是抽取并形成集合，方便统计，并非重新创建变量)
+		createOAVars(mdl_->ssdv_, oaMasterVars);
+		createOAVars(mdl_->uv_, oaMasterVars);
+		// 为主问题生成约束
+		createOACons(mdl_->ssdc_, oaInfo.oaMasterModel, oaInfo.oaMasterAddCons);
+		createOACons(mdl_->uc_, oaInfo.oaMasterModel, oaInfo.oaMasterAddCons);
+		// 为主问题创建目标函数
+		{
+			OpLinExpr oaMasterObjExpr(oaInfo.beta);
+			for (auto it = mdl_->ssdo_.getLBegin(); it != mdl_->ssdo_.getLEnd(); ++it)
+			{
+				auto iter = firstVarSols.find(it.getVar().getImpl());
+				if (iter != firstVarSols.end())
+					oaMasterObjExpr.addLinTerm(iter->second * it.getCoeff());
+				else
+					oaMasterObjExpr.addLinTerm(oaMasterVars.at(it.getVar().getImpl()), it.getCoeff());
+			}
+			for (auto it = mdl_->ssdo_.getQBegin(); it != mdl_->ssdo_.getQEnd(); ++it)
+			{
+				auto var1Ptr = it.getVar1().getImpl(), var2Ptr = it.getVar2().getImpl();
+				auto iter1 = firstVarSols.find(var1Ptr), iter2 = firstVarSols.find(var2Ptr);
+				if (iter1 != firstVarSols.end() && iter2 == firstVarSols.end())
+					oaMasterObjExpr.addLinTerm(oaMasterVars.at(var2Ptr), iter1->second * it.getCoeff()); /*线性项*/
+				else if (iter1 == firstVarSols.end() && iter2 != firstVarSols.end())
+					oaMasterObjExpr.addLinTerm(oaMasterVars.at(var1Ptr), iter2->second * it.getCoeff()); /*线性项*/
+				else
+					; /*双线性项已用beta代替*/
+			}
+			oaInfo.oaMasterObj.setLinExpr(oaMasterObjExpr);
+			oaInfo.oaMasterModel.setObj(oaInfo.oaMasterObj);
+		}
+
+		// 迭代求解
+		while (!oaQuit())
+		{
+			// 生成子问题目标函数
+			{
+				OpLinExpr oaSubObjExpr(oaInfo.oaSubBasicObjExpr);
+				for (auto& l : linears)
+					oaSubObjExpr += l.second * unSetSol.at(l.first);
+				for (auto& bl : bilinears)
+					oaSubObjExpr += std::get<2>(bl) * unSetSol.at(std::get<0>(bl)) * oaSubVars.at(std::get<1>(bl));
+				oaInfo.oaSubModel.setObj(oaInfo.oaSubTmpObj); // 这里为了更换目标函数，先设置一个空的临时目标函数
+				oaInfo.oaSubObj.setLinExpr(oaSubObjExpr); // 此时原目标函数已经解锁，可以正常更换表达式
+				oaInfo.oaSubModel.setObj(oaInfo.oaSubObj); // 最后再将原目标函数对象重新加入模型
+			}
+			// 子问题求解
+			oaSubSolver.extract(oaInfo.oaSubModel);
+			oaSubSolver.setParam(config);
+			oaSubSolver.solve();
+			oaInfo.oaSubStatus = IntStatus2OpStatus(info.solverMode, oaSubSolver.getStatus());
+			// 子问题取值&更新下界
+			if (oaInfo.oaSubStatus == OpSolStatus::Optimal)
+			{
+				// 取(双线性项中)对偶变量解
+				for (auto& bl : bilinears)
+					dualSetSol[std::get<1>(bl)] = oaSubSolver.getValue(oaSubVars.at(std::get<1>(bl)));
+				// 更新Lb
+				oaInfo.oaPrevLb = oaInfo.oaLb;
+				oaInfo.oaLb = oaSubSolver.getValue(oaInfo.oaSubObj);
+			}
+			else
+			{
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve OA sub model failed";
+				throw OpExcBase(msg.str());
+			}
+			// 生成并添加主问题最优割
+			{
+				OpLinExpr cutExpr(0.0);
+				for (auto& bl : bilinears)
+				{
+					auto unPtr = std::get<0>(bl), dualPtr = std::get<1>(bl);
+					auto coef = std::get<2>(bl);
+					cutExpr.addLinTerm(-coef * dualSetSol.at(dualPtr) * unSetSol.at(unPtr));
+					cutExpr.addLinTerm(oaMasterVars.at(unPtr), coef * dualSetSol.at(dualPtr));
+					cutExpr.addLinTerm(oaMasterVars.at(dualPtr), coef * unSetSol.at(unPtr));
+				}
+				if (cutExpr.getSize())
+				{
+					auto newCut = oaInfo.beta <= cutExpr;
+					if (newCut.getImpl())
+					{
+						oaInfo.oaMasterAddCons.add(newCut);
+						oaInfo.oaMasterModel.add(newCut);
+					}
+				}
+			}
+			// 主问题求解
+			oaMasterSolver.extract(oaInfo.oaMasterModel);
+			oaMasterSolver.setParam(config);
+			oaMasterSolver.solve();
+			oaInfo.oaMasterStatus = IntStatus2OpStatus(info.solverMode, oaMasterSolver.getStatus());
+			// 主问题取值&更新上界
+			if (oaInfo.oaMasterStatus == OpSolStatus::Optimal)
+			{
+				// 取不确定变量解
+				for (auto& l : linears)
+					unSetSol[l.first] = oaMasterSolver.getValue(oaMasterVars.at(l.first));
+				for (auto& bl : bilinears)
+					unSetSol[std::get<0>(bl)] = oaMasterSolver.getValue(oaMasterVars.at(std::get<0>(bl)));
+				// 更新Ub
+				oaInfo.oaPrevUb = oaInfo.oaUb;
+				oaInfo.oaUb = oaMasterSolver.getValue(oaInfo.oaMasterObj);
+			}
+			else
+			{
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve OA master model failed";
+				throw OpExcBase(msg.str());
+			}
+			// 打印OA迭代信息
+			oaInfo.printIterInfo(std::cout, tid);
+			// 更新OA迭代信息
+			oaInfo.oaIter++;
+		}
+
+		// 更新子问题解(不确定集解&对偶解)
+		for (OpULInt i = 0; i < mdl_->ssdv_.getSize(); i++)
+			mdl_->ssds_[i] = oaMasterSolver.getValue(mdl_->ssdv_[i]);
+		for (OpULInt i = 0; i < mdl_->uv_.getSize(); i++)
+			mdl_->us_[i] = oaMasterSolver.getValue(mdl_->uv_[i]);
+		// 更新CCG上界
+		info.prevUb = info.ub;
+		if (k > 1)
+		{
+			auto actualObj = oaInfo.oaUb + mdl_->sspo_.getConstant();
+			for (auto it = mdl_->sspo_.getLBegin(); it != mdl_->sspo_.getLEnd(); ++it)
+			{
+				auto iter = oaMasterVars.find(it.getVar().getImpl());
+				if (iter != oaMasterVars.end())
+					actualObj += it.getCoeff() * oaMasterSolver.getValue(iter->second);
+			}
+			info.ub = info.lb - info.etaVal + actualObj;
+		}
+		info.subStatus = OpSolStatus::Optimal;
+	};
+	// lambda对象，用途：子->主迭代，生成并添加主问题割
+	auto createAndAddCuts = [&](OpLInt k) {
+		// 首先复制变量并保存
+		std::unordered_map<OpVarI*, OpVar> subVars;
+		for (OpULInt i = 0; i < mdl_->sspv_.getSize(); i++)
+		{
+			const auto& var = mdl_->sspv_[i];
+			subVars.emplace(var.getImpl(), OpVar(localEnv, var.getType(), var.getLb(), var.getUb(), var.getName() + "_" + std::to_string(k)));
+		}
+		for (const auto& v : subVars)
+			info.masterAddVars.add(v.second);
+		// 统计不确定集解
+		std::unordered_map<OpVarI*, OpFloat> uncertaintyVarSols;
+		for (OpULInt i = 0; i < mdl_->uv_.getSize(); i++)
+			uncertaintyVarSols.emplace(mdl_->uv_[i].getImpl(), mdl_->us_[i]);
+		// 形成新的最优割
+		if (info.subStatus == OpSolStatus::Optimal)
+		{
+			OpLinExpr newObj(mdl_->sspo_.getConstant());
+			for (auto it = mdl_->sspo_.getLBegin(); it != mdl_->sspo_.getLEnd(); ++it)
+			{
+				auto iter = uncertaintyVarSols.find(it.getVar().getImpl());
+				if (iter != uncertaintyVarSols.end())
+					newObj.addLinTerm(iter->second * it.getCoeff());
+				else
+					newObj.addLinTerm(subVars.at(it.getVar().getImpl()), it.getCoeff());
+			}
+			auto newCut = info.eta >= newObj;
+			newCut.setName("ccg_cut_" + std::to_string(k));
+			//auto newCut = OpLinCon(localEnv, -Constant::Infinity, newObj - info.eta, 0, "ccg_cut_" + std::to_string(k)); // 另一种写法
+			if (newCut.getImpl())
+			{
+				info.masterAddCons.add(newCut);
+				info.masterModel.add(newCut);
+			}
+		}
+		// 形成新的可行割(重构约束)
+		for (OpULInt i = 0; i < mdl_->sspc_.getSize(); i++)
+		{
+			const auto& originalCon = mdl_->sspc_[i];
+			OpLinExpr newConExpr(originalCon.getExpr().getConstant());
+			for (auto it = originalCon.getExpr().getLBegin(); it != originalCon.getExpr().getLEnd(); ++it)
+			{
+				auto varPtr = it.getVar().getImpl();
+				if (subVars.find(varPtr) != subVars.end())
+					newConExpr.addLinTerm(subVars.at(varPtr), it.getCoeff()); // 二阶段原问题变量
+				else if (uncertaintyVarSols.find(varPtr) != uncertaintyVarSols.end())
+					newConExpr.addLinTerm(it.getCoeff() * uncertaintyVarSols.at(varPtr)); // 不确定集变量
+				else
+					newConExpr.addLinTerm(it.getVar(), it.getCoeff()); // 一阶段变量
+			}
+			if (newConExpr.getSize())
+			{
+				OpLinCon newCon;
+				if (mdl_->sspfc_.getVal(originalCon.getImpl()))
+					newCon = newConExpr >= originalCon.getLb();
+				else
+					newCon = newConExpr == originalCon.getLb();
+				if (newCon.getImpl())
+				{
+					info.masterAddCons.add(newCon);
+					info.masterModel.add(newCon);
+				}
+			}
+		}
+	};
+	// lambda对象，判断是否满足退出条件
+	auto quit = [&]() {
+		if (info.iter > 1 ? (std::abs(info.lb - info.prevLb) / std::abs(info.prevLb) <= info.lbEpsilon && std::abs(info.ub - info.prevUb) / std::abs(info.prevUb) <= info.ubEpsilon) : false)
+			info.iterNoImpr++;
+		else
+			info.iterNoImpr = 0;
+		return ((info.ub - info.lb) / (std::abs(info.ub) > info.epsilon ? std::abs(info.ub) : 1.0) <= info.epsilon)
+			|| (info.iter > info.iterMax)
+			|| (info.iterNoImpr >= info.iterNoImprLimt - 1);
+	};
+
+	try
+	{
+		// 计时器
+		OpTimer watch(true);
+		// 初始化
+		init();
+		if (info.needSolveRobust)
+		{
+			// 初始化基本主问题
+			createBasicMasterModel();
+			// 外迭代
+			while (!quit())
+			{
+				// 更新主问题解
+				updateMasterSolution(info.iter);
+				// 更新子问题解
+				updateSubSolution(info.iter);
+				// 创建子问题-主问题最优割
+				createAndAddCuts(info.iter);
+				// 打印CCG迭代信息
+				info.printIterInfo(std::cout, tid);
+				// 更新CCG迭代参数
+				info.iter++;
+			}
+			// 重新求解第二阶段问题以获取原始变量解
+			createDeterministicSol2();
+			std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Time(s): " << watch.second() << std::endl;
+		}
+		else
+		{
+			createDeterministicSol1();
+		}
+		// 输出结果
+		mdl_->fsos_ = info.lb - info.etaVal;
+		mdl_->ssos_ = info.etaVal;
+		successful = true;
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << ex.what() << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: unknown" << std::endl;
+	}
+	return successful;
+}
+
+Algorithm::OpAlgoCCG::OpAlgoCCG()
+	: mdl_(nullptr)
+{
+
+}
+
+Algorithm::OpAlgoCCG::OpAlgoCCG(OpRobustModel model)
+	: mdl_(model.getImpl())
+{
+
+}
+
+Algorithm::OpAlgoCCG::~OpAlgoCCG()
+{
+
+}
+
+
+void Algorithm::DefaultCfg4CCG(Solver::OpConfig& config)
+{
+	// 建立基本的配置项(分配默认值)
+	config.regCfg("OPUA.Algorithm.CCG.IterMax", OpLInt(1000));
+	config.regCfg("OPUA.Algorithm.CCG.CCGGap", OpFloat(1e-5));
+	config.regCfg("OPUA.Algorithm.CCG.CCGLBGap", OpFloat(1e-5));
+	config.regCfg("OPUA.Algorithm.CCG.CCGUBGap", OpFloat(1e-5));
+	config.regCfg("OPUA.Algorithm.CCG.LogOutput", OpBool(false));
+	config.regCfg("OPUA.Algorithm.CCG.LogOutputPath", OpStr("Log.txt"));
+	config.regCfg("OPUA.Algorithm.CCG.SubProbSolveMode", OpLInt(0));
+	config.regCfg("OPUA.Algorithm.CCG.NoImprovementIterLimit", OpLInt(3));
+	config.regCfg("OPUA.Algorithm.CCG.FirstStageInitMode", OpLInt(0)); // 0-0值初始化 / 1-给定初值 / 2-确定性解
+	config.regCfg("OPUA.Algorithm.CCG.GetDeterministicSolution", OpBool(false));
+	config.regCfg("OPUA.Algorithm.CCG.MIPTimeLimit", OpFloat(3600));
+	config.regCfg("OPUA.Algorithm.CCG.MIPGap", OpFloat(1e-5));
+	config.regCfg("OPUA.Algorithm.CCG.MIPSolverMode", OpChar('G')); // MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+}
+
+Solver::OpConfig Algorithm::DefaultCfg4CCG()
+{
+	Solver::OpConfig config;
+	DefaultCfg4CCG(config);
+	return config;
 }

@@ -25,6 +25,7 @@ protected:
 	OpFloat getUb() const; // 获取变量下界
 	OpVarType getType() const; // 获取变量类型
 	OpStr getName() const; // 获取变量名称
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpVarI(OpEnvI* env);
 	OpVarI(OpEnvI* env, OpVarType type);
@@ -81,6 +82,11 @@ Variable::OpVarType Variable::OpVarI::getType() const
 OpStr Variable::OpVarI::getName() const
 {
 	return vname_;
+}
+
+OpULInt Variable::OpVarI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Variable::OpVarI::OpVarI(OpEnvI* env)

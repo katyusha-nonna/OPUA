@@ -24,6 +24,7 @@ protected:
 	const Expression::OpLinExpr& getExpr() const; // 获取约束表达式
 	OpFloat getLb() const; // 获取约束下限
 	OpFloat getUb() const; // 获取约束上限
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpLinConI(OpEnvI* env);
 	OpLinConI(OpEnvI* env, OpFloat lb, const Expression::OpLinExpr& expr, OpFloat ub);
@@ -73,6 +74,11 @@ OpFloat Constraint::OpLinConI::getLb() const
 OpFloat Constraint::OpLinConI::getUb() const
 {
 	return cub_;
+}
+
+OpULInt Constraint::OpLinConI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Constraint::OpLinConI::OpLinConI(OpEnvI* env)
@@ -131,6 +137,7 @@ protected:
 	const Expression::OpQuadExpr& getExpr() const; // 获取约束表达式
 	OpFloat getLb() const; // 获取约束下限
 	OpFloat getUb() const; // 获取约束上限
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpQuadConI(OpEnvI* env);
 	OpQuadConI(OpEnvI* env, OpFloat lb, const Expression::OpQuadExpr& expr, OpFloat ub);
@@ -180,6 +187,11 @@ OpFloat Constraint::OpQuadConI::getLb() const
 OpFloat Constraint::OpQuadConI::getUb() const
 {
 	return cub_;
+}
+
+OpULInt Constraint::OpQuadConI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Constraint::OpQuadConI::OpQuadConI(OpEnvI* env)
@@ -237,6 +249,7 @@ protected:
 	OpStr getName() const; // 获取约束名称
 	const Expression::OpLinExpr& getSOSExpr() const; // 获取表示SOS集合的表达式(变量*权重)
 	void removeVar(Variable::OpVar var);  // 从SOS中移除一个变量
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpSOSConI(OpEnvI* env);
 	OpSOSConI(OpEnvI* env, OpConSense sense);
@@ -284,6 +297,11 @@ void Constraint::OpSOSConI::removeVar(Variable::OpVar var)
 {
 	if (!locked_)
 		cvars_.removeVar(var);
+}
+
+OpULInt Constraint::OpSOSConI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Constraint::OpSOSConI::OpSOSConI(OpEnvI* env)
@@ -367,6 +385,7 @@ protected:
 	const Expression::OpNLExpr& getExpr() const; // 获取左操作表达式
 	Expression::OpNLFunc getFunction() const; // 获取约束的操作函数
 	OpStr getName() const; // 获取约束名称
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpNLConI(OpEnvI* env);
 	OpNLConI(OpEnvI* env, Variable::OpVar var, const Expression::OpNLExpr& expr);
@@ -410,6 +429,11 @@ Expression::OpNLFunc Constraint::OpNLConI::getFunction() const
 OpStr Constraint::OpNLConI::getName() const
 {
 	return cname_;
+}
+
+OpULInt Constraint::OpNLConI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Constraint::OpNLConI::OpNLConI(OpEnvI* env)
@@ -467,6 +491,7 @@ protected:
 	OpStr getName() const; // 获取约束名称
 	void lock(); // 锁定条件约束
 	void unlock(); // 解锁条件约束
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpCdtConI(OpEnvI* env);
 	OpCdtConI(OpEnvI* env, Variable::OpVar indicator, OpLinCon thenCon);
@@ -543,6 +568,11 @@ void Constraint::OpCdtConI::unlock()
 	if (!isIndicator())
 		cif_.unlock();
 	OpImplBase::unlock();
+}
+
+OpULInt Constraint::OpCdtConI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Constraint::OpCdtConI::OpCdtConI(OpEnvI* env)

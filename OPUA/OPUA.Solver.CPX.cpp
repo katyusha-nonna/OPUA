@@ -138,6 +138,7 @@ protected:
 	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 	void write(OpStr path) const; // 将模型写入文件
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpCPXSolI(OpEnvI* env);
 	OpCPXSolI(OpEnvI* env, Model::OpModel mdl);
@@ -540,12 +541,17 @@ void Solver::OpCPXSolI::write(OpStr path) const
 {
 	if (path.size())
 	{
-		// 无法输出到控制台
-	}
-	else
-	{
 		csol_.exportModel(path.c_str());
 	}
+	else
+	{	
+		// 无法输出到控制台
+	}
+}
+
+OpULInt Solver::OpCPXSolI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Solver::OpCPXSolI::OpCPXSolI(OpEnvI* env)

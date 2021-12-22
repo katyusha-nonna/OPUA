@@ -65,6 +65,7 @@ namespace OPUA
 		OpChar getClass() const; // 获取组件类别
 		OpLInt getIndex() const; // 获取组件索引
 		OpEnvI* getEnv() const; // 获取环境变量
+		virtual OpULInt getMemoryUsage() const; // 获取内存占用(不额外统计STL容器对象所占用的内存)
 	protected:
 		OpImplBase(OpChar cls, OpEnvI* env);
 	public:

@@ -67,6 +67,7 @@ protected:
 	OpStr getName() const; // 获取目标函数名称
 	OpBool isConstant() const; // 是否为常量目标函数
 	OpBool isQuad() const; // 是否为二次目标函数
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpObjI(OpEnvI* env);
 	OpObjI(OpEnvI* env, OpObjSense sense);
@@ -128,6 +129,11 @@ OpBool Objective::OpObjI::isConstant() const
 OpBool Objective::OpObjI::isQuad() const
 {
 	return OpBool(oqexpr_.getSize());
+}
+
+OpULInt Objective::OpObjI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Objective::OpObjI::OpObjI(OpEnvI* env)

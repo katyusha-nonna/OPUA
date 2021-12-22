@@ -22,6 +22,28 @@ namespace OPUA
 		class OpSCIPSol;
 		class OpMSKSolI;
 		class OpMSKSol;
+		class OpAdapSol;
+
+		// OPUA支持的求解器类型
+		enum class OpSolType
+		{
+			Unknown,
+			CPX,
+			GRB,
+			SCIP,
+			MSK
+		};
+
+		// OPUA求解状态
+		enum class OpSolStatus
+		{
+			Unknown,
+			Feasible,
+			Optimal,
+			Infeasible,
+			Unbounded,
+			InfeasibleOrUnbounded
+		};
 
 		// 通用配置器
 		// 只接受六种类型(布尔、整型、长整型、浮点和字符和字符串)
@@ -265,7 +287,7 @@ namespace OPUA
 		};
 
 		/*
-			OpSCIPBSol：求解器SCIP的接口类
+			OpSCIPSol：求解器SCIP的接口类
 			求解参数说明：
 		*/
 		class OpSCIPSol
@@ -276,7 +298,7 @@ namespace OPUA
 			void solve(); // 执行求解
 			void setParam(const OpConfig& cfg); // 设置配置
 			OpLInt getStatus() const; // 获取求解状态
-			OpFloat getObjValue() const; // 获取目标函数解
+			OpFloat getObjValue() const; // 获取目标函数解(SCIP的目标函数必须为线性且忽略常数项)
 			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
 			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
 			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
@@ -295,5 +317,48 @@ namespace OPUA
 		public:
 			virtual ~OpSCIPSol();
 		};
+
+		/*
+			OpAdapSol：求解器自适应接口类
+		*/
+		class OpAdapSol
+		{
+		protected:
+			const OpSolType stype_;
+			OpCPXSol cpxs_;
+			OpGRBSol grbs_;
+			OpSCIPSol scips_;
+		public:
+			void extract(Model::OpModel mdl);
+			void solve();
+			void setParam(const OpConfig& cfg);
+			OpLInt getStatus() const;
+			OpFloat getObjValue() const;
+			OpFloat getValue(Variable::OpVar var) const;
+			OpFloat getValue(const Expression::OpLinExpr& expr) const;
+			OpFloat getValue(const Expression::OpQuadExpr& expr) const;
+			OpFloat getValue(Objective::OpObj obj) const;
+			OpFloat getDual(Constraint::OpLinCon con) const;
+			void write(OpStr path) const;
+			void release();
+		public:
+			OpAdapSol& operator=(const OpAdapSol& solver);
+		public:
+			OpAdapSol() = delete;
+			OpAdapSol(const OpAdapSol& solver);
+			OpAdapSol(OpSolType type, OpEnv env);
+			OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl);
+		};
+
+		// 求解状态转换函数(CPX)
+		OpSolStatus IntCPXStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(GRB)
+		OpSolStatus IntGRBStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(SCIP)
+		OpSolStatus IntSCIPStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(MSK)
+		OpSolStatus IntMSKStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(通用)
+		OpSolStatus IntStatus2OpStatus(OpSolType stype, OpLInt status);
 	}
 }

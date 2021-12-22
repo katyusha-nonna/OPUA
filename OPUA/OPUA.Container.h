@@ -41,6 +41,7 @@ namespace OPUA
 					elements_.emplace_back(std::forward<ArgTy>(arg)...);
 				size_ = elements_.size();
 			}
+			void setSize(OpULInt n) { elements_.resize(n), size_ = elements_.size(); }
 			OpULInt find(const T& e) const
 			{
 				auto iter = std::find(elements_.begin(), elements_.end(), e); // 对于自定义类需要重载==运算符
@@ -77,6 +78,10 @@ namespace OPUA
 				for (auto& e : elements_)
 					e.release();
 			}
+			virtual OpULInt getMemoryUsage() const // 获取内存占用
+			{
+				return sizeof(*this);
+			}
 		protected:
 			OpArrayI(OpEnvI* env)
 				: OpImplBase('T', env), size_(0) {}
@@ -94,6 +99,7 @@ namespace OPUA
 
 		// OpArray：OPUA动态数组模板
 		// 没有做const和ref类型去除，因此最好T不要带const和ref
+		// 警告，任何对size的调整(包括插入，重置大小)都可能导致迭代器失效！
 		template<typename T>
 		class OpArray
 			: public OpBase
@@ -106,7 +112,8 @@ namespace OPUA
 			template<class... ArgTy>
 			void add(ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(std::forward<ArgTy>(arg)...); } // 加入元素
 			template<class... ArgTy>
-			void add(OpULInt n, ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(n, arg); } // 加入元素	
+			void add(OpULInt n, ArgTy&&... arg) { static_cast<OpArrayI<T>*>(impl_)->add(n, arg); } // 加入元素
+			void setSize(OpULInt n) { static_cast<OpArrayI<T>*>(impl_)->setSize(n); } // 重置大小(超出当前size则删除尾部多余元素，不足size则使用默认值补足)
 			OpULInt find(const T& e)  const { return static_cast<OpArrayI<T>*>(impl_)->find(e); } // 查找元素
 			OpBool idxValid(OpULInt i) const { return static_cast<OpArrayI<T>*>(impl_)->idxValid(i); } // 判断索引是否有效
 			void remove(const T& e) { static_cast<OpArrayI<T>*>(impl_)->remove(e); } // 移除元素
@@ -214,6 +221,10 @@ namespace OPUA
 			{
 				for (auto& e : elements_)
 					e.second.release();
+			}
+			virtual OpULInt getMemoryUsage() const // 获取内存占用
+			{
+				return sizeof(*this);
 			}
 		protected:
 			OpDictI(OpEnvI* env)

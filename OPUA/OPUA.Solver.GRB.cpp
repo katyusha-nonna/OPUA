@@ -181,6 +181,7 @@ protected:
 	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 	OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 	void write(OpStr path) const; // 将模型写入文件
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpGRBSolI(OpEnvI* env);
 	OpGRBSolI(OpEnvI* env, Model::OpModel mdl);
@@ -579,9 +580,13 @@ void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 	switch (mdl.getObj().getSense())
 	{
 	case Objective::OpObjSense::Min:
-		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()), GRB_MINIMIZE);
+		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
+		gmdl_->set(GRB_IntAttr_ModelSense, GRB_MINIMIZE);
+		break;
 	case Objective::OpObjSense::Max:
-		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()), GRB_MAXIMIZE);
+		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
+		gmdl_->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
+		break;
 	default:
 		break;
 	}
@@ -655,12 +660,17 @@ void Solver::OpGRBSolI::write(OpStr path) const
 {
 	if (path.size())
 	{
-		// 不支持输出到控制台
+		gmdl_->write(path);
 	}
 	else
 	{
-		gmdl_->write(path);
+		// 不支持输出到控制台
 	}
+}
+
+OpULInt Solver::OpGRBSolI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env)

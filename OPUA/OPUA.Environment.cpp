@@ -86,8 +86,10 @@ OPUA::OpULInt OPUA::OpEnvI::removeManagement(OpImplBase* impl)
 
 OPUA::OpULInt OPUA::OpEnvI::getMemoryUsage()
 {
-	// TODO£ºÔÝÊ±Î´ÊµÏÖ
-	return 0;
+	OpULInt memoryUse(0);
+	for (const auto& i : impls_)
+		memoryUse += i.first->getMemoryUsage();
+	return memoryUse;
 }
 
 OPUA::OpEnvI::OpEnvI(OpStr name)
@@ -198,6 +200,11 @@ OPUA::OpLInt OPUA::OpImplBase::getIndex() const
 OPUA::OpEnvI* OPUA::OpImplBase::getEnv() const
 {
 	return env_;
+}
+
+OPUA::OpULInt OPUA::OpImplBase::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 OPUA::OpImplBase::~OpImplBase()

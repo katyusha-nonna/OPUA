@@ -77,6 +77,7 @@ protected:
 	OpFloat getObjValue(); // 获取目标函数的解
 	SCIP_STATUS getStatus(); // 获取求解状态
 	void write(OpStr path); // 
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpSCIPSolI(OpEnvI* env);
 	OpSCIPSolI(OpEnvI* env, Model::OpModel mdl);
@@ -159,9 +160,9 @@ void Solver::OpSCIPSolI::update()
 			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
 				SCIPaddCoefLinear(scip_, tmp, vars_[varidxs_.at(iter.getVar().getImpl())], iter.getCoeff());
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsLinear(scip_, tmp, con.getLb());
+				SCIPchgLhsLinear(scip_, tmp, con.getLb() - con.getExpr().getConstant());
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsLinear(scip_, tmp, con.getUb());
+				SCIPchgRhsLinear(scip_, tmp, con.getUb() - con.getExpr().getConstant());
 			SCIPaddCons(scip_, tmp);
 			lc.second = count++;
 		}
@@ -184,9 +185,9 @@ void Solver::OpSCIPSolI::update()
 					SCIPaddBilinTermQuadratic(scip_, tmp, vars_[varidxs_.at(var1)], vars_[varidxs_.at(var2)], iter.getCoeff());
 			}
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsQuadratic(scip_, tmp, con.getLb());
+				SCIPchgLhsQuadratic(scip_, tmp, con.getLb() - con.getExpr().getConstant());
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsQuadratic(scip_, tmp, con.getUb());
+				SCIPchgRhsQuadratic(scip_, tmp, con.getUb() - con.getExpr().getConstant());
 			SCIPaddCons(scip_, tmp);
 			qc.second = count++;
 		}
@@ -451,6 +452,11 @@ void Solver::OpSCIPSolI::write(OpStr path)
 			SCIPprintOrigProblem(scip_, nullptr, nullptr, FALSE);
 		}
 	}
+}
+
+OpULInt Solver::OpSCIPSolI::getMemoryUsage() const
+{
+	return sizeof(*this);
 }
 
 Solver::OpSCIPSolI::OpSCIPSolI(OpEnvI* env)

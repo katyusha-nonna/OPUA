@@ -181,3 +181,383 @@ Solver::OpConfig::OpCfgCIter<OpStr> Solver::OpConfig::getCEnd(OpStr prefix, OpSt
 {
 	return OpCfgCIter<OpStr>(scfg_.cend(), prefix);
 }
+
+void Solver::OpAdapSol::extract(Model::OpModel mdl)
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_.extract(mdl);
+		break;
+	case OpSolType::GRB:
+		grbs_.extract(mdl);
+		break;
+	case OpSolType::SCIP:
+		scips_.extract(mdl);
+		break;
+	default:
+		break;
+	}
+}
+
+void Solver::OpAdapSol::solve()
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_.solve();
+		break;
+	case OpSolType::GRB:
+		grbs_.solve();
+		break;
+	case OpSolType::SCIP:
+		scips_.solve();
+		break;
+	default:
+		break;
+	}
+}
+
+void Solver::OpAdapSol::setParam(const OpConfig& cfg)
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_.setParam(cfg);
+		break;
+	case OpSolType::GRB:
+		grbs_.setParam(cfg);
+		break;
+	case OpSolType::SCIP:
+		scips_.setParam(cfg);
+		break;
+	default:
+		break;
+	}
+}
+
+OpLInt Solver::OpAdapSol::getStatus() const
+{
+	OpLInt tmp(-1);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getStatus();
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getStatus();
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getStatus();
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getObjValue() const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getObjValue();
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getObjValue();
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getObjValue();
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getValue(Variable::OpVar var) const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getValue(var);
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getValue(var);
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getValue(var);
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getValue(const Expression::OpLinExpr& expr) const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getValue(expr);
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getValue(expr);
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getValue(expr);
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getValue(const Expression::OpQuadExpr& expr) const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getValue(expr);
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getValue(expr);
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getValue(expr);
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getValue(Objective::OpObj obj) const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getValue(obj);
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getValue(obj);
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getValue(obj);
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+OpFloat Solver::OpAdapSol::getDual(Constraint::OpLinCon con) const
+{
+	OpFloat tmp(NAN);
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		tmp = cpxs_.getDual(con);
+		break;
+	case OpSolType::GRB:
+		tmp = grbs_.getDual(con);
+		break;
+	case OpSolType::SCIP:
+		tmp = scips_.getDual(con);
+		break;
+	default:
+		break;
+	}
+	return tmp;
+}
+
+void Solver::OpAdapSol::write(OpStr path) const
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_.write(path);
+		break;
+	case OpSolType::GRB:
+		grbs_.write(path);
+		break;
+	case OpSolType::SCIP:
+		scips_.write(path);
+		break;
+	default:
+		break;
+	}
+}
+
+void Solver::OpAdapSol::release()
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_.release();
+		break;
+	case OpSolType::GRB:
+		grbs_.release();
+		break;
+	case OpSolType::SCIP:
+		scips_.release();
+		break;
+	default:
+		break;
+	}
+}
+
+Solver::OpAdapSol& Solver::OpAdapSol::operator=(const OpAdapSol& solver)
+{
+	if (this != &solver && stype_ == solver.stype_)
+	{
+		switch (stype_)
+		{
+		case OpSolType::CPX:
+			cpxs_ = solver.cpxs_;
+			break;
+		case OpSolType::GRB:
+			grbs_ = solver.grbs_;
+			break;
+		case OpSolType::SCIP:
+			scips_ = solver.scips_;
+			break;
+		default:
+			break;
+		}
+	}
+	return *this;
+}
+
+Solver::OpAdapSol::OpAdapSol(const OpAdapSol& solver)
+	: stype_(solver.stype_)
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_ = solver.cpxs_;
+		break;
+	case OpSolType::GRB:
+		grbs_ = solver.grbs_;
+		break;
+	case OpSolType::SCIP:
+		scips_ = solver.scips_;
+		break;
+	default:
+		break;
+	}
+}
+
+Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
+	: stype_(type)
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_ = OpCPXSol(env);
+		break;
+	case OpSolType::GRB:
+		grbs_ = OpGRBSol(env);
+		break;
+	case OpSolType::SCIP:
+		scips_ = OpSCIPSol(env);
+		break;
+	default:
+		break;
+	}
+}
+
+Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
+	: stype_(type)
+{
+	switch (stype_)
+	{
+	case OpSolType::CPX:
+		cpxs_ = OpCPXSol(env, mdl);
+		break;
+	case OpSolType::GRB:
+		grbs_ = OpGRBSol(env, mdl);
+		break;
+	case OpSolType::SCIP:
+		scips_ = OpSCIPSol(env, mdl);
+		break;
+	default:
+		break;
+	}
+}
+
+Solver::OpSolStatus Solver::IntCPXStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[7] = {
+		OpSolStatus::Unknown, /*IloAlgorithm::Status::Unknown = 0*/
+		OpSolStatus::Feasible, /*IloAlgorithm::Status::Feasible = 1*/
+		OpSolStatus::Optimal, /*IloAlgorithm::Status::Optimal = 2*/
+		OpSolStatus::Infeasible, /*IloAlgorithm::Status::Infeasible = 3*/
+		OpSolStatus::Unbounded, /*IloAlgorithm::Status::Unbounded = 4*/
+		OpSolStatus::InfeasibleOrUnbounded, /*IloAlgorithm::Status::InfeasibleOrUnbounded = 5*/
+		OpSolStatus::Unknown /*IloAlgorithm::Status::Error = 6*/
+	};
+	return lookupTable[status];
+}
+
+Solver::OpSolStatus Solver::IntGRBStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[17] = {
+		OpSolStatus::Unknown, /*NULL*/
+		OpSolStatus::Unknown, /*GRB_LOADED = 1*/
+		OpSolStatus::Optimal, /*GRB_OPTIMAL  = 2*/
+		OpSolStatus::Infeasible, /*GRB_INFEASIBLE  = 3*/
+		OpSolStatus::InfeasibleOrUnbounded, /*GRB_INF_OR_UNBD  = 4*/
+		OpSolStatus::Unbounded, /*GRB_UNBOUNDED  = 5*/
+		OpSolStatus::Unknown, /*GRB_CUTOFF  = 6*/
+		OpSolStatus::Unknown, /*GRB_ITERATION_LIMIT  = 7*/
+		OpSolStatus::Unknown, /*GRB_NODE_LIMIT  = 8*/
+		OpSolStatus::Unknown, /*GRB_TIME_LIMIT  = 9*/
+		OpSolStatus::Unknown, /*GRB_SOLUTION_LIMIT  = 10*/
+		OpSolStatus::Unknown, /*GRB_INTERRUPTED  = 11*/
+		OpSolStatus::Unknown, /*GRB_NUMERIC  = 12*/
+		OpSolStatus::Unknown, /*GRB_SUBOPTIMAL  = 13*/
+		OpSolStatus::Unknown, /*GRB_INPROGRESS  = 14*/
+		OpSolStatus::Unknown, /*GRB_USER_OBJ_LIMIT  = 15*/
+		OpSolStatus::Unknown /*GRB_WORK_LIMIT  = 16*/
+	};
+	return lookupTable[status];
+}
+
+Solver::OpSolStatus Solver::IntSCIPStatus2OpStatus(OpLInt status)
+{
+	return OpSolStatus::Unknown;
+}
+
+Solver::OpSolStatus Solver::IntMSKStatus2OpStatus(OpLInt status)
+{
+	return OpSolStatus::Unknown;
+}
+
+Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
+{
+	OpSolStatus result(OpSolStatus::Unknown);
+	switch (stype)
+	{
+	case OpSolType::CPX:
+		result = IntCPXStatus2OpStatus(status);
+		break;
+	case OpSolType::GRB:
+		result = IntGRBStatus2OpStatus(status);
+		break;
+	case OpSolType::SCIP:
+		result = IntSCIPStatus2OpStatus(status);
+		break;
+	case OpSolType::MSK:
+		result = IntMSKStatus2OpStatus(status);
+		break;
+	default:
+		break;
+	}
+	return result;
+}
