@@ -1,10 +1,13 @@
 #include "OPUA.Solver.h"
+#ifdef OPUA_COMPILE_SCIP
 #include "objscip/objscip.h"
 #include "objscip/objscipdefplugins.h"
+#endif
 #include <iostream>
 
 using namespace OPUA;
 
+#ifdef OPUA_COMPILE_SCIP
 /* OPUA::Solver::OpSCIPCfgCvt */
 
 // CPX≈‰÷√∑≠“Î∆˜
@@ -541,6 +544,11 @@ void Solver::OpSCIPSol::write(OpStr path) const
 	static_cast<OpSCIPSolI*>(impl_)->write(path);
 }
 
+void Solver::OpSCIPSol::release0()
+{
+	static_cast<OpSCIPSolI*>(impl_)->release();
+}
+
 OpBool Solver::OpSCIPSol::operator==(const OpSCIPSol& sol) const
 {
 	return impl_ == sol.impl_;
@@ -575,3 +583,4 @@ OPUA::Solver::OpSCIPSol::~OpSCIPSol()
 {
 
 }
+#endif

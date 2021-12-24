@@ -416,180 +416,167 @@ void Algorithm::OpRobustModelI::update()
 
 void Algorithm::OpRobustModelI::initSolution(RobustStageType type)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
+	{
+	case RobustStageType::FirstStage:
 		fss_.setSize(fsv_.getSize());
-	else if (type == RobustStageType::SecondStagePrimal)
+		break;
+	case RobustStageType::SecondStagePrimal:
 		ssps_.setSize(sspv_.getSize());
-	else if (type == RobustStageType::SecondStageDual)
+		break;
+	case RobustStageType::SecondStageDual:
 		ssds_.setSize(ssdv_.getSize());
-	else if (type == RobustStageType::Uncertainty)
+		break;
+	case RobustStageType::Uncertainty:
 		us_.setSize(uv_.getSize());
-	else
-		return;
+		break;
+	default:
+		break;
+	}
 }
 
 void Algorithm::OpRobustModelI::add(Variable::OpVarArr vars, RobustStageType type, OpBool flag)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
 	{
+	case RobustStageType::FirstStage:
 		fsv_.add(vars);
-	}
-	else if (type == RobustStageType::FirstStageSpecial)
-	{
+		break;
+	case RobustStageType::FirstStageSpecial:
 		fssv_.add(vars);
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
+		break;
+	case RobustStageType::SecondStagePrimal:
 		sspv_.add(vars);
 		for (OpULInt i = 0; i < vars.getSize(); i++)
 			sspfv_.add(vars[i].getImpl(), flag);
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
+		break;
+	case RobustStageType::SecondStageDual:
 		ssdv_.add(vars);
 		for (OpULInt i = 0; i < vars.getSize(); i++)
 			ssdfv_.add(vars[i].getImpl(), flag);
-	}
-	else if (type == RobustStageType::Uncertainty)
-	{
+		break;
+	case RobustStageType::Uncertainty:
 		uv_.add(vars);
+		break;
+	default:
+		break;
 	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::add(Variable::OpVar var, RobustStageType type, OpBool flag)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
 	{
+	case RobustStageType::FirstStage:
 		fsv_.add(var);
-	}
-	else if (type == RobustStageType::FirstStageSpecial)
-	{
+		break;
+	case RobustStageType::FirstStageSpecial:
 		fssv_.add(var);
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
+		break;
+	case RobustStageType::SecondStagePrimal:
 		sspv_.add(var);
 		sspfv_.add(var.getImpl(), flag);
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
+		break;
+	case RobustStageType::SecondStageDual:
 		ssdv_.add(var);
 		ssdfv_.add(var.getImpl(), flag);
-	}
-	else if (type == RobustStageType::Uncertainty)
-	{
+		break;
+	case RobustStageType::Uncertainty:
 		uv_.add(var);
+		break;
+	default:
+		break;
 	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::add(Constraint::OpLCArr cons, RobustStageType type, OpBool flag)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
 	{
+	case RobustStageType::FirstStage:
 		fsc_.add(cons);
-	}
-	else if (type == RobustStageType::FirstStageSpecial)
-	{
+		break;
+	case RobustStageType::FirstStageSpecial:
 		fssc_.add(cons);
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
+		break;
+	case RobustStageType::SecondStagePrimal:
 		sspc_.add(cons);
 		for (OpULInt i = 0; i < cons.getSize(); i++)
 			sspfc_.add(cons[i].getImpl(), flag);
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
+		break;
+	case RobustStageType::SecondStageDual:
 		ssdc_.add(cons);
 		for (OpULInt i = 0; i < cons.getSize(); i++)
 			ssdfc_.add(cons[i].getImpl(), flag);
-	}
-	else if (type == RobustStageType::Uncertainty)
-	{
+		break;
+	case RobustStageType::Uncertainty:
 		uc_.add(cons);
+		break;
+	default:
+		break;
 	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::add(Constraint::OpLinCon con, RobustStageType type, OpBool flag)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
 	{
+	case RobustStageType::FirstStage:
 		fsc_.add(con);
-	}
-	else if (type == RobustStageType::FirstStageSpecial)
-	{
+		break;
+	case RobustStageType::FirstStageSpecial:
 		fssc_.add(con);
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
+		break;
+	case RobustStageType::SecondStagePrimal:
 		sspc_.add(con);
 		sspfc_.add(con.getImpl(), flag);
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
+		break;
+	case RobustStageType::SecondStageDual:
 		ssdc_.add(con);
 		ssdfc_.add(con.getImpl(), flag);
-	}
-	else if (type == RobustStageType::Uncertainty)
-	{
+		break;
+	case RobustStageType::Uncertainty:
 		uc_.add(con);
+		break;
+	default:
+		break;
 	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::add(Constraint::OpQCArr cons, RobustStageType type, OpBool flag)
 {
 	if (type == RobustStageType::FirstStageSpecial)
-	{
 		fssqc_.add(cons);
-	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::add(Constraint::OpQuadCon con, RobustStageType type, OpBool flag)
 {
 	if (type == RobustStageType::FirstStageSpecial)
-	{
 		fssqc_.add(con);
-	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::setObj(Expression::OpLinExpr expr, RobustStageType type)
 {
-	if (type == RobustStageType::FirstStage)
+	switch (type)
 	{
+	case RobustStageType::FirstStage:
 		fso_ = expr;
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
+		break;
+	case RobustStageType::SecondStagePrimal:
 		sspo_ = expr;
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
+		break;
+	case RobustStageType::SecondStageDual:
 		ssdo_ = expr;
+		break;
+	default:
+		break;
 	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::setObj(Expression::OpQuadExpr expr, RobustStageType type)
 {
 	if (type == RobustStageType::SecondStageDual)
-	{
 		ssdo_ = expr;
-	}
-	else
-		return;
 }
 
 void Algorithm::OpRobustModelI::setValue(Variable::OpVar var, RobustStageType type, OpFloat val)
@@ -599,16 +586,23 @@ void Algorithm::OpRobustModelI::setValue(Variable::OpVar var, RobustStageType ty
 		if (valArray.idxValid(index))
 			valArray[index] = val;
 	};
-	if (type == RobustStageType::FirstStage)
+	switch (type)
+	{
+	case RobustStageType::FirstStage:
 		setVal(fsv_, fss_, var, val);
-	else if (type == RobustStageType::SecondStagePrimal)
+		break;
+	case RobustStageType::SecondStagePrimal:
 		setVal(sspv_, ssps_, var, val);
-	else if (type == RobustStageType::SecondStageDual)
+		break;
+	case RobustStageType::SecondStageDual:
 		setVal(ssdv_, ssds_, var, val);
-	else if (type == RobustStageType::Uncertainty)
+		break;
+	case RobustStageType::Uncertainty:
 		setVal(uv_, us_, var, val);
-	else
-		return;
+		break;
+	default:
+		break;
+	}
 }
 
 void Algorithm::OpRobustModelI::setBound(Variable::OpVar var, RobustStageType type, OpFloat val, OpBool lb)
@@ -627,65 +621,88 @@ void Algorithm::OpRobustModelI::setBound(Variable::OpVar var, RobustStageType ty
 
 OpFloat Algorithm::OpRobustModelI::getValue(Variable::OpVar var, RobustStageType type) const
 {
-	OpFloat result(0);
-	if (type == RobustStageType::FirstStage)
+	OpFloat result(Constant::NaN);
+	OpULInt index(Constant::MaxSize);
+	switch (type)
 	{
-		auto index = fsv_.find(var);
+	case RobustStageType::FirstStage:
+		index = fsv_.find(var);
 		if (fsv_.idxValid(index))
 			result = fss_[index];
-	}
-	else if (type == RobustStageType::SecondStagePrimal)
-	{
-		auto index = sspv_.find(var);
+		break;
+	case RobustStageType::SecondStagePrimal:
+		index = sspv_.find(var);
 		if (sspv_.idxValid(index))
 			result = ssps_[index];
-	}
-	else if (type == RobustStageType::SecondStageDual)
-	{
-		auto index = ssdv_.find(var);
+		break;
+	case RobustStageType::SecondStageDual:
+		index = ssdv_.find(var);
 		if (ssdv_.idxValid(index))
 			result = ssds_[index];
-	}
-	else if (type == RobustStageType::Uncertainty)
-	{
-		auto index = uv_.find(var);
+		break;
+	case RobustStageType::Uncertainty:
+		index = uv_.find(var);
 		if (uv_.idxValid(index))
 			result = us_[index];
+		break;
+	default:
+		break;
 	}
 	return result;
 }
 
 OpFloat Algorithm::OpRobustModelI::getObjValue(RobustStageType type) const
 {
-	OpFloat result(NAN);
-	if (type == RobustStageType::Unknown)
+	OpFloat result(Constant::NaN);
+	switch (type)
+	{
+	case RobustStageType::Unknown:
 		result = fsos_ + ssos_;
-	else if (type == RobustStageType::FirstStage)
+		break;
+	case RobustStageType::FirstStage:
 		result = fsos_;
-	else if (type == RobustStageType::SecondStagePrimal)
+		break;
+	case RobustStageType::SecondStagePrimal:
 		result = ssos_;
+		break;
+	case RobustStageType::SecondStageDual:
+		result = ssos_;
+		break;
+	default:
+		break;
+	}
 	return result;
 }
 
 OpULInt Algorithm::OpRobustModelI::getSize(RobustStageType type, OpBool isVar) const
 {
 	OpULInt result(0);
-	if (type == RobustStageType::FirstStage)
+	switch (type)
+	{
+	case RobustStageType::FirstStage:
 		result = isVar ? fsv_.getSize() : fsc_.getSize();
-	else if (type == RobustStageType::FirstStageSpecial)
+		break;
+	case RobustStageType::FirstStageSpecial:
 		result = isVar ? fssv_.getSize() : fssc_.getSize() + fssqc_.getSize();
-	else if (type == RobustStageType::SecondStagePrimal)
+		break;
+	case RobustStageType::SecondStagePrimal:
 		result = isVar ? sspv_.getSize() : sspc_.getSize();
-	else if (type == RobustStageType::SecondStageDual)
+		break;
+	case RobustStageType::SecondStageDual:
 		result = isVar ? ssdv_.getSize() : ssdc_.getSize();
-	else if (type == RobustStageType::Uncertainty)
+		break;
+	case RobustStageType::Uncertainty:
 		result = isVar ? uv_.getSize() : uc_.getSize();
+		break;
+	default:
+		break;
+	}
 	return result;
 }
 
 OpFloat Algorithm::OpRobustModelI::getBound(Variable::OpVar var, RobustStageType type, OpBool lb) const
 {
-	OpFloat bound(lb ? -Constant::Infinity : Constant::Infinity);
+	OpFloat bound(Constant::NaN);
 	if (vbd_.has(var.getImpl()))
 		bound = lb ? vbd_.getVal(var.getImpl()).first : vbd_.getVal(var.getImpl()).second;
 	return bound;

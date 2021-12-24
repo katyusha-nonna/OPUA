@@ -1,7 +1,11 @@
 #include "OPUA.Solver.h"
+#ifdef OPUA_COMPILE_CPX
 #include <ilcplex/ilocplex.h>
+#endif
+
 using namespace OPUA;
 
+#ifdef OPUA_COMPILE_CPX
 /* OPUA::Solver::OpCPXCfgCvt */
 
 // CPX≈‰÷√∑≠“Î∆˜
@@ -635,9 +639,14 @@ Solver::OpCPXSolI* Solver::OpCPXSol::getImpl() const
 	return static_cast<OpCPXSolI*>(impl_);
 }
 
-void OPUA::Solver::OpCPXSol::write(OpStr path) const
+void Solver::OpCPXSol::write(OpStr path) const
 {
 	static_cast<OpCPXSolI*>(impl_)->write(path);
+}
+
+void Solver::OpCPXSol::release0()
+{
+	static_cast<OpCPXSolI*>(impl_)->release();
 }
 
 OpBool Solver::OpCPXSol::operator==(const OpCPXSol& sol) const
@@ -674,3 +683,4 @@ Solver::OpCPXSol::~OpCPXSol()
 {
 
 }
+#endif

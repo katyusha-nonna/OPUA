@@ -182,313 +182,152 @@ Solver::OpConfig::OpCfgCIter<OpStr> Solver::OpConfig::getCEnd(OpStr prefix, OpSt
 	return OpCfgCIter<OpStr>(scfg_.cend(), prefix);
 }
 
+Solver::OpSolState::OpSolState()
+{
+
+}
+
+Solver::OpSolState::~OpSolState()
+{
+
+}
+
 void Solver::OpAdapSol::extract(Model::OpModel mdl)
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_.extract(mdl);
-		break;
-	case OpSolType::GRB:
-		grbs_.extract(mdl);
-		break;
-	case OpSolType::SCIP:
-		scips_.extract(mdl);
-		break;
-	default:
-		break;
-	}
+	rsolver_->extract(mdl);
 }
 
 void Solver::OpAdapSol::solve()
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_.solve();
-		break;
-	case OpSolType::GRB:
-		grbs_.solve();
-		break;
-	case OpSolType::SCIP:
-		scips_.solve();
-		break;
-	default:
-		break;
-	}
+	rsolver_->solve();
 }
 
 void Solver::OpAdapSol::setParam(const OpConfig& cfg)
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_.setParam(cfg);
-		break;
-	case OpSolType::GRB:
-		grbs_.setParam(cfg);
-		break;
-	case OpSolType::SCIP:
-		scips_.setParam(cfg);
-		break;
-	default:
-		break;
-	}
+	rsolver_->setParam(cfg);
+}
+
+Solver::OpSolType Solver::OpAdapSol::getSolType() const
+{
+	return stype_;
 }
 
 OpLInt Solver::OpAdapSol::getStatus() const
 {
-	OpLInt tmp(-1);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getStatus();
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getStatus();
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getStatus();
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getStatus();
 }
 
 OpFloat Solver::OpAdapSol::getObjValue() const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getObjValue();
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getObjValue();
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getObjValue();
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getObjValue();
 }
 
 OpFloat Solver::OpAdapSol::getValue(Variable::OpVar var) const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getValue(var);
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getValue(var);
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getValue(var);
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getValue(var);
 }
 
 OpFloat Solver::OpAdapSol::getValue(const Expression::OpLinExpr& expr) const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getValue(expr);
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getValue(expr);
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getValue(expr);
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getValue(expr);
 }
 
 OpFloat Solver::OpAdapSol::getValue(const Expression::OpQuadExpr& expr) const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getValue(expr);
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getValue(expr);
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getValue(expr);
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getValue(expr);
 }
 
 OpFloat Solver::OpAdapSol::getValue(Objective::OpObj obj) const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getValue(obj);
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getValue(obj);
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getValue(obj);
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getValue(obj);
 }
 
 OpFloat Solver::OpAdapSol::getDual(Constraint::OpLinCon con) const
 {
-	OpFloat tmp(NAN);
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		tmp = cpxs_.getDual(con);
-		break;
-	case OpSolType::GRB:
-		tmp = grbs_.getDual(con);
-		break;
-	case OpSolType::SCIP:
-		tmp = scips_.getDual(con);
-		break;
-	default:
-		break;
-	}
-	return tmp;
+	return rsolver_->getDual(con);
 }
 
 void Solver::OpAdapSol::write(OpStr path) const
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_.write(path);
-		break;
-	case OpSolType::GRB:
-		grbs_.write(path);
-		break;
-	case OpSolType::SCIP:
-		scips_.write(path);
-		break;
-	default:
-		break;
-	}
+	rsolver_->write(path);
 }
 
 void Solver::OpAdapSol::release()
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_.release();
-		break;
-	case OpSolType::GRB:
-		grbs_.release();
-		break;
-	case OpSolType::SCIP:
-		scips_.release();
-		break;
-	default:
-		break;
-	}
+	rsolver_->release0();
 }
 
 Solver::OpAdapSol& Solver::OpAdapSol::operator=(const OpAdapSol& solver)
 {
 	if (this != &solver && stype_ == solver.stype_)
 	{
-		switch (stype_)
-		{
-		case OpSolType::CPX:
-			cpxs_ = solver.cpxs_;
-			break;
-		case OpSolType::GRB:
-			grbs_ = solver.grbs_;
-			break;
-		case OpSolType::SCIP:
-			scips_ = solver.scips_;
-			break;
-		default:
-			break;
-		}
+		rsolver_ = solver.rsolver_;
 	}
 	return *this;
 }
 
 Solver::OpAdapSol::OpAdapSol(const OpAdapSol& solver)
-	: stype_(solver.stype_)
+	: stype_(solver.stype_), 
+	rsolver_(solver.rsolver_)
 {
-	switch (stype_)
-	{
-	case OpSolType::CPX:
-		cpxs_ = solver.cpxs_;
-		break;
-	case OpSolType::GRB:
-		grbs_ = solver.grbs_;
-		break;
-	case OpSolType::SCIP:
-		scips_ = solver.scips_;
-		break;
-	default:
-		break;
-	}
+
 }
 
 Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
-	: stype_(type)
+	: stype_(type), 
+	rsolver_(nullptr)
 {
 	switch (stype_)
 	{
+#ifdef OPUA_COMPILE_CPX
 	case OpSolType::CPX:
-		cpxs_ = OpCPXSol(env);
+		rsolver_ = new OpCPXSol(env);
 		break;
+#endif
+#ifdef OPUA_COMPILE_GRB
 	case OpSolType::GRB:
-		grbs_ = OpGRBSol(env);
+		rsolver_ = new OpGRBSol(env);
 		break;
+#endif
+#ifdef OPUA_COMPILE_SCIP
 	case OpSolType::SCIP:
-		scips_ = OpSCIPSol(env);
+		rsolver_ = new OpSCIPSol(env);
 		break;
+#endif
 	default:
 		break;
 	}
 }
 
 Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
-	: stype_(type)
+	: stype_(type),
+	rsolver_(nullptr)
 {
 	switch (stype_)
 	{
+#ifdef OPUA_COMPILE_CPX
 	case OpSolType::CPX:
-		cpxs_ = OpCPXSol(env, mdl);
+		rsolver_ = new OpCPXSol(env, mdl);
 		break;
+#endif
+#ifdef OPUA_COMPILE_GRB
 	case OpSolType::GRB:
-		grbs_ = OpGRBSol(env, mdl);
+		rsolver_ = new OpGRBSol(env, mdl);
 		break;
+#endif
+#ifdef OPUA_COMPILE_SCIP
 	case OpSolType::SCIP:
-		scips_ = OpSCIPSol(env, mdl);
+		rsolver_ = new OpSCIPSol(env, mdl);
 		break;
+#endif
 	default:
 		break;
 	}
+}
+
+Solver::OpAdapSol::~OpAdapSol()
+{
+	delete rsolver_;
 }
 
 Solver::OpSolStatus Solver::IntCPXStatus2OpStatus(OpLInt status)

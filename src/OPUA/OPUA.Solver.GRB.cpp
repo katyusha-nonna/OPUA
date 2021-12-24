@@ -1,8 +1,11 @@
 #include "OPUA.Solver.h"
+#ifdef OPUA_COMPILE_GRB
 #include <gurobi_c++.h>
+#endif
 
 using namespace OPUA;
 
+#ifdef OPUA_COMPILE_GRB
 /* OPUA::Solver::OpGRBCfgCvt */
 
 // GRB≈‰÷√∑≠“Î∆˜
@@ -758,6 +761,11 @@ void Solver::OpGRBSol::write(OpStr path) const
 	static_cast<OpGRBSolI*>(impl_)->write(path);
 }
 
+void Solver::OpGRBSol::release0()
+{
+	static_cast<OpGRBSolI*>(impl_)->release();
+}
+
 OpBool Solver::OpGRBSol::operator==(const OpGRBSol& sol) const
 {
 	return impl_ == sol.impl_;
@@ -792,3 +800,4 @@ Solver::OpGRBSol::~OpGRBSol()
 {
 
 }
+#endif

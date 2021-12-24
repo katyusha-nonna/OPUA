@@ -5,6 +5,11 @@
 #define OPUA_GRB_VERSION_95
 #define OPUA_SCIP_VERSION_701
 
+#define OPUA_COMPILE_CPX
+#define OPUA_COMPILE_GRB
+#define OPUA_COMPILE_SCIP
+#define OPUA_COMPILE_MSK
+
 namespace OPUA
 {
 	namespace Solver
@@ -14,6 +19,7 @@ namespace OPUA
 		class OpGRBCfgCvt;
 		class OpSCIPCfgCvt;
 
+		class OpSolState;
 		class OpCPXSolI;
 		class OpCPXSol;
 		class OpGRBSolI;
@@ -128,6 +134,28 @@ namespace OPUA
 			template<typename T> inline auto getCEnd(OpStr prefix) const { return getCEnd(prefix, T()); }
 		};
 
+		// 用于实现Solver自适应接口OpAdapSol的状态类
+		// 所有的求解器接口都要继承这个类并实现基本的访问函数
+		class OpSolState
+		{
+		public:
+			virtual void extract(Model::OpModel mdl) = 0;
+			virtual void solve() = 0;
+			virtual void setParam(const OpConfig& cfg) = 0;
+			virtual OpLInt getStatus() const = 0;
+			virtual OpFloat getObjValue() const = 0;
+			virtual OpFloat getValue(Variable::OpVar var) const = 0;
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const = 0;
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const = 0;
+			virtual OpFloat getValue(Objective::OpObj obj) const = 0;
+			virtual OpFloat getDual(Constraint::OpLinCon con) const = 0;
+			virtual void write(OpStr path) const = 0;
+			virtual void release0() = 0; // 避免与release重名
+		public:
+			OpSolState();
+			virtual ~OpSolState();
+		};
+
 		/*
 			OpCPXBSol：求解器Cplex的接口类
 			求解参数说明：
@@ -153,21 +181,22 @@ namespace OPUA
 
 		*/
 		class OpCPXSol
-			: public OpBase
+			: public OpBase, public OpSolState
 		{
 		public:
-			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成CPX模型对象
-			void solve(); // 执行求解
-			void setParam(const OpConfig& cfg); // 设置配置
-			OpLInt getStatus() const; // 获取求解状态
-			OpFloat getObjValue() const; // 获取目标函数解
-			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
-			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
-			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成CPX模型对象
+			virtual void solve(); // 执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态
+			virtual OpFloat getObjValue() const; // 获取目标函数解
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpCPXSolI* getImpl() const; // 获取Impl
-			void write(OpStr path) const; // 将模型写入文件
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
 		public:
 			OpBool operator==(const OpCPXSol& sol) const;
 			OpBool operator!=(const OpCPXSol& sol) const;
@@ -259,21 +288,22 @@ namespace OPUA
 
 		*/
 		class OpGRBSol
-			: public OpBase
+			: public OpBase, public OpSolState
 		{
 		public:
-			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成GRB模型对象
-			void solve(); // 执行求解
-			void setParam(const OpConfig& cfg); // 设置配置
-			OpLInt getStatus() const; // 获取求解状态
-			OpFloat getObjValue() const; // 获取目标函数解
-			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
-			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
-			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成GRB模型对象
+			virtual void solve(); // 执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态
+			virtual OpFloat getObjValue() const; // 获取目标函数解
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpGRBSolI* getImpl() const; // 获取Impl
-			void write(OpStr path) const; // 将模型写入文件
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
 		public:
 			OpBool operator==(const OpGRBSol& sol) const;
 			OpBool operator!=(const OpGRBSol& sol) const;
@@ -291,21 +321,22 @@ namespace OPUA
 			求解参数说明：
 		*/
 		class OpSCIPSol
-			: public OpBase
+			: public OpBase, public OpSolState
 		{
 		public:
-			void extract(Model::OpModel mdl); // 抽取OPUA模型，形成SCIP模型对象
-			void solve(); // 执行求解
-			void setParam(const OpConfig& cfg); // 设置配置
-			OpLInt getStatus() const; // 获取求解状态
-			OpFloat getObjValue() const; // 获取目标函数解(SCIP的目标函数必须为线性且忽略常数项)
-			OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
-			OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
-			OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
-			OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成SCIP模型对象
+			virtual void solve(); // 执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态
+			virtual OpFloat getObjValue() const; // 获取目标函数解(SCIP的目标函数必须为线性且忽略常数项)
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
 			OpSCIPSolI* getImpl() const; // 获取Impl
-			void write(OpStr path) const; // 将模型写入文件
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
 		public:
 			OpBool operator==(const OpSCIPSol& sol) const;
 			OpBool operator!=(const OpSCIPSol& sol) const;
@@ -325,13 +356,12 @@ namespace OPUA
 		{
 		protected:
 			const OpSolType stype_;
-			OpCPXSol cpxs_;
-			OpGRBSol grbs_;
-			OpSCIPSol scips_;
+			OpSolState* rsolver_;
 		public:
 			void extract(Model::OpModel mdl);
 			void solve();
 			void setParam(const OpConfig& cfg);
+			OpSolType getSolType() const;
 			OpLInt getStatus() const;
 			OpFloat getObjValue() const;
 			OpFloat getValue(Variable::OpVar var) const;
@@ -348,6 +378,7 @@ namespace OPUA
 			OpAdapSol(const OpAdapSol& solver);
 			OpAdapSol(OpSolType type, OpEnv env);
 			OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl);
+			~OpAdapSol();
 		};
 
 		// 求解状态转换函数(CPX)
