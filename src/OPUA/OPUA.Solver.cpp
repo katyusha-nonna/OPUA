@@ -273,6 +273,13 @@ Solver::OpAdapSol::OpAdapSol(const OpAdapSol& solver)
 
 }
 
+OPUA::Solver::OpAdapSol::OpAdapSol(OpAdapSol&& solver)
+	: stype_(solver.stype_),
+	rsolver_(solver.rsolver_)
+{
+
+}
+
 Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 	: stype_(type), 
 	rsolver_(nullptr)

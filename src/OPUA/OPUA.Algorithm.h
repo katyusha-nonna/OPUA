@@ -9,6 +9,9 @@ namespace OPUA
 		class OpRobustModelI;
 		class OpRobustModel;
 		class OpAlgoCCG;
+		class OpHierarchicalModelI;
+		class OpHierarchicalModel;
+		class OpAlgoATC;
 		typedef std::pair<Variable::OpVarArr, Constraint::OpLCArr> OpLinearization;
 
 		// OPUA两阶段鲁棒模型阶段类型
@@ -55,8 +58,8 @@ namespace OPUA
 			void add(Constraint::OpLinCon con, RobustStageType type, OpBool flag); // 添加约束
 			void add(Constraint::OpQCArr cons, RobustStageType type, OpBool flag); // 添加约束
 			void add(Constraint::OpQuadCon con, RobustStageType type, OpBool flag); // 添加约束	
-			void setObj(Expression::OpLinExpr expr, RobustStageType type); // 设置目标函数
-			void setObj(Expression::OpQuadExpr expr, RobustStageType type); // 设置目标函数
+			void setObj(const Expression::OpLinExpr& expr, RobustStageType type); // 设置目标函数
+			void setObj(const Expression::OpQuadExpr& expr, RobustStageType type); // 设置目标函数
 			void setValue(Variable::OpVar var, RobustStageType type, OpFloat val);	// 设置解
 			void setBound(Variable::OpVar var, RobustStageType type, OpFloat val, OpBool lb); // 设置边界
 			void setBound(Variable::OpVar var, RobustStageType type, OpFloat lbVal, OpFloat ubVal); // 设置边界
@@ -117,6 +120,109 @@ namespace OPUA
 		void DefaultCfg4CCG(Solver::OpConfig& config);
 		// 为CCG算法生成默认配置
 		Solver::OpConfig DefaultCfg4CCG();
+
+		/*
+			OPUA分层模型类
+			标准形式：
+					子系统优化模型：
+						\min_{x_{ij}, r_{ij}, t_{(i+1)k}} f_{ij} + \lambda_{ij}^{T}(t_{ij}-r_{ij})
+																		  + \sum\lambda_{(i+1)k}^{T}(t_{(i+1)k}-r_{(i+1)k})
+																		  + ||\rho_{ij}\dot(t_{ij}-r_{ij})||_{2}^{2}
+																		  + \sum ||\rho_{(i+1)k}\dot(t_{(i+1)k}-r_{(i+1)k})||_{2}^{2}
+						s.t. g_{ij}(x_{ij}, r_{ij}, t_{(i+1)k})\leqslant 0
+							 h_{ij}(x_{ij}, r_{ij}, t_{(i+1)k})=0
+
+				其中：
+																		 ||                                 / \
+																		 || 上级目标t_{ij}            || 上级反馈 r_{ij}
+																		\ /                                 ||
+																	------------------------------
+																	|                子问题 P_{ij}                 |      设计模块 f_{ij}(x_{ij}, r_{ij}, t_{(i+1)k})
+																	|     局部变量 x_{ij}                         |
+																	|     局部目标 f_{ij}                         |      分析模块 \pi(r_{ij}, t_{(i+1)k})
+																	|     局部约束 g_{ij}, h_{ij}               |
+																	------------------------------
+																		 ||                                 / \
+																		 || 下级目标 t_{(i+1)k}    || 下级反馈 r_{(i+1)k ...
+																		\ /                                 ||
+
+				备注：
+					[1] 该模型为树状模型，一个子问题对应一个唯一的上级问题，和零到多个下级问题；
+					[2] 问题索引数字越小表示层级越高/同一层级优先级越高，一般按照问题生成顺从0(根节点)分配索引；负数表示节点不存在；
+					[3] 上下层级问题之间设计指标和反馈指标的对应默认和存放顺序一致；
+		*/
+		class OpHierarchicalModel
+			: public OpBase
+		{
+		public:	
+			OpLInt initRoot(OpLInt idx = 0); // 初始化模型(生成根节点，默认从0开始)，并返回索引
+			void initSolution(); // 初始化解(在模型形成完毕后，设置变量解、对偶变量解之前执行)
+			OpLInt addLower(OpLInt idx1, OpLInt idx2 = -1); // 由一层模型idx1出发，生成他的下级模型idx2(默认自动分配)，并返回索引
+			void link(OpLInt idx1, OpLInt idx2, Variable::OpVar var1, Variable::OpVar var2); // 添加idx1和idx2之间的一对关联变量var1和var2
+			void link(OpLInt idx1, OpLInt idx2, Variable::OpVarArr vars1, Variable::OpVarArr vars2); // 添加idx1和idx2之间的一组关联变量var1和var2
+			void add(OpLInt idx, Variable::OpVar var); // 添加idx的局部决策变量
+			void add(OpLInt idx, Variable::OpVarArr vars); // 添加idx的局部决策变量
+			void add(OpLInt idx, Constraint::OpLinCon con); // 添加idx的局部线性约束
+			void add(OpLInt idx, Constraint::OpLCArr cons); // 添加idx的局部线性约束集
+			void add(OpLInt idx, Constraint::OpQuadCon con); // 添加idx的局部二次约束
+			void add(OpLInt idx, Constraint::OpQCArr cons); // 添加idx的局部二次约束集
+			void setObj(OpLInt idx, const Expression::OpQuadExpr& expr); // 设置idx的局部目标函数
+			void setValue(OpLInt idx, Variable::OpVar var, OpFloat val);	 // 设置idx中变量var的解
+			OpFloat getValue(OpLInt idx, Variable::OpVar var) const; // 获取idx中变量var的解
+			OpFloat getObjValue(OpLInt idx) const; // 获取idx目标函数解(idx取负值则返回整体解)
+			OpBool isRoot(OpLInt idx) const; // idx是否为根节点的合法索引
+			OpBool isLeaf(OpLInt idx) const; // idx是否为叶节点的合法索引
+			OpBool isNode(OpLInt idx) const; // idx是否为节点的合法索引
+			void write(OpStr root); // 导出模型
+			OpHierarchicalModelI* getImpl() const; // 获取impl
+			void release(); // 释放内存
+		public:
+			OpBool operator==(const OpHierarchicalModel& model) const;
+			OpBool operator!=(const OpHierarchicalModel& model) const;
+		public:
+			OpHierarchicalModel(); // 默认构造函数(默认为空)
+			OpHierarchicalModel(OpHierarchicalModelI* impl); // 从impl构造
+			OpHierarchicalModel(OpEnv env); // 从env构造
+			OpHierarchicalModel(OpEnv env, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpHierarchicalModel();
+		};
+
+		/*
+			OPUA中用于求解分层模型的ATC算法
+			求解参数说明：
+					OPUA.Algorithm.ATC.InitMode / OpLInt / 0 / {0, 1} / 注释：乘子初始化模式(0-乘子按统一值初始化 / 1-乘子按指定值初始化)
+					OPUA.Algorithm.ATC.LambdaInitVal / OpFloat / 1 / [-inf, inf] / 注释：线性乘子(统一)初始值
+					OPUA.Algorithm.ATC.RhoInitVal / OpFloat / 1 / [-inf, inf] / 注释：二次乘子(统一)初始值
+					OPUA.Algorithm.ATC.RhoUpdateFactor / OpFloat / 2 / [1, inf] / 注释：二次乘子更新系数(建议值2-3之间)
+					OPUA.Algorithm.ATC.ATCIterMax / OpLInt / 1000 / [0, inf] / 注释：最大迭代次数
+					OPUA.Algorithm.ATC.ATCGap1 / OpFloat / 1e-3 / [0, 1] / 注释：ATC收敛判据(必要性条件)
+					OPUA.Algorithm.ATC.ATCGap2 / OpFloat / 1e-3 / [0, 1] / 注释：ATC收敛判据(充分性条件)
+					OPUA.Algorithm.ATC.ATCShakeGap / OpFloat / 1e-3 / [0, 1] / 注释：ATC震荡间隙判据
+					OPUA.Algorithm.ATC.ATCShakeCount / OpLInt / 3 / [2, inf] / 注释：ATC震荡次数判据
+					OPUA.Algorithm.ATC.ATCShakeAutoQuit / OpBool / true / {true, false} / 注释：ATC震荡自动退出的开关
+					OPUA.Algorithm.ATC.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+		*/
+		class OpAlgoATC
+		{
+		protected:
+			OpHierarchicalModelI* mdl_; // 分层模型
+
+			struct OpATCIterInfo; // ATC迭代信息
+		public:
+			void extract(OpHierarchicalModel model); // 抽取OPUA分层模型	
+			OpBool solve(const Solver::OpConfig& config); // 求解模型
+		public:
+			OpAlgoATC(); // 默认构造函数
+			OpAlgoATC(OpHierarchicalModel model); // 构造并抽取OPUA模型
+		public:
+			~OpAlgoATC();
+		};
+
+		// 为ATC算法生成默认配置
+		void DefaultCfg4ATC(Solver::OpConfig& config);
+		// 为ATC算法生成默认配置
+		Solver::OpConfig DefaultCfg4ATC();
 
 		/*
 			算法类别：Bilinear(整数*连续)线性化

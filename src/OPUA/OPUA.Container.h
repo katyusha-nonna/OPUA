@@ -8,6 +8,8 @@ namespace OPUA
 {
 	namespace Container
 	{
+		// 特别注意：嵌套OPUA组件的容器，如A<B>，若B的资源接受A的管理(如OpArray<OpArray<OpFloat>>)，则A<B>不能作为其他OPUA组件的成员，必须在使用完毕后立即手动释放，否则会因内存释放顺序而产生错误
+
 		template<typename T> class OpArrayI;
 		template<typename T> class OpArray;
 		template<typename TK, typename TV> class OpDictI;

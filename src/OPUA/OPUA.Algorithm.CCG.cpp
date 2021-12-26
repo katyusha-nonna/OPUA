@@ -97,8 +97,8 @@ protected:
 	void add(Constraint::OpQCArr cons, RobustStageType type, OpBool flag);
 	void add(Constraint::OpQuadCon con, RobustStageType type, OpBool flag);
 	// 设置目标函数
-	void setObj(Expression::OpLinExpr expr, RobustStageType type);
-	void setObj(Expression::OpQuadExpr expr, RobustStageType type);
+	void setObj(const Expression::OpLinExpr& expr, RobustStageType type);
+	void setObj(const Expression::OpQuadExpr& expr, RobustStageType type);
 	// 设置解
 	void setValue(Variable::OpVar var, RobustStageType type, OpFloat val);
 	// 设置边界
@@ -555,7 +555,7 @@ void Algorithm::OpRobustModelI::add(Constraint::OpQuadCon con, RobustStageType t
 		fssqc_.add(con);
 }
 
-void Algorithm::OpRobustModelI::setObj(Expression::OpLinExpr expr, RobustStageType type)
+void Algorithm::OpRobustModelI::setObj(const Expression::OpLinExpr& expr, RobustStageType type)
 {
 	switch (type)
 	{
@@ -573,7 +573,7 @@ void Algorithm::OpRobustModelI::setObj(Expression::OpLinExpr expr, RobustStageTy
 	}
 }
 
-void Algorithm::OpRobustModelI::setObj(Expression::OpQuadExpr expr, RobustStageType type)
+void Algorithm::OpRobustModelI::setObj(const Expression::OpQuadExpr& expr, RobustStageType type)
 {
 	if (type == RobustStageType::SecondStageDual)
 		ssdo_ = expr;
@@ -866,12 +866,12 @@ void Algorithm::OpRobustModel::add(Constraint::OpQuadCon con, RobustStageType ty
 	static_cast<OpRobustModelI*>(impl_)->add(con, type, flag);
 }
 
-void OPUA::Algorithm::OpRobustModel::setObj(Expression::OpLinExpr expr, RobustStageType type)
+void OPUA::Algorithm::OpRobustModel::setObj(const Expression::OpLinExpr& expr, RobustStageType type)
 {
 	static_cast<OpRobustModelI*>(impl_)->setObj(expr, type);
 }
 
-void OPUA::Algorithm::OpRobustModel::setObj(Expression::OpQuadExpr expr, RobustStageType type)
+void OPUA::Algorithm::OpRobustModel::setObj(const Expression::OpQuadExpr& expr, RobustStageType type)
 {
 	static_cast<OpRobustModelI*>(impl_)->setObj(expr, type);
 }

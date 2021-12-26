@@ -376,6 +376,7 @@ namespace OPUA
 		public:
 			OpAdapSol() = delete;
 			OpAdapSol(const OpAdapSol& solver);
+			OpAdapSol(OpAdapSol&& solver);
 			OpAdapSol(OpSolType type, OpEnv env);
 			OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl);
 			~OpAdapSol();
