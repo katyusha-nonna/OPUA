@@ -1,14 +1,34 @@
 #pragma once
 
 #include "OPUA.Model.h"
-#define OPUA_CPX_VERSION_128
-#define OPUA_GRB_VERSION_95
-#define OPUA_SCIP_VERSION_701
 
+#ifndef OPUA_CPX_VERSION_128
+#define OPUA_CPX_VERSION_128
+#endif
+
+#ifndef OPUA_GRB_VERSION_95
+#define OPUA_GRB_VERSION_95
+#endif
+
+#ifndef OPUA_SCIP_VERSION_701
+#define OPUA_SCIP_VERSION_701
+#endif
+
+#ifndef OPUA_COMPILE_CPX
 #define OPUA_COMPILE_CPX
+#endif
+
+#ifndef OPUA_COMPILE_GRB
 #define OPUA_COMPILE_GRB
+#endif
+
+#ifndef OPUA_COMPILE_SCIP
 #define OPUA_COMPILE_SCIP
+#endif
+
+#ifndef OPUA_COMPILE_MSK
 #define OPUA_COMPILE_MSK
+#endif
 
 namespace OPUA
 {
@@ -141,6 +161,7 @@ namespace OPUA
 		public:
 			virtual void extract(Model::OpModel mdl) = 0;
 			virtual void solve() = 0;
+			virtual void solveFixed() = 0;
 			virtual void setParam(const OpConfig& cfg) = 0;
 			virtual OpLInt getStatus() const = 0;
 			virtual OpFloat getObjValue() const = 0;
@@ -186,6 +207,7 @@ namespace OPUA
 		public:
 			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成CPX模型对象
 			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
 			virtual void setParam(const OpConfig& cfg); // 设置配置
 			virtual OpLInt getStatus() const; // 获取求解状态
 			virtual OpFloat getObjValue() const; // 获取目标函数解
@@ -293,6 +315,7 @@ namespace OPUA
 		public:
 			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成GRB模型对象
 			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
 			virtual void setParam(const OpConfig& cfg); // 设置配置
 			virtual OpLInt getStatus() const; // 获取求解状态
 			virtual OpFloat getObjValue() const; // 获取目标函数解
@@ -326,6 +349,7 @@ namespace OPUA
 		public:
 			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成SCIP模型对象
 			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
 			virtual void setParam(const OpConfig& cfg); // 设置配置
 			virtual OpLInt getStatus() const; // 获取求解状态
 			virtual OpFloat getObjValue() const; // 获取目标函数解(SCIP的目标函数必须为线性且忽略常数项)
@@ -360,6 +384,7 @@ namespace OPUA
 		public:
 			void extract(Model::OpModel mdl);
 			void solve();
+			void solveFixed();
 			void setParam(const OpConfig& cfg);
 			OpSolType getSolType() const;
 			OpLInt getStatus() const;

@@ -52,6 +52,8 @@ void Solver::OpCPXCfgCvt::init()
 	ipdict_.emplace("OPUA.CPX.Simplex.Dgradient", IloCplex::Param::Simplex::DGradient);
 	ipdict_.emplace("OPUA.CPX.Simplex.Display", IloCplex::Param::Simplex::Display);
 	lpdict_.emplace("OPUA.CPX.Simplex.Limits.Iterations", IloCplex::Param::Simplex::Limits::Iterations);
+
+	bpdict_.emplace("OPUA.CPX.Preprocessing.Presolve", IloCplex::Param::Preprocessing::Presolve);
 #endif
 }
 
@@ -133,6 +135,7 @@ protected:
 	void clear(); // 清除所有组件与映射信息
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
+	void solveFixed(); // 固定整数变量解并执行求解
 	void setParam(const OpConfig& cfg); // 设置配置
 	OpLInt getStatus() const; // 获取求解状态
 	OpFloat getObjValue() const; // 获取目标函数解
@@ -476,6 +479,11 @@ void Solver::OpCPXSolI::solve()
 	csol_.solve();
 }
 
+void Solver::OpCPXSolI::solveFixed()
+{
+	csol_.solveFixed();
+}
+
 void Solver::OpCPXSolI::setParam(const OpConfig& cfg)
 {
 	if (csol_.getImpl())
@@ -592,6 +600,11 @@ void Solver::OpCPXSol::extract(Model::OpModel mdl)
 void Solver::OpCPXSol::solve()
 {
 	static_cast<OpCPXSolI*>(impl_)->solve();
+}
+
+void Solver::OpCPXSol::solveFixed()
+{
+	static_cast<OpCPXSolI*>(impl_)->solveFixed();
 }
 
 void Solver::OpCPXSol::setParam(const OpConfig& cfg)

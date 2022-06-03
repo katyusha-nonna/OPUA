@@ -30,8 +30,8 @@ OPUA由以下基本模块构成：
 
 除此之外包含以下进阶模块：
 
-* **OPUA.Math**: 数学算法模块
-* **OPUA.Algorithm**: 优化算法模块，提供各种经典的优化模型及算法框架。目前已支持C&CG(用于两阶段鲁棒模型的求解)。
+* **OPUA.Math**: 数学算法模块，提供各种数值算法用于辅助建模。目前已支持：函数线性分段拟合(一元二次、多元凸函数)
+* **OPUA.Algorithm**: 优化算法模块，提供各种经典的优化模型及算法框架。目前已支持C&CG(用于两阶段鲁棒模型的求解)、BD(用于两阶段多场景随机规划模型的求解)、ATC(用于分层模型的分布式求解)。
 
 以下文件提供基本的类型和常数定义：
 
@@ -271,7 +271,9 @@ x:
 
 ### 进阶功能
 
-这里我们给出了一份两阶段鲁棒问题的示例程序作为参考：
+#### 两阶段鲁棒优化(C&CG算法求解)
+
+这里我们给出了一份两阶段鲁棒问题的示例程序作为参考[^reference1]：
 
 ```cpp
 #include <iostream>
@@ -402,3 +404,96 @@ int main
   return 0;
 }
 ```
+
+#### 两阶段多场景随机规划(Benders分解算法求解)
+
+这里我们给出了一份两阶段问题的示例程序作为参考[^reference2]：
+
+```cpp
+#include <iostream>
+#include "OPUA.h"
+
+int main
+{
+  using namespace OPUA::Variable;
+  using namespace OPUA::Expression;
+  using namespace OPUA::Constraint;
+  using namespace OPUA::Objective;
+  using namespace OPUA::Algorithm;
+
+  OpEnv env(true, "OPUA_ENV_TEST");
+  OpMSSPModel model(env);
+  OpLInt subIdx(model.addSubProb());
+  // 构建主问题
+  auto y1 = OpVar(env, OpVarType::Bool, 0, 1, "y1");
+  auto y2 = OpVar(env, OpVarType::Bool, 0, 1, "y2");
+  auto y3 = OpVar(env, OpVarType::Bool, 0, 1, "y3");
+  auto y4 = OpVar(env, OpVarType::Bool, 0, 1, "y4");
+  auto y5 = OpVar(env, OpVarType::Bool, 0, 1, "y5");
+  model.add(y1);
+  model.add(y2);
+  model.add(y3);
+  model.add(y4);
+  model.add(y5);
+  model.setObj(7 * y1 + 7 * y2 + 7 * y3 + 7 * y4 + 7 * y5);
+  // 构建子问题
+  auto x1 = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "x1");
+  auto x2 = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "x2");
+  auto x3 = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "x3");
+  auto x4 = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "x4");
+  auto x5 = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "x5");
+  auto s1p = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s1+");
+  auto s2p = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s2+");
+  auto s3p = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s3+");
+  auto s1n = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s1-");
+  auto s2n = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s2-");
+  auto s3n = OpVar(env, OpVarType::Con, 0, Constant::Infinity, "s3-");
+  OpFloat pentyFactor(1e5);
+  model.add(x1, subIdx);
+  model.add(x2, subIdx);
+  model.add(x3, subIdx);
+  model.add(x4, subIdx);
+  model.add(x5, subIdx);
+  model.add(s1p, subIdx);
+  model.add(s2p, subIdx);
+  model.add(s3p, subIdx);
+  model.add(s1n, subIdx);
+  model.add(s2n, subIdx);
+  model.add(s3n, subIdx);
+  model.setObj(x1 + x2 + x3 + x4 + x5 + pentyFactor * (s1p + s1n + s2p + s2n + s3p + s3n), subIdx);
+  model.add(x1 + x4 + x5 + s1p - s1n == 8, subIdx);
+  model.add(x2 + x5 + s2p - s2n == 3, subIdx);
+  model.add(x3 + x4 + s3p - s3n == 5, subIdx);
+  model.add(x1 <= 8 * y1, subIdx);
+  model.add(x2 <= 3 * y2, subIdx);
+  model.add(x3 <= 5 * y3, subIdx);
+  model.add(x4 <= 5 * y4, subIdx);
+  model.add(x5 <= 3 * y5, subIdx);
+  // 创建BD求解器&配置器
+  OpAlgoBD solver(model);
+  auto config = DefaultCfg4BD();
+  config.regCfg("OPUA.CPX.Preprocessing.Presolve", OpBool(false));
+  auto flag = solver.solve(config);
+  // 输出解
+  if (flag)
+  {
+    std::cout << "Objm: " << model.getObjValue() << std::endl;
+    std::cout << "Objs: " << model.getObjValue(subIdx) << std::endl;
+    std::cout << "y1: " << model.getValue(y1) << std::endl;
+    std::cout << "y2: " << model.getValue(y2) << std::endl;
+    std::cout << "y3: " << model.getValue(y3) << std::endl;
+    std::cout << "y4: " << model.getValue(y4) << std::endl;
+    std::cout << "y5: " << model.getValue(y5) << std::endl;
+    std::cout << "x1: " << model.getValue(x1, subIdx) << std::endl;
+    std::cout << "x2: " << model.getValue(x2, subIdx) << std::endl;
+    std::cout << "x3: " << model.getValue(x3, subIdx) << std::endl;
+    std::cout << "x4: " << model.getValue(x4, subIdx) << std::endl;
+    std::cout << "x5: " << model.getValue(x5, subIdx) << std::endl;
+  }
+  env.release();
+}
+```
+
+* ## 参考文献
+  [^reference1]: Zeng B, Zhao L. Solving two-stage robust optimization problems using a column-and-constraint generation method[J]. Operations Research Letters, 2013, 41(5): 457-461.
+  [^reference2]: http://hacivat.ie.boun.edu.tr/~taskin/pdf/taskin_benders.pdf

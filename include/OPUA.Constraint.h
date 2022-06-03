@@ -61,10 +61,10 @@ namespace OPUA
 		OpNLCon operator==(const Expression::OpNLExpr& lhs, Variable::OpVar rhs);
 		OpNLCon operator==(Variable::OpVar lhs, const Expression::OpNLExpr& rhs);
 
-		// 警告，创建条件约束时，==左右两端约束/变量不能互换，左侧为条件，右侧为约束
+		// 警告，创建条件约束时，->左右两端约束/变量不能互换，左侧为条件，右侧为约束
 		std::ostream& operator<<(std::ostream& stream, OpCdtCon con);
-		OpCdtCon operator==(Variable::OpVar lhs, OpLinCon rhs);
-		OpCdtCon operator==(OpLinCon lhs, OpLinCon rhs);
+		OpCdtCon operator>>(Variable::OpVar lhs, OpLinCon rhs);
+		OpCdtCon operator>>(OpLinCon lhs, OpLinCon rhs);
 
 		// 警告，参数的顺序关系到操作数的位置，详见操作函数说明
 		OpNLCon OpSum(OpEnv env, Variable::OpVar x1, Variable::OpVarArr X, OpFloat a); // x1 = Sum(X, a)

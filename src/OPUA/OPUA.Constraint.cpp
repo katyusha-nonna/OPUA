@@ -1342,7 +1342,7 @@ std::ostream& Constraint::operator<<(std::ostream& stream, OpCdtCon con)
 	return stream;
 }
 
-Constraint::OpCdtCon Constraint::operator==(Variable::OpVar lhs, OpLinCon rhs)
+Constraint::OpCdtCon Constraint::operator>>(Variable::OpVar lhs, OpLinCon rhs)
 {
 	OpCdtCon con(nullptr);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
@@ -1351,7 +1351,7 @@ Constraint::OpCdtCon Constraint::operator==(Variable::OpVar lhs, OpLinCon rhs)
 	return con;
 }
 
-Constraint::OpCdtCon Constraint::operator==(OpLinCon lhs, OpLinCon rhs)
+Constraint::OpCdtCon Constraint::operator>>(OpLinCon lhs, OpLinCon rhs)
 {
 	OpCdtCon con(nullptr);
 	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());

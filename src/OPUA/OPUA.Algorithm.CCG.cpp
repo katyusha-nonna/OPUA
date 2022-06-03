@@ -627,22 +627,22 @@ OpFloat Algorithm::OpRobustModelI::getValue(Variable::OpVar var, RobustStageType
 	{
 	case RobustStageType::FirstStage:
 		index = fsv_.find(var);
-		if (fsv_.idxValid(index))
+		if (fss_.idxValid(index))
 			result = fss_[index];
 		break;
 	case RobustStageType::SecondStagePrimal:
 		index = sspv_.find(var);
-		if (sspv_.idxValid(index))
+		if (ssps_.idxValid(index))
 			result = ssps_[index];
 		break;
 	case RobustStageType::SecondStageDual:
 		index = ssdv_.find(var);
-		if (ssdv_.idxValid(index))
+		if (ssds_.idxValid(index))
 			result = ssds_[index];
 		break;
 	case RobustStageType::Uncertainty:
 		index = uv_.find(var);
-		if (uv_.idxValid(index))
+		if (us_.idxValid(index))
 			result = us_[index];
 		break;
 	default:

@@ -6,6 +6,9 @@ namespace OPUA
 {
 	namespace Algorithm
 	{
+		class OpMSSPModelI;
+		class OpMSSPModel;
+		class OpAlgoBD;
 		class OpRobustModelI;
 		class OpRobustModel;
 		class OpAlgoCCG;
@@ -13,6 +16,106 @@ namespace OPUA
 		class OpHierarchicalModel;
 		class OpAlgoATC;
 		typedef std::pair<Variable::OpVarArr, Constraint::OpLCArr> OpLinearization;
+
+		// OPUA两阶段多场景随机规划模型阶段类型
+		enum class MSSPStageType
+		{
+			Unknown, // 未知阶段(仅作为默认值保留)
+			FirstStage, // 第一阶段问题
+			SecondStagePrimal, // 第二阶段原始问题
+			SecondStageDual // 第二阶段对偶问题
+		};
+
+		/*
+			OPUA两阶段多场景随机规划问题类
+
+			标准形式：
+				第一阶段：
+
+				第二阶段
+
+			其中：
+				第二阶段对偶约束
+
+		*/
+		class OpMSSPModel
+			: public OpBase
+		{
+		public:	
+			void update(); // 更新模型(初始化解集等)
+			OpLInt addSubProb(); // 添加并初始化子问题(自动分配问题编号)
+			void addSubProb(OpLInt idx); // 添加并初始化子问题(手动分配问题编号)
+			void add(Variable::OpVarArr vars); // 添加变量(主问题)
+			void add(Variable::OpVar var); // 添加变量(主问题)
+			void add(Constraint::OpLCArr cons); // 添加约束(主问题)
+			void add(Constraint::OpLinCon con); // 添加约束(主问题)
+			void add(Variable::OpVarArr vars, OpLInt idx); // 添加变量(子问题)
+			void add(Variable::OpVar var, OpLInt idx); // 添加变量(子问题)
+			void add(Constraint::OpLCArr cons, OpLInt idx); // 添加约束(子问题)
+			void add(Constraint::OpLinCon con, OpLInt idx);	// 添加约束(子问题)
+			void setObj(const Expression::OpLinExpr& expr); // 设置目标函数(主问题)
+			void setObj(const Expression::OpLinExpr& expr, OpLInt idx); // 设置目标函数(子问题)
+			void setValue(Variable::OpVar var, OpFloat val); // 设置解(主问题)
+			void setValue(Variable::OpVar var, OpFloat val, OpLInt idx); // 设置解(子问题)
+			void setDualValue(Constraint::OpLinCon con, OpFloat val, OpLInt idx); // 设置对偶解(子问题)
+			OpFloat getValue(Variable::OpVar var) const; // 获取解(主问题)
+			OpFloat getValue(Variable::OpVar var, OpLInt idx) const; // 获取解(子问题)
+			OpFloat getDualValue(Constraint::OpLinCon con, OpLInt idx) const; // 获取对偶解(子问题)
+			OpFloat getObjValue() const; // 获取目标函数解(主问题)
+			OpFloat getObjValue(OpLInt idx) const; // 获取目标函数解(子问题)
+			OpULInt getSize(OpBool isVar) const; // 获取变量&约束数目(主问题)
+			OpULInt getSize(OpBool isVar, OpLInt idx) const; // 获取变量&约束数目(子问题)
+			OpBool isSubProb(OpLInt idx) const; // idx是否为节点的合法索引
+			void write(OpStr root); // 导出模型
+			OpMSSPModelI* getImpl() const; // 获取impl
+			void release(); // 释放内存
+		public:
+			OpBool operator==(const OpMSSPModel& model) const;
+			OpBool operator!=(const OpMSSPModel& model) const;
+		public:
+			OpMSSPModel(); // 默认构造函数(默认为空)
+			OpMSSPModel(OpMSSPModelI* impl); // 从impl构造
+			OpMSSPModel(OpEnv env); // 从env构造
+			OpMSSPModel(OpEnv env, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpMSSPModel();
+		};
+
+		/*
+			OPUA中用于求解两阶段随即规划模型的经典Benders算法
+			求解参数说明：
+				OPUA.Algorithm.BD.IterMax / OpLInt / 1000 / [0, inf] / 注释：BD迭代次数上限
+				OPUA.Algorithm.BD.BDGap / OpFloat / 1e-5 / [0, 1] / 注释：BD收敛判据
+				OPUA.Algorithm.BD.LogOutput / OpBool / false / {true, false} / 注释：是否输出日志
+				OPUA.Algorithm.BD.LogOutputPath / OpStr / "Log.txt" / {any valid path} / 注释：日志输出路径(需要路径合法)
+				OPUA.Algorithm.BD.FirstStageInitMode / OpLInt / 0 / {0, 1, 2} /  注释：BD一阶段变量初始化模式：0-0值初始化 / 1-给定初值
+				OPUA.Algorithm.BD.MIPSolverMode / OpChar / 'C' / {'G', 'C', 'S', 'M'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+			备注：
+				[1] 用户需要保证第二阶段问题的可行性(为约束添加松弛变量)，BD算法不求解可行子问题，不生成可行割
+				[2] 最优割采用单割形式构造
+				[3] 用户需要在求解器配置中关闭求解器的预求解功能
+		*/
+		class OpAlgoBD
+		{
+		protected:
+			OpMSSPModelI* mdl_; // 两阶段多场景随机规划模型
+
+			struct OpBDIterInfo; // BD迭代信息
+		public:
+			void extract(OpMSSPModel model); // 抽取OPUA两阶段多场景随机规划模型
+			OpBool solve(const Solver::OpConfig& config); // 求解模型
+		public:
+			OpAlgoBD(); // 默认构造函数
+			OpAlgoBD(OpMSSPModel model); // 构造并抽取OPUA模型
+		public:
+			~OpAlgoBD();
+		};
+
+		// 为BD算法生成默认配置
+		void DefaultCfg4BD(Solver::OpConfig& config);
+		// 为BD算法生成默认配置
+		Solver::OpConfig DefaultCfg4BD();
+
 
 		// OPUA两阶段鲁棒模型阶段类型
 		enum class RobustStageType

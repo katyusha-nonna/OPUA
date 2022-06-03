@@ -494,6 +494,11 @@ void Solver::OpSCIPSol::solve()
 	static_cast<OpSCIPSolI*>(impl_)->solve();
 }
 
+void Solver::OpSCIPSol::solveFixed()
+{
+
+}
+
 void Solver::OpSCIPSol::setParam(const OpConfig& cfg)
 {
 	

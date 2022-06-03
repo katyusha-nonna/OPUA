@@ -175,6 +175,7 @@ protected:
 	void clear(); // 清除所有组件与映射信息
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
+	void solveFixed(); // 固定整数变量解并求解模型
 	void setParam(const OpConfig& cfg); // 设置配置
 	OpLInt getStatus() const; // 获取求解状态
 	OpFloat getObjValue() const; // 获取目标函数解
@@ -600,6 +601,14 @@ void Solver::OpGRBSolI::solve()
 	gmdl_->optimize();
 }
 
+void Solver::OpGRBSolI::solveFixed()
+{
+	auto fixedMdl = &(gmdl_->fixedModel());
+	delete gmdl_;
+	gmdl_ = fixedMdl;
+	gmdl_->optimize();
+}
+
 void Solver::OpGRBSolI::setParam(const OpConfig& cfg)
 {
 	if (gmdl_)
@@ -709,6 +718,11 @@ void Solver::OpGRBSol::extract(Model::OpModel mdl)
 void Solver::OpGRBSol::solve()
 {
 	static_cast<OpGRBSolI*>(impl_)->solve();
+}
+
+void Solver::OpGRBSol::solveFixed()
+{
+	static_cast<OpGRBSolI*>(impl_)->solveFixed();
 }
 
 void Solver::OpGRBSol::setParam(const OpConfig& cfg)

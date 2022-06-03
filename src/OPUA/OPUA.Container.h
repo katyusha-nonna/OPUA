@@ -195,6 +195,14 @@ namespace OPUA
 			}
 		};
 
+		template<typename T>
+		std::ostream& operator<<(std::ostream& stream, OpArray<T> vec)
+		{
+			for (auto iter = vec.getCBegin(); iter != vec.getCEnd(); ++iter)
+				stream << iter.getVal() << '\t';
+			return stream;
+		}
+
 		// OpDictI£ºOpDictµÄImplÀà
 		template<typename TK, typename TV> 
 		class OpDictI
@@ -320,5 +328,13 @@ namespace OPUA
 
 			}
 		};
+
+		template<typename TK, typename TV>
+		std::ostream& operator<<(std::ostream& stream, OpDict<TK, TV> dict)
+		{
+			for (auto iter = dict.getCBegin(); iter != dict.getCEnd(); ++iter)
+				stream << "[" << iter.getKey() << ", " << iter.getVal() << "]\t";
+			return stream;
+		}
 	}
 }

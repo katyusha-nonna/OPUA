@@ -38,7 +38,7 @@ void Algorithm::OpAlgoBigMBilinear2(OpEnv env, OpLinearization& result, Variable
 	segment = segment > 2 ? segment : 2;
 	auto& auxVars = result.first;
 	auto& auxCons = result.second;
-	OpFloat delta((xmax - xmin) / (OpFloat)(std::pow((OpULInt)2, segment))); // 分辨率
+	OpFloat delta((xmax - xmin) / (OpFloat)(std::pow((OpULInt)2, segment) -1)); // 分辨率
 	std::vector<OpULInt> weights(segment, 1); // 二进制位权重
 	std::vector<OpVar> u(segment); // 辅助变量
 	std::vector<OpVar> prods(segment); // 乘积项b_{k}*y
@@ -61,6 +61,13 @@ void Algorithm::OpAlgoBigMBilinear2(OpEnv env, OpLinearization& result, Variable
 		for (OpULInt k = 0; k < segment; k++)
 			wExpr.addLinTerm(prods[k], delta * weights[k]);
 		auxCons.add(OpLinCon(env, 0.0, wExpr - w, 0.0));
+	}
+	// 形成x的二进制表达式
+	{
+		OpLinExpr xExpr(xmin);
+		for (OpULInt k = 0; k < segment; k++)
+			xExpr.addLinTerm(u[k], delta * weights[k]);
+		auxCons.add(OpLinCon(env, 0.0, xExpr - x, 0.0));
 	}
 	// 调用OpAlgoBigMBilinear1对所有双线性乘积项分别进行线性化
 	for (OpULInt k = 0; k < segment; k++)

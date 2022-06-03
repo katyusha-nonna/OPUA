@@ -202,6 +202,11 @@ void Solver::OpAdapSol::solve()
 	rsolver_->solve();
 }
 
+void Solver::OpAdapSol::solveFixed()
+{
+	rsolver_->solveFixed();
+}
+
 void Solver::OpAdapSol::setParam(const OpConfig& cfg)
 {
 	rsolver_->setParam(cfg);

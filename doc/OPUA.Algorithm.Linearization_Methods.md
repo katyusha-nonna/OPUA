@@ -45,7 +45,7 @@
   $$
   \begin{aligned}
     &x=x^{min}+\Delta x\sum_{k=1}^{N}u_{k}2^{k-1}\\
-    &\Delta x=\frac{x^{max}-x^{min}}{2^{N}}\\
+    &\Delta x=\frac{x^{max}-x^{min}}{2^{N}-1}\\
     &\forall k\in\{1,\dots,N\}:u_{k}\in\{0,1\}
   \end{aligned}
   $$
