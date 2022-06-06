@@ -194,7 +194,7 @@ namespace OPUA
 				OPUA.Algorithm.CCG.CCGUBGap / OpFloat / 1e-5 / [0, 1] / 注释：CCG上界无改善判据
 				OPUA.Algorithm.CCG.LogOutput / OpBool / false / {true, false} / 注释：是否输出日志
 				OPUA.Algorithm.CCG.LogOutputPath / OpStr / "Log.txt" / {any valid path} / 注释：日志输出路径(需要路径合法)
-				OPUA.Algorithm.CCG.SubProbSolveMode/ OpLInt / 0 / {0, 1, 2} / 注释：CCG子问题求解模式：暂时不起作用
+				OPUA.Algorithm.CCG.SubProbSolveMode/ OpLInt / 0 / {0, 1, 2} / 注释：CCG子问题求解模式：0-OA(外逼近算法) / 1-AD(交替方向迭代算法)
 				OPUA.Algorithm.CCG.NoImprovementIterLimit / OpLInt / 3 / [2, inf] / 注释：CCG上下界最大累计无改善次数(超过限制会认为已经无法继续优化而退出)
 				OPUA.Algorithm.CCG.FirstStageInitMode / OpLInt / 0 / {0, 1, 2} /  注释：CCG一阶段变量初始化模式：0-0值初始化 / 1-给定初值 / 2-确定性解
 				OPUA.Algorithm.CCG.GetDeterministicSolution / OpBool / false / {true, false} / 注释：是否作为确定性模型求解(需要给定不确定集初值)
@@ -209,6 +209,7 @@ namespace OPUA
 
 			struct OpCCGIterInfo; // CCG迭代信息
 			struct OpOAIterInfo; // OA迭代信息
+			struct OpADIterInfo; // AD迭代信息
 		public:	
 			void extract(OpRobustModel model); // 抽取OPUA两阶段鲁棒模型	
 			OpBool solve(const Solver::OpConfig& config); // 求解模型

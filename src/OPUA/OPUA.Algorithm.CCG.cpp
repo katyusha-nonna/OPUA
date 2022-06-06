@@ -1172,6 +1172,79 @@ void Algorithm::OpAlgoCCG::OpOAIterInfo::printIterInfo(std::ostream& stream, con
 		<< oaUb - oaLb << std::endl;
 }
 
+struct Algorithm::OpAlgoCCG::OpADIterInfo
+{
+	Solver::OpSolStatus adSubStatus; // AD子问题求解状态
+	Solver::OpSolStatus adMasterStatus; // AD主问题求解状态
+	OpLInt adIter; // AD迭代次数
+	OpLInt adIterMax; // AD迭代次数上限
+	OpLInt adIterNoImpr; // AD无改善累计迭代次数
+	OpLInt adIterNoImprLimt; // AD无改善累计迭代次数上限
+	OpFloat adGap; // AD相对收敛间隙
+	OpFloat adLbGap; // AD下界相对收敛间隙(无改善判据)
+	OpFloat adUbGap; // AD上界相对收敛间隙(无改善判据)
+	OpFloat adUb; // 当前AD上界
+	OpFloat adLb; // 当前AD下界
+	OpFloat adPrevUb; // 上一次迭代的AD上界
+	OpFloat adPrevLb; // 上一次迭代的AD下界
+
+	Objective::OpObj adSubObj; // AD子问题目标函数对象(需要释放)
+	Objective::OpObj adSubTmpObj;  // AD子问题临时目标函数对象(用于中途更换目标函数)(需要释放)
+	Model::OpModel adSubModel; // AD子问题模型对象(需要释放)
+	Objective::OpObj adMasterObj; // AD主问题目标函数对象(需要释放)
+	Objective::OpObj adMasterTmpObj;  // AD主问题临时目标函数对象(用于中途更换目标函数)(需要释放)
+	Model::OpModel adMasterModel; // AD主问题模型对象(需要释放)
+
+	void init(const OpRobustModelI* mdl, const Solver::OpConfig& config); // 初始化
+	void clear(); // 清理
+	void printIterInfo(std::ostream& stream, const std::thread::id& tid); // 打印迭代信息
+};
+
+void Algorithm::OpAlgoCCG::OpADIterInfo::init(const OpRobustModelI* mdl, const Solver::OpConfig& config)
+{
+	OpEnv localEnv(mdl->env_);
+	adSubStatus = Solver::OpSolStatus::Unknown;
+	adMasterStatus = Solver::OpSolStatus::Unknown;
+	adIter = 1;
+	adIterMax = 100;
+	adIterNoImpr = 0;
+	adIterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	adGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGGap");
+	adLbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGLBGap");
+	adUbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGUBGap");
+	adUb = Constant::Infinity;
+	adLb = -Constant::Infinity;
+	adPrevUb = Constant::Infinity;
+	adPrevLb = -Constant::Infinity;
+
+	adSubObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	adSubTmpObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	adSubModel = Model::OpModel(localEnv);
+	adMasterObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	adMasterTmpObj = Objective::OpObj(localEnv, Objective::OpObjSense::Max);
+	adMasterModel = Model::OpModel(localEnv);
+}
+
+void Algorithm::OpAlgoCCG::OpADIterInfo::clear()
+{
+	adMasterModel.release();
+	adMasterTmpObj.release();
+	adMasterObj.release();
+	adSubModel.release();
+	adSubTmpObj.release();
+	adSubObj.release();
+}
+
+void Algorithm::OpAlgoCCG::OpADIterInfo::printIterInfo(std::ostream& stream, const std::thread::id& tid)
+{
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")AD: ITER\tLB\tUB\tGAP" << std::endl;
+	stream << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")AD: "
+		<< adIter << '\t'
+		<< adLb << '\t'
+		<< adUb << '\t'
+		<< adUb - adLb << std::endl;
+}
+
 void Algorithm::OpAlgoCCG::extract(OpRobustModel model)
 {
 	mdl_ = model.getImpl();
@@ -1224,7 +1297,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 				break;
 			default:
 				std::stringstream msg;
-				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: wrong init mode";
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->wrong init mode";
 				throw OpExcBase(msg.str());
 				break;
 			}
@@ -1321,7 +1394,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 		else
 		{
 			std::stringstream msg;
-			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: resolve sub primal model failed";
+			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->resolve sub primal model failed";
 			throw OpExcBase(msg.str());
 		}
 		std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")resolve sub primal model finished" << std::endl;
@@ -1416,7 +1489,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 		else
 		{
 			std::stringstream msg;
-			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: re-solve special cons failed";
+			msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->re-solve special cons failed";
 			throw OpExcBase(msg.str());
 		}
 		std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")re-solve special cons finished" << std::endl;
@@ -1454,7 +1527,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 			else
 			{
 				std::stringstream msg;
-				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve master model failed";
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->solve master model failed";
 				throw OpExcBase(msg.str());
 			}
 		}
@@ -1477,7 +1550,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 		}
 	};
 	// lambda对象，用途：更新子问题的解(OA迭代)
-	auto updateSubSolution = [&](OpLInt k) {
+	auto updateSubSolution1 = [&](OpLInt k) {
 		// 创建并初始化OA迭代的基本信息
 		OpOAIterInfo oaInfo;
 		oaInfo.init(mdl_, config);
@@ -1655,7 +1728,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 			else
 			{
 				std::stringstream msg;
-				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve OA sub model failed";
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->solve OA sub model failed";
 				throw OpExcBase(msg.str());
 			}
 			// 生成并添加主问题最优割
@@ -1699,7 +1772,7 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 			else
 			{
 				std::stringstream msg;
-				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: solve OA master model failed";
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->solve OA master model failed";
 				throw OpExcBase(msg.str());
 			}
 			// 打印OA迭代信息
@@ -1723,6 +1796,184 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 				auto iter = oaMasterVars.find(it.getVar().getImpl());
 				if (iter != oaMasterVars.end())
 					actualObj += it.getCoeff() * oaMasterSolver.getValue(iter->second);
+			}
+			info.ub = info.lb - info.etaVal + actualObj;
+		}
+		info.subStatus = OpSolStatus::Optimal;
+	};
+	// lambda对象，用途：更新子问题的解(交替迭代)
+	auto updateSubSolution2 = [&](OpLInt k) {
+		// 创建并初始化AD迭代的基本信息
+		OpADIterInfo adInfo;
+		adInfo.init(mdl_, config);
+		Solver::OpAdapSol adSubSolver(info.solverMode, localEnv); // AD子问题求解器(需要释放)
+		Solver::OpAdapSol adMasterSolver(info.solverMode, localEnv); // AD主问题求解器(需要释放)
+		// 一些统计变量
+		std::unordered_map<OpVarI*, OpFloat> firstVarSols; // 一阶段变量解
+		std::unordered_map<OpVarI*, OpFloat> unSetSol; // 不确定集变量解 
+		std::unordered_map<OpVarI*, OpFloat> dualSetSol; // 对偶变量解
+		// 自动释放内存
+		OpAutoFree localGuard([&]() {
+			try
+			{
+				adSubSolver.release();
+				adMasterSolver.release();
+				adInfo.clear();
+			}
+			catch (std::exception& ex)
+			{
+				std::cerr << ex.what() << std::endl;
+			}
+		});
+
+		// 一些通用的函数
+		auto adQuit = [&]() { /* 判定AD迭代的退出条件 */
+			if (adInfo.adIter > 1 ?  /* 非第一次迭代：需要统计上下界累计无改善的次数 */
+				(std::abs(adInfo.adLb - adInfo.adPrevLb) / std::abs(adInfo.adPrevLb) <= adInfo.adLbGap /* 下界无改善判据 */
+					&& std::abs(adInfo.adUb - adInfo.adPrevUb) / std::abs(adInfo.adPrevUb) <= adInfo.adUbGap) /* 上界无改善判据 */
+				: false /* 第一次迭代：不对上下界是否各有所改善进行统计 */)
+				adInfo.adIterNoImpr++;
+			else
+				adInfo.adIterNoImpr = 0;
+			return (adInfo.adIter > adInfo.adIterMax
+				|| adInfo.adIterNoImpr > adInfo.adIterNoImprLimt
+				|| std::abs(adInfo.adUb - adInfo.adLb) / std::abs(adInfo.adUb) < adInfo.adGap);
+		};
+		// 统计一阶段变量解
+		for (OpULInt i = 0; i < mdl_->fsv_.getSize(); i++)
+			firstVarSols.emplace(mdl_->fsv_[i].getImpl(), mdl_->fss_[i]);
+		// 统计不确定集解
+		for (OpULInt i = 0; i < mdl_->uv_.getSize(); i++)
+			unSetSol.emplace(mdl_->uv_[i].getImpl(), mdl_->us_[i]);
+		// 初始化对偶解
+		for (OpULInt i = 0; i < mdl_->ssdv_.getSize(); i++)
+			dualSetSol.emplace(mdl_->ssdv_[i].getImpl(), 0);
+		// 构建主问题(主问题只包含不确定集约束)
+		adInfo.adMasterModel.add(mdl_->uc_);
+		// 构建子问题(子问题只包含对偶约束)
+		adInfo.adSubModel.add(mdl_->ssdc_);
+
+		// 迭代求解
+		while (!adQuit())
+		{
+			// 构建子问题目标函数
+			{
+				OpLinExpr adSubObjExpr(0);
+				for (auto it = mdl_->ssdo_.getLBegin(); it != mdl_->ssdo_.getLEnd(); ++it)
+						adSubObjExpr.addLinTerm(it.getVar(), it.getCoeff()); /* 线性项->系数*对偶变量 */
+				for (auto it = mdl_->ssdo_.getQBegin(); it != mdl_->ssdo_.getQEnd(); ++it)
+				{
+					auto var1Ptr = it.getVar1().getImpl(), var2Ptr = it.getVar2().getImpl();
+					auto iter1 = firstVarSols.find(var1Ptr), iter2 = firstVarSols.find(var2Ptr);
+					if (iter1 != firstVarSols.end() && iter2 == firstVarSols.end())
+						adSubObjExpr.addLinTerm(var2Ptr, iter1->second * it.getCoeff()); /* 线性项->系数*一阶段变量*对偶变量 */
+					else if (iter1 == firstVarSols.end() && iter2 != firstVarSols.end())
+						adSubObjExpr.addLinTerm(var1Ptr, iter2->second * it.getCoeff()); /* 线性项->系数*对偶变量*一阶段变量 */
+					else
+					{
+						auto iter3 = unSetSol.find(var1Ptr), iter4 = unSetSol.find(var2Ptr);
+						if (iter3 != unSetSol.end() && iter4 == unSetSol.end())
+							adSubObjExpr.addLinTerm(var2Ptr, iter3->second * it.getCoeff()); /* 线性项->系数*不确定集变量*对偶变量 */
+						else if (iter3 == unSetSol.end() && iter4 != unSetSol.end())
+							adSubObjExpr.addLinTerm(var1Ptr, iter4->second * it.getCoeff()); /* 线性项->系数*对偶变量*不确定集变量 */
+						else
+							; /*不存在这项*/
+					}
+				}
+				adInfo.adSubModel.setObj(adInfo.adSubTmpObj); // 这里为了更换目标函数，先设置一个空的临时目标函数
+				adInfo.adSubObj.setLinExpr(adSubObjExpr); // 此时原目标函数已经解锁，可以正常更换表达式
+				adInfo.adSubModel.setObj(adInfo.adSubObj); // 最后再将原目标函数对象重新加入模型
+			}
+			// 子问题求解
+			adSubSolver.extract(adInfo.adSubModel);
+			adSubSolver.setParam(config);
+			adSubSolver.solve();
+			adInfo.adSubStatus = IntStatus2OpStatus(info.solverMode, adSubSolver.getStatus());
+			// 子问题取值&更新下界
+			if (adInfo.adSubStatus == OpSolStatus::Optimal)
+			{
+				// 更新对偶变量解
+				for (auto& lbd : dualSetSol)
+					lbd.second = adSubSolver.getValue(lbd.first);
+				// 更新Lb
+				adInfo.adPrevLb = adInfo.adLb;
+				adInfo.adLb = adSubSolver.getValue(adInfo.adSubObj);
+			}
+			else
+			{
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->solve AD sub model failed";
+				throw OpExcBase(msg.str());
+			}
+			// 构造主问题目标函数
+			{
+				OpLinExpr adMasterObjExpr(0);
+				for (auto it = mdl_->ssdo_.getLBegin(); it != mdl_->ssdo_.getLEnd(); ++it)
+					adMasterObjExpr.addLinTerm(dualSetSol.at(it.getVar().getImpl()) * it.getCoeff()); /* 常数项->系数*对偶变量 */
+				for (auto it = mdl_->ssdo_.getQBegin(); it != mdl_->ssdo_.getQEnd(); ++it)
+				{
+					auto var1Ptr = it.getVar1().getImpl(), var2Ptr = it.getVar2().getImpl();
+					auto iter1 = firstVarSols.find(var1Ptr), iter2 = firstVarSols.find(var2Ptr);
+					if (iter1 != firstVarSols.end() && iter2 == firstVarSols.end())
+						adMasterObjExpr.addLinTerm(iter1->second * dualSetSol.at(var2Ptr) * it.getCoeff()); /* 常数项->系数*一阶段变量*对偶变量 */
+					else if (iter1 == firstVarSols.end() && iter2 != firstVarSols.end())
+						adMasterObjExpr.addLinTerm(dualSetSol.at(var1Ptr) * iter2->second * it.getCoeff()); /* 常数项->系数*对偶变量*一阶段变量 */
+					else
+					{
+						auto iter3 = dualSetSol.find(var1Ptr), iter4 = dualSetSol.find(var2Ptr);
+						if (iter3 != dualSetSol.end() && iter4 == dualSetSol.end())
+							adMasterObjExpr.addLinTerm(var2Ptr, iter3->second * it.getCoeff()); /* 线性项->系数*对偶变量*不确定集变量 */
+						else if (iter3 == dualSetSol.end() && iter4 != dualSetSol.end())
+							adMasterObjExpr.addLinTerm(var1Ptr, iter4->second * it.getCoeff()); /* 线性项->系数*不确定集变量*对偶变量 */
+						else
+							; /*不存在这项*/
+					}
+				}
+				adInfo.adMasterModel.setObj(adInfo.adMasterTmpObj); // 这里为了更换目标函数，先设置一个空的临时目标函数
+				adInfo.adMasterObj.setLinExpr(adMasterObjExpr); // 此时原目标函数已经解锁，可以正常更换表达式
+				adInfo.adMasterModel.setObj(adInfo.adMasterObj); // 最后再将原目标函数对象重新加入模型
+			}
+			// 主问题求解
+			adMasterSolver.extract(adInfo.adMasterModel);
+			adMasterSolver.setParam(config);
+			adMasterSolver.solve();
+			adInfo.adMasterStatus = IntStatus2OpStatus(info.solverMode, adMasterSolver.getStatus());
+			// 主问题取值&更新上界
+			if (adInfo.adMasterStatus == OpSolStatus::Optimal)
+			{
+				// 更新不确定集解
+				for (auto& un : unSetSol)
+					un.second = adMasterSolver.getValue(un.first);
+				// 更新Ub
+				adInfo.adPrevUb = adInfo.adUb;
+				adInfo.adUb = adMasterSolver.getValue(adInfo.adMasterObj);
+			}
+			else
+			{
+				std::stringstream msg;
+				msg << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception->solve AD master model failed";
+				throw OpExcBase(msg.str());
+			}
+			// 打印AD迭代信息
+			adInfo.printIterInfo(std::cout, tid);
+			// 更新OA迭代信息
+			adInfo.adIter++;
+		}
+		// 更新CCG子问题解(不确定集解&对偶解)
+		for (OpULInt i = 0; i < mdl_->ssdv_.getSize(); i++)
+			mdl_->ssds_[i] = dualSetSol.at(mdl_->ssdv_[i].getImpl());
+		for (OpULInt i = 0; i < mdl_->uv_.getSize(); i++)
+			mdl_->us_[i] = unSetSol.at(mdl_->uv_[i].getImpl());
+		// 更新CCG上界
+		info.prevUb = info.ub;
+		if (k > 1)
+		{
+			auto actualObj = adInfo.adUb + mdl_->sspo_.getConstant();
+			for (auto it = mdl_->sspo_.getLBegin(); it != mdl_->sspo_.getLEnd(); ++it)
+			{
+				auto iter = unSetSol.find(it.getVar().getImpl());
+				if (iter != unSetSol.end())
+					actualObj += it.getCoeff() * iter->second;
 			}
 			info.ub = info.lb - info.etaVal + actualObj;
 		}
@@ -1811,6 +2062,17 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 		OpTimer watch(true);
 		// 初始化
 		init();
+		switch (info.subProbSolveMode)
+		{
+		case 0:
+			std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")sub problem mode: OA" << std::endl;
+			break;
+		case 1:
+			std::cout << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")sub problem mode: AD" << std::endl;
+			break;
+		default:
+			break;
+		}
 		if (info.needSolveRobust)
 		{
 			// 初始化基本主问题
@@ -1821,7 +2083,17 @@ OpBool Algorithm::OpAlgoCCG::solve(const Solver::OpConfig& config)
 				// 更新主问题解
 				updateMasterSolution(info.iter);
 				// 更新子问题解
-				updateSubSolution(info.iter);
+				switch (info.subProbSolveMode)
+				{
+				case 0:
+					updateSubSolution1(info.iter);
+					break;
+				case 1:
+					updateSubSolution2(info.iter);
+					break;
+				default:
+					break;
+				}
 				// 创建子问题-主问题最优割
 				createAndAddCuts(info.iter);
 				// 打印CCG迭代信息
