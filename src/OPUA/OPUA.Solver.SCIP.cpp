@@ -466,14 +466,13 @@ Solver::OpSCIPSolI::OpSCIPSolI(OpEnvI* env)
 	: OpImplBase('S', env),
 	modified_(false), sense_(SCIP_OBJSENSE::SCIP_OBJSENSE_MINIMIZE), scip_(false), sol_(false)
 {
-	init();
+
 }
 
 Solver::OpSCIPSolI::OpSCIPSolI(OpEnvI* env, Model::OpModel mdl)
 	: OpImplBase('S', env),
 	modified_(false), sense_(SCIP_OBJSENSE::SCIP_OBJSENSE_MINIMIZE), scip_(false), sol_(false)
 {
-	init();
 	extract(mdl);
 }
 

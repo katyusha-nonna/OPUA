@@ -527,11 +527,8 @@ void Solver::OpGRBSolI::clear()
 void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 {
 	// 首先清除原模型
-	if (genv_)
-	{
-		clear();
-		init();
-	}
+	clear();
+	init();
 	// 加载现有模型
 	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
 		vardict_.emplace(iter.getKey(), addGRBVar(iter.getVal()));
@@ -690,7 +687,7 @@ Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env)
 	genv_(nullptr), 
 	gmdl_(nullptr)
 {
-	init();
+
 }
 
 Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, Model::OpModel mdl)
@@ -698,7 +695,6 @@ Solver::OpGRBSolI::OpGRBSolI(OpEnvI* env, Model::OpModel mdl)
 	genv_(nullptr),
 	gmdl_(nullptr)
 {
-	init();
 	extract(mdl);
 }
 

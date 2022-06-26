@@ -7,6 +7,7 @@ OPUA(Optimization Program Universal API)是一套优化求解器通用接口工�
 * Gurobi(已支持)
 * Mosek
 * SCIP(已支持)
+* COPT(已支持)
 
 <p align="right">
 By: Katyusha
@@ -42,6 +43,16 @@ OPUA由以下基本模块构成：
 * **OPUA.Common**: OPUA的通用工具，如计时器、控制台&文件打印等
 * **OPUA.Exception**: OPUA的异常处理工具
 
+OPUA提供了编译开关控制优化求解器或第三方库的编译，在编译时，将需要支持的求解器或第三方库对应的编译开关的宏及其他需要伴随添加的宏加入预处理器定义即可：
+
+| 求解器或第三方库 | 编译开关宏名称 | 其他需要伴随添加的宏名称 |
+| :----: | :----: | :----: |
+| IBM ILOG CPLEX | OPUA_COMPILE_CPX | IL_STD |
+| Gurobi | OPUA_COMPILE_GRB |  |
+| Mosek | OPUA_COMPILE_MSK |  |
+| SCIP | OPUA_COMPILE_SCIP |  |
+| COPT | OPUA_COMPILE_COPT |  |
+| Eigen | OPUA_COMPILE_EIGEN | _CRT_SECURE_NO_WARNINGS |
 
 ## 使用说明
 

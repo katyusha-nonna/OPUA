@@ -432,19 +432,19 @@ void Solver::OpCPXSolI::clear()
 	scdict_.clear();
 	nlcdict_.clear();
 	objdict_.clear();
-	csol_.end();
-	cmdl_.end();
-	cenv_.end();
+	if (csol_.getImpl())
+		csol_.end();
+	if (cmdl_.getImpl())
+		cmdl_.end();
+	if (cenv_.getImpl())
+		cenv_.end();
 }
 
 void Solver::OpCPXSolI::extract(Model::OpModel mdl)
 {
 	// 首先清除原模型
-	if (cenv_.getImpl())
-	{
-		clear();
-		init();
-	}
+	clear();
+	init();
 	// 加载现有模型
 	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
 		vardict_.emplace(iter.getKey(), addCPXVar(iter.getVal()));
@@ -572,7 +572,7 @@ Solver::OpCPXSolI::OpCPXSolI(OpEnvI* env)
 	cmdl_(nullptr), 
 	csol_(nullptr)
 {
-	init();
+
 }
 
 Solver::OpCPXSolI::OpCPXSolI(OpEnvI* env, Model::OpModel mdl)
@@ -581,7 +581,6 @@ Solver::OpCPXSolI::OpCPXSolI(OpEnvI* env, Model::OpModel mdl)
 	cmdl_(nullptr),
 	csol_(nullptr)
 {
-	init();
 	extract(mdl);
 }
 
