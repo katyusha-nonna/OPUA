@@ -953,6 +953,9 @@ void Algorithm::OpAlgoBD::OpBDIterInfo::init(const OpMSSPModelI* mdl, const Solv
 	case 'M':
 		solverMode = Solver::OpSolType::MSK;
 		break;
+	case 'T':
+		solverMode = Solver::OpSolType::COPT;
+		break;
 	default:
 		solverMode = Solver::OpSolType::GRB;
 		break;

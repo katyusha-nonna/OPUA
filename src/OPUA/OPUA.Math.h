@@ -2,9 +2,9 @@
 #include "OPUA.Container.h"
 #include "OPUA.Constant.h"
 
-#ifndef OPUA_COMPILE_EIGEN
-#define OPUA_COMPILE_EIGEN
-#endif
+//#ifndef OPUA_COMPILE_EIGEN
+//#define OPUA_COMPILE_EIGEN
+//#endif
 
 namespace OPUA
 {

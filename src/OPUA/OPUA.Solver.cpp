@@ -306,6 +306,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 		rsolver_ = new OpSCIPSol(env);
 		break;
 #endif
+#ifdef OPUA_COMPILE_COPT
+	case OpSolType::COPT:
+		rsolver_ = new OpCOPTSol(env);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -330,6 +335,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
 #ifdef OPUA_COMPILE_SCIP
 	case OpSolType::SCIP:
 		rsolver_ = new OpSCIPSol(env, mdl);
+		break;
+#endif
+#ifdef OPUA_COMPILE_COPT
+	case OpSolType::COPT:
+		rsolver_ = new OpCOPTSol(env, mdl);
 		break;
 #endif
 	default:
@@ -390,6 +400,24 @@ Solver::OpSolStatus Solver::IntMSKStatus2OpStatus(OpLInt status)
 	return OpSolStatus::Unknown;
 }
 
+Solver::OpSolStatus OPUA::Solver::IntCOPTStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[11] = {
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_UNSTARTED = 0*/
+	OpSolStatus::Optimal, /*COPT_LPSTATUS_OPTIMAL = 1*/
+	OpSolStatus::Infeasible, /*COPT_LPSTATUS_INFEASIBLE  = 2*/
+	OpSolStatus::Unbounded, /*COPT_LPSTATUS_UNBOUNDED  = 3*/
+	OpSolStatus::InfeasibleOrUnbounded, /*COPT_MIPSTATUS_INF_OR_UNB  = 4*/
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_NUMERICAL  = 5*/
+	OpSolStatus::Unknown, /*COPT_MIPSTATUS_NODELIMIT  = 6*/
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_IMPRECISE  = 7*/
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_TIMEOUT  = 8*/
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_UNFINISHED  = 9*/
+	OpSolStatus::Unknown, /*COPT_LPSTATUS_INTERRUPTED   = 10*/
+	};
+	return lookupTable[status];
+}
+
 Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 {
 	OpSolStatus result(OpSolStatus::Unknown);
@@ -406,6 +434,9 @@ Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 		break;
 	case OpSolType::MSK:
 		result = IntMSKStatus2OpStatus(status);
+		break;
+	case OpSolType::COPT:
+		result = IntCOPTStatus2OpStatus(status);
 		break;
 	default:
 		break;

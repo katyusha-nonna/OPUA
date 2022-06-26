@@ -1111,6 +1111,9 @@ void Algorithm::OpAlgoATC::OpATCIterInfo::init(const OpHierarchicalModelI* mdl, 
 	case 'M':
 		solverMode = Solver::OpSolType::MSK;
 		break;
+	case 'T':
+		solverMode = Solver::OpSolType::COPT;
+		break;
 	default:
 		solverMode = Solver::OpSolType::GRB;
 		break;

@@ -89,7 +89,7 @@ namespace OPUA
 				OPUA.Algorithm.BD.LogOutput / OpBool / false / {true, false} / 注释：是否输出日志
 				OPUA.Algorithm.BD.LogOutputPath / OpStr / "Log.txt" / {any valid path} / 注释：日志输出路径(需要路径合法)
 				OPUA.Algorithm.BD.FirstStageInitMode / OpLInt / 0 / {0, 1, 2} /  注释：BD一阶段变量初始化模式：0-0值初始化 / 1-给定初值
-				OPUA.Algorithm.BD.MIPSolverMode / OpChar / 'C' / {'G', 'C', 'S', 'M'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+				OPUA.Algorithm.BD.MIPSolverMode / OpChar / 'C' / {'G', 'C', 'S', 'M', 'T'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK / T-COPT
 			备注：
 				[1] 用户需要保证第二阶段问题的可行性(为约束添加松弛变量)，BD算法不求解可行子问题，不生成可行割
 				[2] 最优割采用单割形式构造
@@ -200,7 +200,7 @@ namespace OPUA
 				OPUA.Algorithm.CCG.GetDeterministicSolution / OpBool / false / {true, false} / 注释：是否作为确定性模型求解(需要给定不确定集初值)
 				OPUA.Algorithm.CCG.MIPTimeLimit / OpFloat / 3600 / [0, inf] / 注释：MIP求解时间上限
 				OPUA.Algorithm.CCG.MIPGap / OpFloat / 1e-5 / [0, 1] /  注释：MIP求解收敛判据
-				OPUA.Algorithm.CCG.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+				OPUA.Algorithm.CCG.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M', 'T'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK / T-COPT
 		*/
 		class OpAlgoCCG
 		{
@@ -305,7 +305,7 @@ namespace OPUA
 					OPUA.Algorithm.ATC.ATCShakeGap / OpFloat / 1e-3 / [0, 1] / 注释：ATC震荡间隙判据
 					OPUA.Algorithm.ATC.ATCShakeCount / OpLInt / 3 / [2, inf] / 注释：ATC震荡次数判据
 					OPUA.Algorithm.ATC.ATCShakeAutoQuit / OpBool / true / {true, false} / 注释：ATC震荡自动退出的开关
-					OPUA.Algorithm.ATC.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK
+					OPUA.Algorithm.ATC.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M', 'T'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK / T-COPT
 		*/
 		class OpAlgoATC
 		{
