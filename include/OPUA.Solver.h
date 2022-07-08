@@ -18,25 +18,9 @@
 #define OPUA_COPT_VERSION_501
 #endif
 
-//#ifndef OPUA_COMPILE_CPX
-//#define OPUA_COMPILE_CPX
-//#endif
-
-//#ifndef OPUA_COMPILE_GRB
-//#define OPUA_COMPILE_GRB
-//#endif
-
-//#ifndef OPUA_COMPILE_SCIP
-//#define OPUA_COMPILE_SCIP
-//#endif
-
-//#ifndef OPUA_COMPILE_MSK
-//#define OPUA_COMPILE_MSK
-//#endif
-
-//#ifndef OPUA_COMPILE_COPT
-//#define OPUA_COMPILE_COPT
-//#endif
+#ifndef OPUA_IPOPT_VERSION_3147
+#define OPUA_IPOPT_VERSION_3147
+#endif
 
 namespace OPUA
 {
@@ -47,6 +31,7 @@ namespace OPUA
 		class OpGRBCfgCvt;
 		class OpSCIPCfgCvt;
 		class OpCOPTCfgCvt;
+		class OpIPOPTCfgCvt;
 
 		class OpSolState;
 		class OpCPXSolI;
@@ -59,6 +44,8 @@ namespace OPUA
 		class OpMSKSol;
 		class OpCOPTSolI;
 		class OpCOPTSol;
+		class OpIPOPTSolI;
+		class OpIPOPTSol;
 		class OpAdapSol;
 
 		// OPUA支持的求解器类型
@@ -69,7 +56,8 @@ namespace OPUA
 			GRB,
 			SCIP,
 			MSK,
-			COPT
+			COPT,
+			IPOPT
 		};
 
 		// OPUA求解状态
@@ -398,7 +386,7 @@ namespace OPUA
 			virtual void solveFixed(); // 固定整数变量解并执行求解
 			virtual void setParam(const OpConfig& cfg); // 设置配置
 			virtual OpLInt getStatus() const; // 获取求解状态
-			virtual OpFloat getObjValue() const; // 获取目标函数解(SCIP的目标函数必须为线性且忽略常数项)
+			virtual OpFloat getObjValue() const; // 获取目标函数解
 			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
 			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
 			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
@@ -417,6 +405,40 @@ namespace OPUA
 			OpCOPTSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
 		public:
 			virtual ~OpCOPTSol();
+		};
+
+		/*
+			OpIPOPTSol：求解器IPOPT的接口类
+			求解参数说明：
+		*/
+		class OpIPOPTSol
+			: public OpBase, public OpSolState
+		{
+		public:
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成IPOPT模型对象
+			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态
+			virtual OpFloat getObjValue() const; // 获取目标函数解
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpIPOPTSolI* getImpl() const; // 获取Impl
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
+		public:
+			OpBool operator==(const OpIPOPTSol& sol) const;
+			OpBool operator!=(const OpIPOPTSol& sol) const;
+		public:
+			OpIPOPTSol(); // 默认构造函数(默认为空)
+			OpIPOPTSol(OpIPOPTSolI* impl); // 从impl构造
+			OpIPOPTSol(OpEnv env); // 从env构造
+			OpIPOPTSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
+		public:
+			virtual ~OpIPOPTSol();
 		};
 
 		/*
@@ -463,6 +485,8 @@ namespace OPUA
 		OpSolStatus IntMSKStatus2OpStatus(OpLInt status);
 		// 求解状态转换函数(COPT)
 		OpSolStatus IntCOPTStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(IPOPT)
+		OpSolStatus IntIPOPTStatus2OpStatus(OpLInt status);
 		// 求解状态转换函数(通用)
 		OpSolStatus IntStatus2OpStatus(OpSolType stype, OpLInt status);
 	}

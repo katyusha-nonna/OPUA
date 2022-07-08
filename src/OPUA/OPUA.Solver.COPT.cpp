@@ -1,6 +1,6 @@
 #include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_COPT
-#include "coptcpp_pch.h"
+#include <coptcpp_inc/coptcpp_pch.h>
 #endif
 
 #ifdef OPUA_COMPILE_COPT

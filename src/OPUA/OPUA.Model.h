@@ -39,7 +39,7 @@ namespace OPUA
 			void add(Constraint::OpCdtCon con); // 添加条件约束
 			void add(Constraint::OpCCArr cons);  // 添加条件约束集
 			void setObj(Objective::OpObj obj); // 设置单目标优化目标函数
-			Objective::OpObj getObj(); // 获取单目标优化目标函数
+			Objective::OpObj getObj() const; // 获取单目标优化目标函数
 			void remove(Constraint::OpLinCon con); // 移除线性约束
 			void remove(Constraint::OpLCArr cons); // 移除线性约束集
 			void remove(Constraint::OpQuadCon con); // 移除二次约束
@@ -51,6 +51,14 @@ namespace OPUA
 			void remove(Constraint::OpCdtCon con); // 添加条件约束
 			void remove(Constraint::OpCCArr cons);  // 添加条件约束集
 			void write(OpStr path) const; // 将模型写入文件
+			OpULInt getSize(Variable::OpVar flag) const; // 获取变量数目
+			OpULInt getSize(Constraint::OpLinCon flag) const; // 获取线性约束数目
+			OpULInt getSize(Constraint::OpQuadCon flag) const; // 获取二次约束数目
+			OpULInt getSize(Constraint::OpSOSCon flag) const; // 获取SOS约束数目
+			OpULInt getSize(Constraint::OpNLCon flag) const; // 获取非线性约束数目
+			OpULInt getSize(Constraint::OpCdtCon flag) const; // 获取条件约束数目
+			OpULInt getSize(Objective::OpObj flag) const; // 获取目标函数数目
+			template<typename T> inline auto  getSize() const { return getSize(T()); }
 			void setName(OpStr name); // 设置名称
 			OpStr getName() const; // 获取模型名称
 			OpModelI* getImpl() const; // 获取impl

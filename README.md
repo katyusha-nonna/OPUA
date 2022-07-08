@@ -8,6 +8,7 @@ OPUA(Optimization Program Universal API)是一套优化求解器通用接口工�
 * Mosek
 * SCIP(已支持)
 * COPT(已支持)
+* IPOPT(已支持)
 
 <p align="right">
 By: Katyusha
@@ -27,12 +28,12 @@ OPUA由以下基本模块构成：
 * **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、SOS约束、非线性约束、条件约束、逻辑约束、特殊约束等
 * **OPUA.Objective**: 目标函数模块，提供OPUA的目标函数模型
 * **OPUA.Model**: 优化问题模块，提供OPUA的优化问题模型
-* **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP等
+* **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP、COPT、IPOPT等
 
 除此之外包含以下进阶模块：
 
 * **OPUA.Math**: 数学算法模块，提供各种数值算法用于辅助建模。目前已支持：函数线性分段拟合(一元二次、多元凸函数)
-* **OPUA.Algorithm**: 优化算法模块，提供各种经典的优化模型及算法框架。目前已支持C&CG(用于两阶段鲁棒模型的求解)、BD(用于两阶段多场景随机规划模型的求解)、ATC(用于分层模型的分布式求解)。
+* **OPUA.Algorithm**: 优化算法模块，提供各种经典的优化模型及算法框架。目前已支持C&CG(用于两阶段鲁棒模型的求解)、BD(用于两阶段多场景随机规划模型的求解)、ATC(用于分层模型的分布式求解)。还提供约束线性化、KKT条件自动推导、对偶问题自动推导等通用算法。
 
 以下文件提供基本的类型和常数定义：
 
@@ -45,14 +46,15 @@ OPUA由以下基本模块构成：
 
 OPUA提供了编译开关控制优化求解器或第三方库的编译，在编译时，将需要支持的求解器或第三方库对应的编译开关的宏及其他需要伴随添加的宏加入预处理器定义即可：
 
-| 求解器或第三方库 | 编译开关宏名称 | 其他需要伴随添加的宏名称 |
-| :----: | :----: | :----: |
-| IBM ILOG CPLEX | OPUA_COMPILE_CPX | IL_STD |
-| Gurobi | OPUA_COMPILE_GRB |  |
-| Mosek | OPUA_COMPILE_MSK |  |
-| SCIP | OPUA_COMPILE_SCIP |  |
-| COPT | OPUA_COMPILE_COPT |  |
-| Eigen | OPUA_COMPILE_EIGEN | _CRT_SECURE_NO_WARNINGS |
+| 求解器或第三方库 | 编译开关宏名称 | 依赖库 | 其他需要伴随添加的宏名称 |
+| :----: | :----: | :----: | :----: |
+| IBM ILOG CPLEX | OPUA_COMPILE_CPX |  | IL_STD |
+| Gurobi | OPUA_COMPILE_GRB |  |  |
+| Mosek | OPUA_COMPILE_MSK |  |  |
+| SCIP | OPUA_COMPILE_SCIP |  |  |
+| COPT | OPUA_COMPILE_COPT |  |  |
+| IPOPT | OPUA_COMPILE_IPOPT | CppAD |  |
+| Eigen | OPUA_COMPILE_EIGEN |  | _CRT_SECURE_NO_WARNINGS |
 
 ## 使用说明
 

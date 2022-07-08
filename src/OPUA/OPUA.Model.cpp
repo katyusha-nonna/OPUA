@@ -45,7 +45,7 @@ protected:
 	void addCdtCon(Constraint::OpCdtCon con); // 添加条件约束
 	void addCdtCons(Constraint::OpCCArr cons); // 添加条件约束集
 	void setObj(Objective::OpObj obj); // 设置单目标优化目标函数
-	Objective::OpObj getObj(); // 获取单目标优化目标函数
+	Objective::OpObj getObj() const; // 获取单目标优化目标函数
 	void addMultiObj(Objective::OpObj obj); // 添加多目标优化目标函数
 	void addMultiObj(Objective::OpObjArr objs); // 添加多目标优化目标函数
 	
@@ -61,6 +61,14 @@ protected:
 	void removeCdtCons(Constraint::OpCCArr cons); // 添加条件约束集
 	void removeMultiObj(Objective::OpObj obj); // 移除多目标优化目标函数
 	void removeMultiObj(Objective::OpObjArr objs); // 移除多目标优化目标函数
+
+	OpULInt getSize(Variable::OpVar flag) const; // 获取变量数目
+	OpULInt getSize(Constraint::OpLinCon flag) const; // 获取线性约束数目
+	OpULInt getSize(Constraint::OpQuadCon flag) const; // 获取二次约束数目
+	OpULInt getSize(Constraint::OpSOSCon flag) const; // 获取SOS约束数目
+	OpULInt getSize(Constraint::OpNLCon flag) const; // 获取非线性约束数目
+	OpULInt getSize(Constraint::OpCdtCon flag) const; // 获取条件约束数目
+	OpULInt getSize(Objective::OpObj flag) const; // 获取目标函数数目
 
 	void setName(OpStr name); // 设置名称
 	OpStr getName() const; // 获取名称
@@ -294,7 +302,7 @@ void Model::OpModelI::setObj(Objective::OpObj obj)
 	}
 }
 
-Objective::OpObj Model::OpModelI::getObj()
+Objective::OpObj Model::OpModelI::getObj() const
 {
 	return mobj0_;
 }
@@ -415,6 +423,41 @@ void Model::OpModelI::removeMultiObj(Objective::OpObjArr objs)
 {
 	for (OpULInt i = 0; i < objs.getSize(); i++)
 		removeMultiObj(objs[i]);
+}
+
+OpULInt Model::OpModelI::getSize(Variable::OpVar flag) const
+{
+	return mvars_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Constraint::OpLinCon flag) const
+{
+	return mlcs_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Constraint::OpQuadCon flag) const
+{
+	return mqcs_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Constraint::OpSOSCon flag) const
+{
+	return mscs_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Constraint::OpNLCon flag) const
+{
+	return mnlcs_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Constraint::OpCdtCon flag) const
+{
+	return mccs_.getSize();
+}
+
+OpULInt Model::OpModelI::getSize(Objective::OpObj flag) const
+{
+	return mobjs_.getSize() + 1;
 }
 
 void Model::OpModelI::setName(OpStr name)
@@ -562,7 +605,7 @@ void Model::OpModel::setObj(Objective::OpObj obj)
 	static_cast<OpModelI*>(impl_)->setObj(obj);
 }
 
-Objective::OpObj Model::OpModel::getObj()
+Objective::OpObj Model::OpModel::getObj() const
 {
 	return static_cast<OpModelI*>(impl_)->getObj();
 }
@@ -620,6 +663,41 @@ void OPUA::Model::OpModel::remove(Constraint::OpCCArr cons)
 void Model::OpModel::write(OpStr path) const
 {
 	static_cast<OpModelI*>(impl_)->write(path);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Variable::OpVar flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Constraint::OpLinCon flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Constraint::OpQuadCon flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Constraint::OpSOSCon flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Constraint::OpNLCon flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Constraint::OpCdtCon flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
+}
+
+OpULInt OPUA::Model::OpModel::getSize(Objective::OpObj flag) const
+{
+	return static_cast<OpModelI*>(impl_)->getSize(flag);
 }
 
 void OPUA::Model::OpModel::setName(OpStr name)

@@ -311,6 +311,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 		rsolver_ = new OpCOPTSol(env);
 		break;
 #endif
+#ifdef OPUA_COMPILE_IPOPT
+	case OpSolType::IPOPT:
+		rsolver_ = new OpIPOPTSol(env);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -340,6 +345,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
 #ifdef OPUA_COMPILE_COPT
 	case OpSolType::COPT:
 		rsolver_ = new OpCOPTSol(env, mdl);
+		break;
+#endif
+#ifdef OPUA_COMPILE_IPOPT
+	case OpSolType::IPOPT:
+		rsolver_ = new OpIPOPTSol(env, mdl);
 		break;
 #endif
 	default:
@@ -413,7 +423,29 @@ Solver::OpSolStatus OPUA::Solver::IntCOPTStatus2OpStatus(OpLInt status)
 	OpSolStatus::Unknown, /*COPT_LPSTATUS_IMPRECISE  = 7*/
 	OpSolStatus::Unknown, /*COPT_LPSTATUS_TIMEOUT  = 8*/
 	OpSolStatus::Unknown, /*COPT_LPSTATUS_UNFINISHED  = 9*/
-	OpSolStatus::Unknown, /*COPT_LPSTATUS_INTERRUPTED   = 10*/
+	OpSolStatus::Unknown /*COPT_LPSTATUS_INTERRUPTED   = 10*/
+	};
+	return lookupTable[status];
+}
+
+Solver::OpSolStatus Solver::IntIPOPTStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[15] = {
+		OpSolStatus::Unknown, /*not_defined = 0*/
+		OpSolStatus::Optimal, /*success = 1*/
+		OpSolStatus::Unknown, /*maxiter_exceeded  = 2*/
+		OpSolStatus::Unknown, /*stop_at_tiny_step  = 3*/
+		OpSolStatus::Unknown, /*stop_at_acceptable_point  = 4*/
+		OpSolStatus::Infeasible, /*local_infeasibility  = 5*/
+		OpSolStatus::Unknown, /*user_requested_stop  = 6*/
+		OpSolStatus::Feasible, /*feasible_point_found  = 7*/
+		OpSolStatus::Unknown, /*diverging_iterates  = 8*/
+		OpSolStatus::Unknown, /*restoration_failure  = 9*/
+		OpSolStatus::Unknown, /*error_in_step_computation  = 10*/
+		OpSolStatus::Unknown, /*invalid_number_detected  = 11*/
+		OpSolStatus::Unknown, /* too_few_degrees_of_freedom  = 12*/
+		OpSolStatus::Unknown, /*internal_error  = 13*/
+		OpSolStatus::Unknown /*unknown  = 14*/
 	};
 	return lookupTable[status];
 }
@@ -437,6 +469,9 @@ Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 		break;
 	case OpSolType::COPT:
 		result = IntCOPTStatus2OpStatus(status);
+		break;
+	case OpSolType::IPOPT:
+		result = IntIPOPTStatus2OpStatus(status);
 		break;
 	default:
 		break;

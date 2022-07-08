@@ -15,6 +15,9 @@ namespace OPUA
 		class OpHierarchicalModelI;
 		class OpHierarchicalModel;
 		class OpAlgoATC;
+
+		class OpAutoKKTSet;
+		class OpAutoDualSet;
 		typedef std::pair<Variable::OpVarArr, Constraint::OpLCArr> OpLinearization;
 
 		// OPUA两阶段多场景随机规划模型阶段类型
@@ -463,5 +466,105 @@ namespace OPUA
 			Container::OpFloatArr Xmin, Container::OpFloatArr Xmax);
 		OpLinearization OpAlgoBigMMin(OpEnv env, Variable::OpVar w, Variable::OpVarArr X,
 			Container::OpFloatArr Xmin, Container::OpFloatArr Xmax);
+
+		class OpAutoKKTSet
+		{
+		public:
+			Variable::OpVarArr primalVar; /*原始变量*/
+			Variable::OpVarArr dualVar; /*对偶变量*/
+			Variable::OpVarArr slackVar; /*松弛变量*/
+			Constraint::OpLCArr gradCon; /*梯度约束*/
+			Constraint::OpLCArr primalCon; /*原始可行性约束*/
+			Constraint::OpLCArr dualCon; /*对偶可行性约束*/
+			Constraint::OpLCArr csCon1; /*互补松弛约束(线性)*/
+			Constraint::OpQCArr csCon2; /*互补松弛约束(二次)*/
+		public:
+			void init(OpEnv env); //初始化
+			void clear(OpBool deep); // 清空(deep为true时将执行深度清理，释放数组中的所有元素)
+		public:
+			OpAutoKKTSet();
+			OpAutoKKTSet(OpEnv env);
+		};
+
+		/*
+			算法类别：自动KKT条件推导
+			松弛方式：Bilinear(不松驰) / BigM
+			数学形式：
+				原问题形式：
+					\min_{x,y} c^{T}*x+d^{T}*y
+					s.t.   A*x+B*y>=b: \lambda
+					       G*x+D*y=g: \mu
+						   x>=0
+				KKT条件形式：
+					A^{T}*\lambda-G^{T}*\mu<=c
+					B^{T}*\lambda-D^{T}*\mu=d
+					A*x+B*y>=b
+					G*x+D*y=g
+					\lambda>=0
+					\lambda^{T}*(A*x+B*y-b)=0
+			参数说明：
+				env / OpEnv / - / - / 环境变量
+				result / OpAutoKKTSet& / - / - / KKT条件(包含变量和约束)
+				X0 / Variable::OpVarArr / - / - / 原问题变量集(非负变量)
+				Y0 / Variable::OpVarArr / - / - / 原问题变量集(无限制变量)
+				NEC0 / Constraint::OpLCArr / - / - / 原问题不等式约束条件集
+				EC0 / Constraint::OpLCArr / - / - / 原问题等式约束条件集
+				O0 / const Expression::OpLinExpr& / - / - / 原问题目标函数
+				M / Container::OpFloatArr / - / - / 互补松弛约束的BigM参数
+				relax / OpBool / - / {true, false} / 是否对互补松弛约束进行松弛
+			特别说明：
+				1. result中primalCon按照[不等式约束，等式约束]的顺序排列，对偶变量dualVar自动生成并与primalCon的顺序对应，为[非负对偶变量，无限制对偶变量]；gradCon按照[不等式约束，等式约束]的顺序排列
+				2. 原问题约束NEC0和EC0必须要写成标准的小于等于约束A*x+B*y>=b或标准的等式约束G*x+D*y，对应的对偶变量分别为lambda(非负)和mu(无限制)
+				3. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoKKT失败！
+				4. relax设为true时，对互补松弛约束进行BigM松弛(需要自行设置M并保证M长度与NEC0相等)并放入result中的csCon1，松弛变量加入result；设置为false时，互补松弛约束为二次约束并放入result中的csCon2(M可以为空)
+		*/
+		void OpAlgoAutoKKT(OpEnv env, OpAutoKKTSet& result, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0,
+			Container::OpFloatArr M, OpBool relax);
+		OpAutoKKTSet OpAlgoAutoKKT(OpEnv env, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0,
+			Container::OpFloatArr M, OpBool relax);
+
+		class OpAutoDualSet
+		{
+		public:
+			Variable::OpVarArr dualVar; /*对偶问题变量*/
+			Constraint::OpLCArr dualCon; /*对偶问题约束*/
+			Expression::OpLinExpr dualObj; /*对偶问题目标函数*/
+		public:
+			void init(OpEnv env); //初始化
+			void clear(OpBool deep); // 清空(deep为true时将执行深度清理，释放数组中的所有元素)
+		public:
+			OpAutoDualSet();
+			OpAutoDualSet(OpEnv env);
+		};
+
+		/*
+			算法类别：自动对偶问题推导
+			数学形式：
+				原问题形式：
+					\min c^{T}*x+d^{T}*y
+					s.t.   A*x+B*y>=b: \lambda
+						   G*x+D*y=g: \mu
+						   x>=0
+				对偶问题形式：
+					\max_{\lambda,\mu} b^T*\lambda+g^T*\mu
+					s.t.   A^{T}*\lambda+G^{T}*\mu<=c: x
+						   B^{T}*\lambda+D^{T}*\mu=d: y
+						   \lambda>=0
+			参数说明：
+				env / OpEnv / - / - / 环境变量
+				result / OpAutoDualSet& / - / - / 对偶问题
+				X0 / Variable::OpVarArr / - / - / 原问题变量集(非负变量)
+				Y0 / Variable::OpVarArr / - / - / 原问题变量集(无限制变量)
+				NEC0 / Constraint::OpLCArr / - / - / 原问题不等式约束条件集
+				EC0 / Constraint::OpLCArr / - / - / 原问题等式约束条件集
+				O0 / const Expression::OpLinExpr& / - / - / 原问题目标函数
+			特别说明：
+				1. result中对偶变量dualVar自动生成，按照[非负对偶变量，无限制对偶变量]的顺序排列，并[不等式约束，等式约束]的顺序对应
+				2. result中对偶约束dualCon自动生成，按照[不等式约束，等式约束]的顺序排列，并与[非负原问题变量，无限制原问题变量]的顺序对应
+				3. 原问题约束NEC0和EC0必须要写成标准的小于等于约束A*x+B*y>=b或标准的等式约束G*x+D*y，对应的对偶变量分别为lambda(非负)和mu(无限制)
+				4. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoDual失败！
+		*/
+		void OpAlgoAutoDual(OpEnv env, OpAutoDualSet& result, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0);
+		OpAutoDualSet OpAlgoAutoDual(OpEnv env, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0);
 	}
 }
