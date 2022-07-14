@@ -96,7 +96,7 @@ auto sos1con1 = OpSOSCon(env, OpConSense::SOS1, linexpr1);
 // 非线性约束
 auto nlcon1 = OpAbs(env, var4, var1);
 // 条件约束
-auto indcon1 = var4 == lincon2;
+auto indcon1 = var4 >> lincon2;
 ```
 
 接着，我们可以创建目标函数：

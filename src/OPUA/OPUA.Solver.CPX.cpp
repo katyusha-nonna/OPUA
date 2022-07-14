@@ -34,8 +34,10 @@ void Solver::OpCPXCfgCvt::init()
 {
 #ifdef OPUA_CPX_VERSION_128
 	// CPX版本：12.8
-	// 加载Barrier参数
+	// 按字母顺序排列	
+	// 加载其他参数
 	ipdict_.emplace("OPUA.CPX.Advance", IloCplex::Param::Advance);
+	// 加载Barrier参数
 	ipdict_.emplace("OPUA.CPX.Barrier.Algorithm", IloCplex::Param::Barrier::Algorithm);
 	ipdict_.emplace("OPUA.CPX.Barrier.ColNonzeros", IloCplex::Param::Barrier::ColNonzeros);
 	npdict_.emplace("OPUA.CPX.Barrier.ConvergeTol", IloCplex::Param::Barrier::ConvergeTol);
@@ -48,12 +50,191 @@ void Solver::OpCPXCfgCvt::init()
 	ipdict_.emplace("OPUA.CPX.Barrier.Ordering", IloCplex::Param::Barrier::Ordering);
 	npdict_.emplace("OPUA.CPX.Barrier.QCPConvergeTol", IloCplex::Param::Barrier::QCPConvergeTol);
 	ipdict_.emplace("OPUA.CPX.Barrier.StartAlg", IloCplex::Param::Barrier::StartAlg);
+	// 加载其他参数
+	ipdict_.emplace("OPUA.CPX.ClockType", IloCplex::Param::ClockType);
+	// 加载Conflict参数
+	ipdict_.emplace("OPUA.CPX.Conflict.Algorithm", IloCplex::Param::Conflict::Algorithm);
+	ipdict_.emplace("OPUA.CPX.Conflict.Display", IloCplex::Param::Conflict::Display);
+	// 加载其他参数
+	spdict_.emplace("OPUA.CPX.CPUmask", IloCplex::Param::CPUmask);
+	npdict_.emplace("OPUA.CPX.DetTimeLimit", IloCplex::Param::DetTimeLimit);
+	// 加载DistMIP参数
+	npdict_.emplace("OPUA.CPX.DistMIP.Rampup.DetTimeLimit", IloCplex::Param::DistMIP::Rampup::DetTimeLimit);
+	ipdict_.emplace("OPUA.CPX.DistMIP.Rampup.Duration", IloCplex::Param::DistMIP::Rampup::Duration);
+	npdict_.emplace("OPUA.CPX.DistMIP.Rampup.TimeLimit", IloCplex::Param::DistMIP::Rampup::TimeLimit);
+	// 加载Emphasis参数
+	bpdict_.emplace("OPUA.CPX.Emphasis.Memory", IloCplex::Param::Emphasis::Memory);
+	ipdict_.emplace("OPUA.CPX.Emphasis.MIP", IloCplex::Param::Emphasis::MIP);
+	bpdict_.emplace("OPUA.CPX.Emphasis.Numerical", IloCplex::Param::Emphasis::Numerical);
+	// 加载Feasopt参数
+	ipdict_.emplace("OPUA.CPX.Feasopt.Mode", IloCplex::Param::Feasopt::Mode);
+	npdict_.emplace("OPUA.CPX.Feasopt.Tolerance", IloCplex::Param::Feasopt::Tolerance);
+	// 加载MIP参数
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.BQP", IloCplex::Param::MIP::Cuts::BQP);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.Cliques", IloCplex::Param::MIP::Cuts::Cliques);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.Covers", IloCplex::Param::MIP::Cuts::Covers);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.Disjunctive", IloCplex::Param::MIP::Cuts::Disjunctive);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.FlowCovers", IloCplex::Param::MIP::Cuts::FlowCovers);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.Gomory", IloCplex::Param::MIP::Cuts::Gomory);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.GUBCovers", IloCplex::Param::MIP::Cuts::GUBCovers);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.Implied", IloCplex::Param::MIP::Cuts::Implied);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.LiftProj", IloCplex::Param::MIP::Cuts::LiftProj);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.LocalImplied", IloCplex::Param::MIP::Cuts::LocalImplied);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.MCFCut", IloCplex::Param::MIP::Cuts::MCFCut);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.MIRCut", IloCplex::Param::MIP::Cuts::MIRCut);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.PathCut", IloCplex::Param::MIP::Cuts::PathCut);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.RLT", IloCplex::Param::MIP::Cuts::RLT);
+	ipdict_.emplace("OPUA.CPX.MIP.Cuts.ZeroHalfCut", IloCplex::Param::MIP::Cuts::ZeroHalfCut);
+	ipdict_.emplace("OPUA.CPX.MIP.Display", IloCplex::Param::MIP::Display);
+	lpdict_.emplace("OPUA.CPX.MIP.Interval", IloCplex::Param::MIP::Interval);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.AggForCut", IloCplex::Param::MIP::Limits::AggForCut);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.AuxRootThreads", IloCplex::Param::MIP::Limits::AuxRootThreads);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.CutPasses", IloCplex::Param::MIP::Limits::CutPasses);
+	npdict_.emplace("OPUA.CPX.MIP.Limits.CutsFactor", IloCplex::Param::MIP::Limits::CutsFactor);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.EachCutLimit", IloCplex::Param::MIP::Limits::EachCutLimit);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.GomoryCand", IloCplex::Param::MIP::Limits::GomoryCand);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.GomoryPass", IloCplex::Param::MIP::Limits::GomoryPass);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.Nodes", IloCplex::Param::MIP::Limits::Nodes);
+	npdict_.emplace("OPUA.CPX.MIP.Limits.PolishTime", IloCplex::Param::MIP::Limits::PolishTime);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.Populate", IloCplex::Param::MIP::Limits::Populate);
+	npdict_.emplace("OPUA.CPX.MIP.Limits.ProbeDetTime", IloCplex::Param::MIP::Limits::ProbeDetTime);
+	npdict_.emplace("OPUA.CPX.MIP.Limits.ProbeTime", IloCplex::Param::MIP::Limits::ProbeTime);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.RepairTries", IloCplex::Param::MIP::Limits::RepairTries);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.Solutions", IloCplex::Param::MIP::Limits::Solutions);
+	ipdict_.emplace("OPUA.CPX.MIP.Limits.StrongCand", IloCplex::Param::MIP::Limits::StrongCand);
+	lpdict_.emplace("OPUA.CPX.MIP.Limits.StrongIt", IloCplex::Param::MIP::Limits::StrongIt);
+	npdict_.emplace("OPUA.CPX.MIP.Limits.TreeMemory", IloCplex::Param::MIP::Limits::TreeMemory);
+	ipdict_.emplace("OPUA.CPX.MIP.OrderType", IloCplex::Param::MIP::OrderType);
+	npdict_.emplace("OPUA.CPX.MIP.PolishAfter.AbsMIPGap", IloCplex::Param::MIP::PolishAfter::AbsMIPGap);
+	npdict_.emplace("OPUA.CPX.MIP.PolishAfter.DetTime", IloCplex::Param::MIP::PolishAfter::DetTime);
+	npdict_.emplace("OPUA.CPX.MIP.PolishAfter.MIPGap", IloCplex::Param::MIP::PolishAfter::MIPGap);
+	lpdict_.emplace("OPUA.CPX.MIP.PolishAfter.Nodes", IloCplex::Param::MIP::PolishAfter::Nodes);
+	lpdict_.emplace("OPUA.CPX.MIP.PolishAfter.Solutions", IloCplex::Param::MIP::PolishAfter::Solutions);
+	npdict_.emplace("OPUA.CPX.MIP.PolishAfter.Time", IloCplex::Param::MIP::PolishAfter::Time);
+	npdict_.emplace("OPUA.CPX.MIP.Pool.AbsGap", IloCplex::Param::MIP::Pool::AbsGap);
+	ipdict_.emplace("OPUA.CPX.MIP.Pool.Capacity", IloCplex::Param::MIP::Pool::Capacity);
+	ipdict_.emplace("OPUA.CPX.MIP.Pool.Intensity", IloCplex::Param::MIP::Pool::Intensity);
+	npdict_.emplace("OPUA.CPX.MIP.Pool.RelGap", IloCplex::Param::MIP::Pool::RelGap);
+	ipdict_.emplace("OPUA.CPX.MIP.Pool.Replace", IloCplex::Param::MIP::Pool::Replace);
+	npdict_.emplace("OPUA.CPX.MIP.Strategy.Backtrack", IloCplex::Param::MIP::Strategy::Backtrack);
+	lpdict_.emplace("OPUA.CPX.MIP.Strategy.BBInterval", IloCplex::Param::MIP::Strategy::BBInterval);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.Branch", IloCplex::Param::MIP::Strategy::Branch);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.Dive", IloCplex::Param::MIP::Strategy::Dive);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.File", IloCplex::Param::MIP::Strategy::File);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.FPHeur", IloCplex::Param::MIP::Strategy::FPHeur);
+	npdict_.emplace("OPUA.CPX.MIP.Strategy.HeuristicEffort", IloCplex::Param::MIP::Strategy::HeuristicEffort);
+	lpdict_.emplace("OPUA.CPX.MIP.Strategy.HeuristicFreq", IloCplex::Param::MIP::Strategy::HeuristicFreq);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.KappaStats", IloCplex::Param::MIP::Strategy::KappaStats);
+	bpdict_.emplace("OPUA.CPX.MIP.Strategy.LBHeur", IloCplex::Param::MIP::Strategy::LBHeur);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.MIQCPStrat", IloCplex::Param::MIP::Strategy::MIQCPStrat);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.NodeSelect", IloCplex::Param::MIP::Strategy::NodeSelect);
+	bpdict_.emplace("OPUA.CPX.MIP.Strategy.Order", IloCplex::Param::MIP::Strategy::Order);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.PresolveNode", IloCplex::Param::MIP::Strategy::PresolveNode);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.Probe", IloCplex::Param::MIP::Strategy::Probe);
+	lpdict_.emplace("OPUA.CPX.MIP.Strategy.RINSHeur", IloCplex::Param::MIP::Strategy::RINSHeur);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.Search", IloCplex::Param::MIP::Strategy::Search);
+	ipdict_.emplace("OPUA.CPX.MIP.Strategy.VariableSelect", IloCplex::Param::MIP::Strategy::VariableSelect);
+	ipdict_.emplace("OPUA.CPX.MIP.SubMIP.StartAlg", IloCplex::Param::MIP::SubMIP::StartAlg);
+	ipdict_.emplace("OPUA.CPX.MIP.SubMIP.SubAlg", IloCplex::Param::MIP::SubMIP::SubAlg);
+	lpdict_.emplace("OPUA.CPX.MIP.SubMIP.NodeLimit", IloCplex::Param::MIP::SubMIP::NodeLimit);
+	ipdict_.emplace("OPUA.CPX.MIP.SubMIP.Scale", IloCplex::Param::MIP::SubMIP::Scale);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.AbsMIPGap", IloCplex::Param::MIP::Tolerances::AbsMIPGap);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.Linearization", IloCplex::Param::MIP::Tolerances::Linearization);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.Integrality", IloCplex::Param::MIP::Tolerances::Integrality);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.LowerCutoff", IloCplex::Param::MIP::Tolerances::LowerCutoff);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.MIPGap", IloCplex::Param::MIP::Tolerances::MIPGap);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.ObjDifference", IloCplex::Param::MIP::Tolerances::ObjDifference);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.RelObjDifference", IloCplex::Param::MIP::Tolerances::RelObjDifference);
+	npdict_.emplace("OPUA.CPX.MIP.Tolerances.UpperCutoff", IloCplex::Param::MIP::Tolerances::UpperCutoff);
+	// 加载MultiObjective参数
+	ipdict_.emplace("OPUA.CPX.MultiObjective.Display", IloCplex::Param::MultiObjective::Display);
+	// 加载Network参数
+	ipdict_.emplace("OPUA.CPX.Network.Display", IloCplex::Param::Network::Display);
+	lpdict_.emplace("OPUA.CPX.Network.Iterations", IloCplex::Param::Network::Iterations);
+	ipdict_.emplace("OPUA.CPX.Network.NetFind", IloCplex::Param::Network::NetFind);
+	ipdict_.emplace("OPUA.CPX.Network.Pricing", IloCplex::Param::Network::Pricing);
+	npdict_.emplace("OPUA.CPX.Network.Tolerances.Feasibility", IloCplex::Param::Network::Tolerances::Feasibility);
+	npdict_.emplace("OPUA.CPX.Network.Tolerances.Optimality", IloCplex::Param::Network::Tolerances::Optimality);
+	// 加载其他参数
+	ipdict_.emplace("OPUA.CPX.NodeAlgorithm", IloCplex::Param::NodeAlgorithm);
+	ipdict_.emplace("OPUA.CPX.OptimalityTarget", IloCplex::Param::OptimalityTarget);
+	// 加载Output参数
+	bpdict_.emplace("OPUA.CPX.Output.CloneLog", IloCplex::Param::Output::CloneLog);
+	spdict_.emplace("OPUA.CPX.Output.IntSolFilePrefix", IloCplex::Param::Output::IntSolFilePrefix);
+	bpdict_.emplace("OPUA.CPX.Output.MPSLong", IloCplex::Param::Output::MPSLong);
+	ipdict_.emplace("OPUA.CPX.Output.WriteLevel", IloCplex::Param::Output::WriteLevel);
+	// 加载其他参数
+	ipdict_.emplace("OPUA.CPX.Parallel", IloCplex::Param::Parallel);
+	bpdict_.emplace("OPUA.CPX.ParamDisplay", IloCplex::Param::ParamDisplay);
+	// 加载Preprocessing参数
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Aggregator", IloCplex::Param::Preprocessing::Aggregator);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.BoundStrength", IloCplex::Param::Preprocessing::BoundStrength);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.CoeffReduce", IloCplex::Param::Preprocessing::CoeffReduce);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Dependency", IloCplex::Param::Preprocessing::Dependency);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Dual", IloCplex::Param::Preprocessing::Dual);
+	lpdict_.emplace("OPUA.CPX.Preprocessing.Fill", IloCplex::Param::Preprocessing::Fill);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Folding", IloCplex::Param::Preprocessing::Folding);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Linear", IloCplex::Param::Preprocessing::Linear);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.NumPass", IloCplex::Param::Preprocessing::NumPass);
+	bpdict_.emplace("OPUA.CPX.Preprocessing.Presolve", IloCplex::Param::Preprocessing::Presolve);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.QCPDuals", IloCplex::Param::Preprocessing::QCPDuals);
+	bpdict_.emplace("OPUA.CPX.Preprocessing.QPMakePSD", IloCplex::Param::Preprocessing::QPMakePSD);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.QToLin", IloCplex::Param::Preprocessing::QToLin);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Reduce", IloCplex::Param::Preprocessing::Reduce);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Relax", IloCplex::Param::Preprocessing::Relax);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.RepeatPresolve", IloCplex::Param::Preprocessing::RepeatPresolve);
+	ipdict_.emplace("OPUA.CPX.Preprocessing.Symmetry", IloCplex::Param::Preprocessing::Symmetry);
+	// 加载其他参数
+	ipdict_.emplace("OPUA.CPX.RandomSeed", IloCplex::Param::RandomSeed);
+	// 加载Read参数
+	spdict_.emplace("OPUA.CPX.Read.APIEncoding", IloCplex::Param::Read::APIEncoding);
+	ipdict_.emplace("OPUA.CPX.Read.Constraints", IloCplex::Param::Read::Constraints);
+	ipdict_.emplace("OPUA.CPX.Read.DataCheck", IloCplex::Param::Read::DataCheck);
+	spdict_.emplace("OPUA.CPX.Read.FileEncoding", IloCplex::Param::Read::FileEncoding);
+	lpdict_.emplace("OPUA.CPX.Read.Nonzeros", IloCplex::Param::Read::Nonzeros);
+	lpdict_.emplace("OPUA.CPX.Read.QPNonzeros", IloCplex::Param::Read::QPNonzeros);
+	ipdict_.emplace("OPUA.CPX.Read.Scale", IloCplex::Param::Read::Scale);
+	ipdict_.emplace("OPUA.CPX.Read.Variables", IloCplex::Param::Read::Variables);
+	lpdict_.emplace("OPUA.CPX.Read.WarningLimit", IloCplex::Param::Read::WarningLimit);
+	// 加载其他参数
+	bpdict_.emplace("OPUA.CPX.Record", IloCplex::Param::Record);
+	ipdict_.emplace("OPUA.CPX.RootAlgorithm", IloCplex::Param::RootAlgorithm);
+	// 加载Sifting参数
+	ipdict_.emplace("OPUA.CPX.Sifting.Algorithm", IloCplex::Param::Sifting::Algorithm);
+	bpdict_.emplace("OPUA.CPX.Sifting.Simplex", IloCplex::Param::Sifting::Simplex);
+	ipdict_.emplace("OPUA.CPX.Sifting.Display", IloCplex::Param::Sifting::Display);
+	lpdict_.emplace("OPUA.CPX.Sifting.Iterations", IloCplex::Param::Sifting::Iterations);
+	// 加载Simplex参数
 	ipdict_.emplace("OPUA.CPX.Simplex.Crash", IloCplex::Param::Simplex::Crash);
 	ipdict_.emplace("OPUA.CPX.Simplex.Dgradient", IloCplex::Param::Simplex::DGradient);
 	ipdict_.emplace("OPUA.CPX.Simplex.Display", IloCplex::Param::Simplex::Display);
+	ipdict_.emplace("OPUA.CPX.Simplex.DynamicRows", IloCplex::Param::Simplex::DynamicRows);
 	lpdict_.emplace("OPUA.CPX.Simplex.Limits.Iterations", IloCplex::Param::Simplex::Limits::Iterations);
-
-	bpdict_.emplace("OPUA.CPX.Preprocessing.Presolve", IloCplex::Param::Preprocessing::Presolve);
+	npdict_.emplace("OPUA.CPX.Simplex.Limits.LowerObj", IloCplex::Param::Simplex::Limits::LowerObj);
+	ipdict_.emplace("OPUA.CPX.Simplex.Limits.Perturbation", IloCplex::Param::Simplex::Limits::Perturbation);
+	ipdict_.emplace("OPUA.CPX.Simplex.Limits.Singularity", IloCplex::Param::Simplex::Limits::Singularity);
+	npdict_.emplace("OPUA.CPX.Simplex.Limits.UpperObj", IloCplex::Param::Simplex::Limits::UpperObj);
+	npdict_.emplace("OPUA.CPX.Simplex.Perturbation.Constant", IloCplex::Param::Simplex::Perturbation::Constant);
+	bpdict_.emplace("OPUA.CPX.Simplex.Perturbation.Indicator", IloCplex::Param::Simplex::Perturbation::Indicator);
+	ipdict_.emplace("OPUA.CPX.Simplex.PGradient", IloCplex::Param::Simplex::PGradient);
+	ipdict_.emplace("OPUA.CPX.Simplex.Pricing", IloCplex::Param::Simplex::Pricing);
+	ipdict_.emplace("OPUA.CPX.Simplex.Refactor", IloCplex::Param::Simplex::Refactor);
+	npdict_.emplace("OPUA.CPX.Simplex.Tolerances.Feasibility", IloCplex::Param::Simplex::Tolerances::Feasibility);
+	npdict_.emplace("OPUA.CPX.Simplex.Tolerances.Markowitz", IloCplex::Param::Simplex::Tolerances::Markowitz);
+	npdict_.emplace("OPUA.CPX.Simplex.Tolerances.Optimality", IloCplex::Param::Simplex::Tolerances::Optimality);
+	// 加载其他参数
+	ipdict_.emplace("OPUA.CPX.SolutionType", IloCplex::Param::SolutionType);
+	ipdict_.emplace("OPUA.CPX.Threads", IloCplex::Param::Threads);
+	npdict_.emplace("OPUA.CPX.TimeLimit", IloCplex::Param::TimeLimit);
+	// 加载Tune参数
+	npdict_.emplace("OPUA.CPX.Tune.DetTimeLimit", IloCplex::Param::Tune::DetTimeLimit);
+	ipdict_.emplace("OPUA.CPX.Tune.Display", IloCplex::Param::Tune::Display);
+	ipdict_.emplace("OPUA.CPX.Tune.Measure", IloCplex::Param::Tune::Measure);
+	ipdict_.emplace("OPUA.CPX.Tune.Repeat", IloCplex::Param::Tune::Repeat);
+	npdict_.emplace("OPUA.CPX.Tune.TimeLimit", IloCplex::Param::Tune::TimeLimit);
+	// 加载其他参数
+	spdict_.emplace("OPUA.CPX.WorkDir", IloCplex::Param::WorkDir);
+	npdict_.emplace("OPUA.CPX.WorkMem", IloCplex::Param::WorkMem);
 #endif
 }
 

@@ -179,27 +179,7 @@ namespace OPUA
 
 		/*
 			OpCPXBSol：求解器Cplex的接口类
-			求解参数说明：
-				OPUA.CPX.Advance / OpInt / 0 / [0, 3] / 注释：?
-				OPUA.CPX.Barrier.Algorithm / OpInt / 0 / [0, 3] / 注释：1|2-初始不可行(速度较慢) / 3-标准内点法(速度较快)
-				OPUA.CPX.Barrier.ColNonzeros / OpInt / 0 / [0, INF] / 注释：?
-				OPUA.CPX.Barrier.ConvergeTol / OpFloat / 0.00000001 / [0.000000000001, INF] / 注释：对于LP和QP问题的收敛判据
-				OPUA.CPX.Barrier.Crossover / OpInt / 0 / [-1, 2] / 注释：?
-				OPUA.CPX.Barrier.Display / OpInt / 1 / [0, 2] / 注释：内点法计算过程中输出信息类型
-				OPUA.CPX.Barrier.Limits.Corrections / OpLInt / 0 / [-1, INF] / 注释：?
-				OPUA.CPX.Barrier.Limits.Growth / OpFloat / 1000000000000 / [1, INF] / 注释：?
-				OPUA.CPX.Barrier.Limits.Iteration / OpLInt / 9223372036800000000 / [0, INF] / 注释：内点法迭代次数限制
-				OPUA.CPX.Barrier.Limits.ObjRange / OpFloat / 1E+20 / [0, INF] / 注释：unbounded问题判据
-				OPUA.CPX.Barrier.Ordering / OpInt / 0 / [0, 3] / 注释：?
-				OPUA.CPX.Barrier.QCPConvergeTol / OpFloat / 0.0000001 / [0.000000000001, INF] / 注释：对于QCP问题的收敛判据
-				OPUA.CPX.Barrier.StartAlg / OpInt / 1 / [1, 4] / 注释：初始内点选择方式
-				OPUA.CPX.Simplex.Crash / OpInt / 0 / [-1, 1] / 注释：?
-				OPUA.CPX.Simplex.Dgradient / OpInt / 0 / [0, 5] / 注释：?
-				OPUA.CPX.Simplex.Display / OpInt / 1 / [0, 2] / 注释：单纯形法计算过程中输出信息类型
-				OPUA.CPX.Simplex.Limits.Iterations / OpLInt / 9223372036800000000 / [0, INF] / 注释：单纯形法最大迭代次数
-
-				...未完待续
-
+			求解参数说明见doc/OPUA.Solver.CPX_API.md
 		*/
 		class OpCPXSol
 			: public OpBase, public OpSolState
@@ -233,81 +213,7 @@ namespace OPUA
 
 		/*
 			OpGRBSol：求解器Gurobi的接口类
-			求解参数说明：
-			[1] OPUA.GRB.Termination(终止条件)
-				OPUA.GRB.Termination.BarIterLimit / int / 1000 / [0, MAXINT] / 退出条件：内点法已迭代次数
-				OPUA.GRB.Termination.BestBdStop / double / INF / [-INF, INF] / ?
-				OPUA.GRB.Termination.BestObjStop / double / -INF / [-INF, INF] / 退出条件：目标函数最优估计值(比这个值小就可以退出)
-				OPUA.GRB.Termination.Cutoff / double / INF / [-INF, INF] / ?
-				OPUA.GRB.Termination.IterationLimit / double / INF / [0, INF] / 退出条件：单纯形法已迭代次数
-				OPUA.GRB.Termination.NodeLimit / double / INF / [0, INF] / 退出条件：已遍历的MIP节点个数
-				OPUA.GRB.Termination.SolutionLimit / int / INF / [1, MAXINT] / 退出条件：已找到的可行解个数
-				OPUA.GRB.Termination.TimeLimit / double / INF / [0, INF] / 退出条件：求解已耗时
-
-			[2] OPUA.GRB.Tolerances(可行性&最优性收敛判定参数)
-				OPUA.GRB.Tolerances.BarConvTol / double / 1e-8 / [0.0, 1.0] / 内点法收敛间隙
-				OPUA.GRB.Tolerances.BarQCPConvTol / double / 1e-6 / [0.0, 1.0] / 内点法收敛间隙(QCP问题)
-				OPUA.GRB.Tolerances.FeasibilityTol / double / 1e-6 / [1e-9, 1e-2] / 约束条件可行性判定间隙
-				OPUA.GRB.Tolerances.IntFeasTol / double / 1e-5 / [1e-9, 1e-1] / 整数解可行性判定间隙
-				OPUA.GRB.Tolerances.MarkowitzTol / double / 0.0078125 / [1e-4, 0.999] / ?
-				OPUA.GRB.Tolerances.MIPGap / double / 1e-4 / [0, INF] / MIP问题相对收敛间隙
-				OPUA.GRB.Tolerances.MIPGapAbs / double / 1e-10 / [0, INF] / MIP问题绝对收敛间隙
-				OPUA.GRB.Tolerances.OptimalityTol / double / 1e-6 / [1e-9, 1e-2] / 对偶可行性判定间隙(原问题最优性判定间隙)
-				OPUA.GRB.Tolerances.PSDTol / double / 1e-6 / [0, INF] / ?
-
-			[3] OPUA.GRB.Simplex(单纯形法参数)
-				OPUA.GRB.Simplex.InfUnbdInfo / int / 0 / [0, 1] / ?
-				OPUA.GRB.Simplex.NormAdjust / int / -1 / [-1, 3] / ?
-				OPUA.GRB.Simplex.ObjScale / double / 0.0 / [-1, INF] / ?
-				OPUA.GRB.Simplex.PerturbValue / double / 0.0002 / [0, INF] / ?
-				OPUA.GRB.Simplex.Quad / int / -1 / [-1, 1] / ?
-				OPUA.GRB.Simplex.ScaleFlag / int / -1 / [-1, 3] / ?
-				OPUA.GRB.Simplex.Sifting / int / -1 / [-1, 2] / ?
-				OPUA.GRB.Simplex.SiftMethod / int / -1 / [-1, 2] / ?
-				OPUA.GRB.Simplex.SimplexPricing / int / -1 / [-1, 3] / ?
-
-			[4] OPUA.GRB.Barrier(内点法参数)
-				OPUA.GRB.Barrier.BarCorrectors / int / -1 / [-1, MAXINT] / ?
-				OPUA.GRB.Barrier.BarHomogeneous / int / -1 / [-1, 1] / ?
-				OPUA.GRB.Barrier.BarOrder / int / -1 / [-1, 1] / ?
-				OPUA.GRB.Barrier.Crossover / int / -1 / [-1, 4] / ?
-				OPUA.GRB.Barrier.CrossoverBasis / int / 0 / [0, 1] / ?
-				OPUA.GRB.Barrier.QCPDual / int / 0 / [0, 1] / ?
-
-			[5] OPUA.GRB.MIP(混合整数求解参数)
-				OPUA.GRB.MIP.BranchDir / int / 0 / [-1, 1] / 分支定界方向选择(0-自动 / -1-优先遍历下分支 / 1-优先遍历上分支)
-				OPUA.GRB.MIP.ConcurrentJobs / int / 0 / [0, MAXINT] / 并行求解器任务数
-				OPUA.GRB.MIP.ConcurrentMIP / int / 1 / [0, MAXINT] / 并行工作的MIP求解器数
-				OPUA.GRB.MIP.ConcurrentSettings / string / "" / 并行环境配置参数
-				OPUA.GRB.MIP.DegenMoves / int / -1 / [-1, MAXINT] / ?
-				OPUA.GRB.MIP.Disconnected / int / -1 / [-1, 2] / ?
-				OPUA.GRB.MIP.DistributedMIPJobs / int / 0 / [0, MAXINT] / ?
-				OPUA.GRB.MIP.Heuristics / double / 0.05 / [0, 1] / 使用启发式方法探索MIP可行解的耗时程度(占总求解时间的比例)
-				OPUA.GRB.MIP.ImproveStartGap / double / 0.0 / [0.0, INF] / MIP求解过程中开始切换寻优策略的相对收敛间隙起点(RelGap小于该值时，切换寻优策略)
-				OPUA.GRB.MIP.ImproveStartNodes / double / INF / [0.0, INF] / 效果同ImproveStartGap，条件改为已搜索的MIP节点数量
-				OPUA.GRB.MIP.ImproveStartTime / double / INF / [0.0, INF] / 效果同ImproveStartGap，条件改为已耗时
-				OPUA.GRB.MIP.LazyConstraints / int / 0 / [0, 1] / 启用Lazy约束时必须开启
-				OPUA.GRB.MIP.MinRelNodes / int / -1/ [-1, MAXINT] / ?
-				OPUA.GRB.MIP.MIPFocus / int / 0 / [0, 3] / 影响寻优策略的配置，数值越大越倾向于搜寻最优解，数值越小越倾向于搜寻可行解
-				OPUA.GRB.MIP.MIQCPMethod / -1 / [-1, 1] / MIQCP求解模式(-1-自动选择 / 0-在每个节点上求解QCP松弛 / 1-使用线性化的外逼近法)
-				OPUA.GRB.MIP.NodefileDir / string / "" / ?
-				OPUA.GRB.MIP.NodefileStart / double / INF / [0, INF] / ?
-				OPUA.GRB.MIP.NodeMethod / int / -1 / [-1, 2] / MIP节点上求解松弛问题的算法选择模式(-1-自动 / 0-原始单纯形 / 1-对偶单纯形 / 2-内点法)
-				OPUA.GRB.MIP.NonConvex / int / -1 / [-1, 2] / 如果MIP中有双线性项等非线性部分，需要打开此开关，否则报错
-				OPUA.GRB.MIP.NoRelHeurTime / double / 0 / [0, INF] / ?
-				OPUA.GRB.MIP.NoRelHeurWork / double / 0 / [0, INF] / ?
-				OPUA.GRB.MIP.PartitionPlace / int / 15 / [0, 31] / 位开关：详见GRB用户手册
-				OPUA.GRB.MIP.PumpPassese / int / -1 / [-1, MAXINT] / ?
-				OPUA.GRB.MIP.RINS / int / -1 / [-1, MAXINT] / RINS探测频率(-1-自动 / other-探测频率上限)
-				OPUA.GRB.MIP.SolFiles / string / "" / 当前解的输出文件路径
-				OPUA.GRB.MIP.SolutionNumber / int / 0 / [0, MAXINT] / 当MIP存在多解时，被选中的MIP解的序号
-				OPUA.GRB.MIP.StartNodeLimit / int / -1/ [-3, MAXINT] / ?
-				OPUA.GRB.MIP.StartNumber / int / 0 / [-1, MAXINT] / 当存在多个MIP起点时，被选中的MIP起点的序号
-				OPUA.GRB.MIP.SubMIPNodes / int / 500 / [-1, MAXINT] / ?
-				OPUA.GRB.MIP.Symmetry / int / -1 / [-1, 2] / ?
-				OPUA.GRB.MIP.VarBranch / int / -1 / [-1, 3] / 分支定界时选择变量的策略，详见GRB用户手册
-				OPUA.GRB.MIP.ZeroObjNodes  / int / -1 / [-1, MAXINT] / ?
-
+			求解参数说明见doc/OPUA.Solver.GRB_API.md
 		*/
 		class OpGRBSol
 			: public OpBase, public OpSolState
@@ -341,7 +247,7 @@ namespace OPUA
 
 		/*
 			OpSCIPSol：求解器SCIP的接口类
-			求解参数说明：
+			求解参数说明见doc/OPUA.Solver.SCIP_API.md
 		*/
 		class OpSCIPSol
 			: public OpBase, public OpSolState
@@ -375,7 +281,7 @@ namespace OPUA
 
 		/*
 			OpCOPTSol：求解器COPT的接口类
-			求解参数说明：
+			求解参数说明见doc/OPUA.Solver.COPT_API.md
 		*/
 		class OpCOPTSol
 			: public OpBase, public OpSolState
@@ -409,7 +315,7 @@ namespace OPUA
 
 		/*
 			OpIPOPTSol：求解器IPOPT的接口类
-			求解参数说明：
+			求解参数说明见doc/OPUA.Solver.IPOPT_API.md
 		*/
 		class OpIPOPTSol
 			: public OpBase, public OpSolState
