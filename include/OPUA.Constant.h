@@ -14,7 +14,10 @@ namespace OPUA
 		constexpr OpFloat NaN = NAN; /*Not a Number*/
 		constexpr OpULInt MaxSize = -1; /*索引最大值(无符号长整型最大数)*/
 
+		OpBool IsPInfinity(OpFloat val); // 是否为正无穷大数
+		OpBool IsNInfinity(OpFloat val); // 是否为负无穷大数
 		OpBool IsInfinity(OpFloat val); // 是否为无穷大数
 		OpBool IsEqual(OpFloat val1, OpFloat val2); // 是否相等
+		OpBool IsNaN(OpFloat val); // 是否为NaN
 	}
 }

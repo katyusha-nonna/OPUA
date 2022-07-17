@@ -53,8 +53,8 @@ Expression::OpLinExpr Expression::operator-(const OpLinExpr& expr1, const OpLinE
 
 Expression::OpLinExpr Expression::operator-(const OpLinExpr& expr)
 {
-	OpLinExpr result(0.0);
-	result -= expr;
+	OpLinExpr result(expr);
+	result.piecewiseInv();
 	return result;
 }
 
@@ -155,8 +155,8 @@ Expression::OpQuadExpr Expression::operator+(const OpQuadExpr& expr)
 
 Expression::OpQuadExpr Expression::operator-(const OpQuadExpr& expr)
 {
-	OpQuadExpr result(0.0);
-	result -= expr;
+	OpQuadExpr result(expr);
+	result.piecewiseInv();
 	return result;
 }
 
@@ -340,6 +340,27 @@ void Expression::OpLinExpr::simplify(OpFloat zero)
 		else
 			++it;
 	}
+}
+
+void Expression::OpLinExpr::piecewiseProd(OpFloat val)
+{
+	for (auto& lin : linterm_)
+		lin.second *= val;
+	constant_ *= val;
+}
+
+void Expression::OpLinExpr::piecewiseDiv(OpFloat val)
+{
+	for (auto& lin : linterm_)
+		lin.second /= val;
+	constant_ /= val;
+}
+
+void Expression::OpLinExpr::piecewiseInv()
+{
+	for (auto& lin : linterm_)
+		lin.second = -lin.second;
+	constant_ = -constant_;
 }
 
 Expression::OpLinExpr& Expression::OpLinExpr::operator+=(const OpLinExpr& expr)
@@ -557,6 +578,27 @@ void Expression::OpQuadExpr::simplify(OpFloat zero)
 			++it;
 	}
 	linexpr_.simplify(zero);
+}
+
+void Expression::OpQuadExpr::piecewiseProd(OpFloat val)
+{
+	linexpr_.piecewiseProd(val);
+	for (auto& q : quadterm_)
+		q.second *= val;
+}
+
+void Expression::OpQuadExpr::piecewiseDiv(OpFloat val)
+{
+	linexpr_.piecewiseDiv(val);
+	for (auto& q : quadterm_)
+		q.second /= val;
+}
+
+void Expression::OpQuadExpr::piecewiseInv()
+{
+	linexpr_.piecewiseInv();
+	for (auto& q : quadterm_)
+		q.second = -q.second;
 }
 
 Expression::OpQuadExpr& Expression::OpQuadExpr::operator+=(const OpQuadExpr& expr)

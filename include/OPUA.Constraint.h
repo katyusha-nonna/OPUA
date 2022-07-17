@@ -93,6 +93,7 @@ namespace OPUA
 			void setExpr(const Expression::OpLinExpr& expr); // 设置约束表达式
 			void setLb(OpFloat lb); // 设置约束下限
 			void setUb(OpFloat ub); // 设置约束上限
+			OpInt standardize(); // 约束标准化(-2-无效约束(两端都为inf或nan)无法标准化 / -1-Range约束无法标准化 / 0-标准约束(等式或大于等于约束)无需标准化 / 1-已标准化)
 			OpStr getName() const; // 获取约束名称
 			const Expression::OpLinExpr& getExpr() const; // 获取约束表达式
 			OpFloat getLb() const; // 获取约束下限

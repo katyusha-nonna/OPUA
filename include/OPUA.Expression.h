@@ -124,6 +124,9 @@ namespace OPUA
 			void removeVar(Variable::OpVar var); // 从线性表达式中移除变量
 			void clear(); // 清除线性表达式
 			void simplify(OpFloat zero = Constant::AbsEpsilon); // 表达式化简
+			void piecewiseProd(OpFloat val); // 逐位运算-乘(相当于expr *= val)
+			void piecewiseDiv(OpFloat val); // 逐位运算-除(相当于expr /= val)
+			void piecewiseInv(); // 逐位运算-取负(相当于expr = -expr)
 		public:
 			OpLinExpr& operator+=(const OpLinExpr& expr);
 			OpLinExpr& operator-=(const OpLinExpr& expr);
@@ -256,6 +259,9 @@ namespace OPUA
 			void removeQuadTerm(Variable::OpVar var1, Variable::OpVar var2); // 从二次表达式中移除二次项
 			void clear(); // 清除二次表达式
 			void simplify(OpFloat zero = Constant::AbsEpsilon); // 表达式化简
+			void piecewiseProd(OpFloat val); // 逐位运算-乘(相当于expr *= val)
+			void piecewiseDiv(OpFloat val); // 逐位运算-除(相当于expr /= val)
+			void piecewiseInv(); // 逐位运算-取负(相当于expr = -expr)
 		public:
 			OpQuadExpr& operator+=(const OpQuadExpr& expr);
 			OpQuadExpr& operator-=(const OpQuadExpr& expr);

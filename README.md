@@ -240,7 +240,7 @@ int main
   // 输出模型
 	mdl.write("");
   // 创建求解器对象并抽取模型
-  OpGRBSol solver(env, mdl);
+  OpAdapSol solver(OpSolType::GRB, env, mdl);
   // 创建配置器并配置求解参数
   OpConfig config;
   config.regCfg("OPUA.GRB.Termination.TimeLimit", OpFloat(60));
@@ -353,9 +353,9 @@ int main
     + alpha * (s[0] + s[1] + s[2] + s[3] + s[4] + s[5]), RobustStageType::SecondStagePrimal);
   // [2-2] 约束条件
   for (int i = 0; i < 3; i++)
-    model.add(0 <= s[i] + z[i] - (x[i][0] + x[i][1] + x[i][2]), RobustStageType::SecondStagePrimal, true);
+    model.add(s[i] + z[i] - (x[i][0] + x[i][1] + x[i][2]) + 5 >= 5, RobustStageType::SecondStagePrimal, true);
   for (int i = 0; i < 3; i++)
-    model.add(0 <= s[i + 3] + x[0][i] + x[1][i] + x[2][i] - d[i], RobustStageType::SecondStagePrimal, true);
+    model.add(s[i + 3] + x[0][i] + x[1][i] + x[2][i] - d[i] >= 0, RobustStageType::SecondStagePrimal, true);
   // [2-3] 决策变量
   for (int i = 0; i < 3; i++)
     model.add(x[i], RobustStageType::SecondStagePrimal, true);
@@ -371,6 +371,7 @@ int main
   model.add(d, RobustStageType::Uncertainty, true);
   model.add(g, RobustStageType::Uncertainty, true);
   // 自动推导对偶
+  model.autoStd(RobustStageType::SecondStagePrimal);
   model.autoDual();
   model.update();
   // 设置初始解

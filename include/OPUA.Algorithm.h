@@ -135,7 +135,7 @@ namespace OPUA
 			OPUA两阶段鲁棒模型类
 			第二阶段原问题/对偶问题必须写成标准形式(数学形式严格按照如下公式所述)
 			注意：使用“<=”、“>=”符号生成的线性/二次约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr
-						写成expr>=lb实际中会被加载为-expr<=-lb，会导致autoDual失败！
+						写成expr>=lb实际中会被加载为-expr<=-lb，会导致autoDual失败！如果采用非标准约束，必须在执行autoDual前先执行autoStd
 			标准形式：
 				第一阶段：
 					\min_{y} c^{T}y+\eta
@@ -154,7 +154,8 @@ namespace OPUA
 		class OpRobustModel
 			: public OpBase
 		{
-		public:		
+		public:
+			void autoStd(RobustStageType type); // 按阶段自动执行约束的标准化(在autoDual之前执行)
 			void autoDual(); // 自动推导对偶
 			void autoBound(); // 自动推导变量的上下界
 			void update(); // 更新模型(初始化解集)
@@ -348,7 +349,7 @@ namespace OPUA
 				ymax / OpFloat / - / [-inf, inf] / 预估的y的上限(注意：这个值会作为BigM参数)
 			特别说明：
 				1. 对于x和y，不添加额外的Bound约束，即默认xmin <= x <= xmax, ymin <= y <= ymax
-				2. 辅助约束全部为标准形式：expr >= lb / expr == lb
+				2. 辅助约束全部为标准形式：expr >= lb / expr == lb；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoBigMBilinear1(OpEnv env, OpLinearization& result, Variable::OpVar w, Variable::OpVar x, Variable::OpVar y,
 			OpFloat xmin, OpFloat xmax, OpFloat ymin, OpFloat ymax);
@@ -374,7 +375,7 @@ namespace OPUA
 			特别说明：
 				1. 默认对x进行二进制采样，segment将决定采样精度\delta x
 				2. 对于x和y，不添加额外的Bound约束，即默认xmin <= x <= xmax, ymin <= y <= ymax
-				3. 辅助约束全部为标准形式：expr >= lb / expr == lb
+				3. 辅助约束全部为标准形式：expr >= lb / expr == lb；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoBigMBilinear2(OpEnv env, OpLinearization& result, Variable::OpVar w, Variable::OpVar x, Variable::OpVar y,
 			OpFloat xmin, OpFloat xmax, OpFloat ymin, OpFloat ymax, OpULInt segment);
@@ -404,7 +405,7 @@ namespace OPUA
 
 			特别说明：
 				1. 对于x，不添加额外的Bound约束，即默认abs(x) <= xamax
-				2. 辅助约束全部为标准形式：expr >= lb / expr == lb
+				2. 辅助约束全部为标准形式：expr >= lb / expr == lb；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoBigMAbs(OpEnv env, OpLinearization& result, Variable::OpVar w, Variable::OpVar x, OpFloat xamax);
 		OpLinearization OpAlgoBigMAbs(OpEnv env, Variable::OpVar w, Variable::OpVar x, OpFloat xamax);
@@ -427,7 +428,7 @@ namespace OPUA
 
 			特别说明：
 				1. 对于x，不添加额外的Bound约束，即默认abs(x) <= xamax
-				2. 辅助约束全部为标准形式：expr >= lb / expr == lb
+				2. 辅助约束全部为标准形式：expr >= lb / expr == lb；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoBigMMax(OpEnv env, OpLinearization& result, Variable::OpVar w, Variable::OpVar x, Variable::OpVar y,
 			OpFloat xmin, OpFloat xmax, OpFloat ymin, OpFloat ymax);
@@ -456,7 +457,7 @@ namespace OPUA
 
 			特别说明：
 				1. 对于x，不添加额外的Bound约束，即默认abs(x) <= xamax
-				2. 辅助约束全部为标准形式：expr >= lb / expr == lb
+				2. 辅助约束全部为标准形式：expr >= lb / expr == lb；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoBigMMin(OpEnv env, OpLinearization& result, Variable::OpVar w, Variable::OpVar x, Variable::OpVar y,
 			OpFloat xmin, OpFloat xmax, OpFloat ymin, OpFloat ymax);
@@ -515,7 +516,7 @@ namespace OPUA
 			特别说明：
 				1. result中primalCon按照[不等式约束，等式约束]的顺序排列，对偶变量dualVar自动生成并与primalCon的顺序对应，为[非负对偶变量，无限制对偶变量]；gradCon按照[不等式约束，等式约束]的顺序排列
 				2. 原问题约束NEC0和EC0必须要写成标准的小于等于约束A*x+B*y>=b或标准的等式约束G*x+D*y，对应的对偶变量分别为lambda(非负)和mu(无限制)
-				3. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoKKT失败！
+				3. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoKKT失败！；如果采用非标准约束，必须先执行standardize
 				4. relax设为true时，对互补松弛约束进行BigM松弛(需要自行设置M并保证M长度与NEC0相等)并放入result中的csCon1，松弛变量加入result；设置为false时，互补松弛约束为二次约束并放入result中的csCon2(M可以为空)
 		*/
 		void OpAlgoAutoKKT(OpEnv env, OpAutoKKTSet& result, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0,
@@ -562,7 +563,7 @@ namespace OPUA
 				1. result中对偶变量dualVar自动生成，按照[非负对偶变量，无限制对偶变量]的顺序排列，并[不等式约束，等式约束]的顺序对应
 				2. result中对偶约束dualCon自动生成，按照[不等式约束，等式约束]的顺序排列，并与[非负原问题变量，无限制原问题变量]的顺序对应
 				3. 原问题约束NEC0和EC0必须要写成标准的小于等于约束A*x+B*y>=b或标准的等式约束G*x+D*y，对应的对偶变量分别为lambda(非负)和mu(无限制)
-				4. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoDual失败！
+				4. 使用“<=”、“>=”符号生成的线性约束必须将常量和含变量的表达式进行分离，且常量应作为左操作数，即：lb<=expr、ub>=expr写成expr>=lb实际中会被加载为-expr<=-lb，会导致AutoDual失败！；如果采用非标准约束，必须先执行standardize
 		*/
 		void OpAlgoAutoDual(OpEnv env, OpAutoDualSet& result, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0);
 		OpAutoDualSet OpAlgoAutoDual(OpEnv env, Variable::OpVarArr X0, Variable::OpVarArr Y0, Constraint::OpLCArr NEC0, Constraint::OpLCArr EC0, const Expression::OpLinExpr& O0);

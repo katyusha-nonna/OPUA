@@ -20,6 +20,7 @@ protected:
 	void setExpr(const Expression::OpLinExpr& expr); // 设置约束表达式
 	void setLb(OpFloat lb); // 设置约束下限
 	void setUb(OpFloat ub); // 设置约束上限
+	OpInt standardize(); // 约束标准化(-2-无效约束无法标准化 / -1-Range约束无法标准化 / 0-标准约束(等式或大于等于约束)无需标准化 / 1-已标准化)
 	OpStr getName() const; // 获取约束名称
 	const Expression::OpLinExpr& getExpr() const; // 获取约束表达式
 	OpFloat getLb() const; // 获取约束下限
@@ -54,6 +55,84 @@ void Constraint::OpLinConI::setUb(OpFloat ub)
 {
 	if (!locked_)
 		cub_ = ub;
+}
+
+OpInt Constraint::OpLinConI::standardize()
+{
+	OpBool fl(false), fu(false), fr(false), feq(false), fgt(false), flt(false), fse(false);
+	// 首先修正lb和ub，将nan或inf统一修正为inf
+	if (Constant::IsNaN(clb_) || Constant::IsInfinity(clb_))
+	{
+		clb_ = -Constant::Infinity;
+		fl = true;
+	}
+	if (Constant::IsNaN(cub_) || Constant::IsInfinity(cub_))
+	{
+		cub_ = Constant::Infinity;
+		fu = true;
+	}
+	feq = Constant::IsEqual(clb_, cub_);
+	fgt = fl ? false : true;
+	flt = fu ? false : true;
+	// 然后修正expr的常数项，将nan或inf统一修正为0
+	if (Constant::IsNaN(cexpr_.getConstant()) || Constant::IsInfinity(cexpr_.getConstant()) || Constant::IsEqual(cexpr_.getConstant(), 0))
+	{
+		cexpr_.setLinTerm(0.0);
+		fse = true;
+	}
+	// 判断是否为无效约束(仅消去expr的常数项)
+	if (fl && fu)
+	{
+		cexpr_.setLinTerm(0.0);
+		return -2;
+	}
+	// 然后判断是否为Range约束(仅消去expr的常数项)
+	if (!fl && !fu && !feq)
+		fr = true;
+	if (fr)
+	{
+		if (!fse)
+		{
+			clb_ -= cexpr_.getConstant();
+			cub_ -= cexpr_.getConstant();
+			cexpr_.setLinTerm(0.0);
+		}
+		return -1;
+	}
+	// 然后判断是否为等式约束(仅消去expr的常数项)
+	if (feq)
+	{
+		if (!fse)
+		{
+			clb_ -= cexpr_.getConstant();
+			cub_ -= cexpr_.getConstant();
+			cexpr_.setLinTerm(0.0);
+		}		
+		return 0;
+	}
+	// 然后判断是否为大于等于约束(仅消去expr的常数项)
+	if (fgt)
+	{
+		if (!fse)
+		{
+			clb_-= cexpr_.getConstant();
+			cexpr_.setLinTerm(0.0);
+		}
+		return 0;
+	}
+	// 然后判断是否为小于等于约束(消去expr的常数项并转换为大于等于约束)
+	if (flt)
+	{
+		if (!fse)
+		{
+			cub_ -= cexpr_.getConstant();
+			cexpr_.setLinTerm(0.0);
+		}
+		clb_ = -cub_;
+		cub_ = Constant::Infinity;
+		cexpr_.piecewiseInv();
+		return 1;
+	}
 }
 
 OpStr Constraint::OpLinConI::getName() const
@@ -657,6 +736,11 @@ void Constraint::OpLinCon::setUb(OpFloat ub)
 	static_cast<OpLinConI*>(impl_)->setUb(ub);
 }
 
+OpInt Constraint::OpLinCon::standardize()
+{
+	return static_cast<OpLinConI*>(impl_)->standardize();
+}
+
 OpStr Constraint::OpLinCon::getName() const
 {
 	return static_cast<OpLinConI*>(impl_)->getName();
@@ -1110,12 +1194,12 @@ OpStr Constraint::ConSense2Str(OpConSense sense)
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpLinCon con)
 {
-	if (!Constant::IsInfinity(con.getLb()))
+	if (!Constant::IsNInfinity(con.getLb()))
 		stream << con.getLb() << " <= ";
 	else
 		stream << "-inf <= ";
 	stream << con.getExpr();
-	if (!Constant::IsInfinity(con.getUb()))
+	if (!Constant::IsPInfinity(con.getUb()))
 		stream << " <= " << con.getUb();
 	else
 		stream << " <= inf";
@@ -1198,12 +1282,12 @@ Constraint::OpLinCon Constraint::operator==(const Expression::OpLinExpr& lhs, co
 
 std::ostream& Constraint::operator<<(std::ostream& stream, OpQuadCon con)
 {
-	if (!Constant::IsInfinity(con.getLb()))
+	if (!Constant::IsNInfinity(con.getLb()))
 		stream << con.getLb() << " <= ";
 	else
 		stream << "-inf <= ";
 	stream << con.getExpr();
-	if (!Constant::IsInfinity(con.getUb()))
+	if (!Constant::IsPInfinity(con.getUb()))
 		stream << " <= " << con.getUb();
 	else
 		stream << " <= inf";

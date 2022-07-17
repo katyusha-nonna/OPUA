@@ -81,6 +81,8 @@ protected:
 	void init();
 	// 清空模型(仅允许析构函数使用)
 	void clear();
+	// 按阶段自动执行约束的标准化(在autoDual之前执行)
+	void autoStd(RobustStageType type);
 	// 自动推导对偶
 	void autoDual();
 	// 自动推导变量的上下界
@@ -224,6 +226,46 @@ void Algorithm::OpRobustModelI::clear()
 	ssps_.release();
 	ssds_.release();
 	us_.release();
+}
+
+void Algorithm::OpRobustModelI::autoStd(RobustStageType type)
+{
+	auto stdCvt = [](auto& conArray) {
+		for (OpULInt i = 0; i < conArray.getSize(); i++)
+		{
+			auto& con(conArray[i]);
+			if (con.isLocked())
+			{
+				con.unlock();
+				con.standardize();
+				con.lock();
+			}
+			else
+				con.standardize();
+		}
+	};
+	switch (type)
+	{
+	case OPUA::Algorithm::RobustStageType::Unknown:
+		break;
+	case OPUA::Algorithm::RobustStageType::FirstStage:
+		stdCvt(fsc_);
+		break;
+	case OPUA::Algorithm::RobustStageType::FirstStageSpecial:
+		stdCvt(fssc_);
+		break;
+	case OPUA::Algorithm::RobustStageType::SecondStagePrimal:
+		stdCvt(sspc_);
+		break;
+	case OPUA::Algorithm::RobustStageType::SecondStageDual:
+		stdCvt(ssdc_);
+		break;
+	case OPUA::Algorithm::RobustStageType::Uncertainty:
+		stdCvt(uc_);
+		break;
+	default:
+		break;
+	}
 }
 
 void Algorithm::OpRobustModelI::autoDual()
@@ -820,6 +862,11 @@ Algorithm::OpRobustModelI::~OpRobustModelI()
 }
 
 /* OPUA::Algorithm::OpRobustModel */
+
+void Algorithm::OpRobustModel::autoStd(RobustStageType type)
+{
+	static_cast<OpRobustModelI*>(impl_)->autoStd(type);
+}
 
 void Algorithm::OpRobustModel::autoDual()
 {
