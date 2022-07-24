@@ -1,7 +1,7 @@
 #include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_SCIP
-#include "objscip/objscip.h"
-#include "objscip/objscipdefplugins.h"
+#include <objscip/objscip.h>
+#include <objscip/objscipdefplugins.h>
 #endif
 #include <iostream>
 
@@ -10,7 +10,7 @@ using namespace OPUA;
 #ifdef OPUA_COMPILE_SCIP
 /* OPUA::Solver::OpSCIPCfgCvt */
 
-// CPX≈‰÷√∑≠“Î∆˜
+// SCIP≈‰÷√∑≠“Î∆˜
 class Solver::OpSCIPCfgCvt
 {
 protected:

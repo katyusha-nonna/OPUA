@@ -12,7 +12,7 @@
 			计划支持的求解器：
 				1. IBM CPLEX(已支持)
 				2. Gurobi(已支持)
-				3. Mosek
+				3. Mosek(已支持)
 				4. SCIP(已支持)
 				5. COPT(已支持)
 				6. IPOPT(已支持)

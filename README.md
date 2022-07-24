@@ -5,7 +5,7 @@ OPUA(Optimization Program Universal API)是一套优化求解器通用接口工�
 计划支持的求解器：
 * IBM ILOG CPLEX(已支持)
 * Gurobi(已支持)
-* Mosek
+* Mosek(已支持)
 * SCIP(已支持)
 * COPT(已支持)
 * IPOPT(已支持)
@@ -55,6 +55,8 @@ OPUA提供了编译开关控制优化求解器或第三方库的编译，在编�
 | COPT | OPUA_COMPILE_COPT |  |  |
 | IPOPT | OPUA_COMPILE_IPOPT | CppAD |  |
 | Eigen | OPUA_COMPILE_EIGEN |  | _CRT_SECURE_NO_WARNINGS |
+
+**警告！**：Mosek求解器不可与其他求解器一同编译，Mosek需要在IDE中设置“属性->配置属性->C/C++->代码生成->运行库”为“多线程(/MT)”，其余求解器需设置为“多线程DLL(/MD)”。
 
 ## 使用说明
 

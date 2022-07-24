@@ -306,6 +306,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 		rsolver_ = new OpSCIPSol(env);
 		break;
 #endif
+#ifdef OPUA_COMPILE_MSK
+	case OpSolType::MSK:
+		rsolver_ = new OpMSKSol(env);
+		break;
+#endif
 #ifdef OPUA_COMPILE_COPT
 	case OpSolType::COPT:
 		rsolver_ = new OpCOPTSol(env);
@@ -340,6 +345,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
 #ifdef OPUA_COMPILE_SCIP
 	case OpSolType::SCIP:
 		rsolver_ = new OpSCIPSol(env, mdl);
+		break;
+#endif
+#ifdef OPUA_COMPILE_MSK
+	case OpSolType::MSK:
+		rsolver_ = new OpMSKSol(env, mdl);
 		break;
 #endif
 #ifdef OPUA_COMPILE_COPT
