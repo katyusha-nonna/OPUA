@@ -10,10 +10,15 @@ namespace OPUA
 		class OpExpr;
 		class OpLinExpr;
 		class OpQuadExpr;
+		class OpDenseMat;
+		class OpSpraseMat;
+		class OpPSDExpr;
 		class OpNLExpr;
 		
+		typedef OpSpraseMat OpPSDRealMat; // PSD实系数矩阵(使用稀疏矩阵存储)
 		typedef Container::OpArray<OpLinExpr> OpLEArr; // 线性表达式数组
 		typedef Container::OpArray<OpQuadExpr> OpQEArr; // 二次表达式数组
+		typedef Container::OpArray<OpPSDExpr> OpPSDEArr; // 半定表达式数组
 		typedef Container::OpArray<OpNLExpr> OpNLEArr; // 非线性表达式数组
 
 		std::ostream& operator<<(std::ostream& stream, const OpLinExpr& expr);
@@ -47,6 +52,19 @@ namespace OPUA
 		OpQuadExpr operator*(const OpLinExpr& expr, Variable::OpVar var);
 		OpQuadExpr operator*(const OpLinExpr& expr1, const OpLinExpr& expr2);
 		OpQuadExpr operator/(const OpQuadExpr& expr, OpFloat val);
+
+		std::ostream& operator<<(std::ostream& stream, const OpDenseMat& mat);
+		std::ostream& operator<<(std::ostream& stream, const OpSpraseMat& mat);
+		std::ostream& operator<<(std::ostream& stream, const OpPSDExpr& expr);
+		OpPSDExpr operator+(const OpPSDExpr& expr1, const OpPSDExpr& expr2);
+		OpPSDExpr operator-(const OpPSDExpr& expr1, const OpPSDExpr& expr2);
+		OpPSDExpr operator+(const OpPSDExpr& expr);
+		OpPSDExpr operator-(const OpPSDExpr& expr);
+		OpPSDExpr operator*(const OpPSDExpr& expr, OpFloat val);
+		OpPSDExpr operator*(OpFloat val, const OpPSDExpr& expr);
+		OpPSDExpr operator*(Variable::OpPSDVar var, const OpPSDRealMat& mat);
+		OpPSDExpr operator*(const OpPSDRealMat& mat, Variable::OpPSDVar var);
+		OpPSDExpr operator/(const OpPSDExpr& expr, OpFloat val);
 
 		// OPUA非线性函数
 		enum class OpNLFunc
@@ -92,7 +110,7 @@ namespace OPUA
 			LinTermTab linterm_; // 线性项
 
 			friend class OpQuadExpr;
-
+			friend class OpPSDExpr;
 			friend std::ostream& operator<<(std::ostream& stream, const OpLinExpr& expr);
 			friend OpLinExpr operator+(const OpLinExpr& expr1, const OpLinExpr& expr2);
 			friend OpLinExpr operator+(const OpLinExpr& expr);
@@ -298,6 +316,200 @@ namespace OPUA
 			OpQuadExpr(const OpLinExpr& expr);
 		};
 
+		// OpDenseMat：稠密矩阵
+		class OpDenseMat
+		{
+		protected:
+			using DMValTab = std::vector<OpFloat>;
+
+			OpULInt dim_; // 矩阵维度
+			DMValTab data_; // 矩阵元素
+
+			friend class OpPSDExpr;
+			friend std::ostream& operator<<(std::ostream& stream, const OpDenseMat& mat);
+		private:
+			OpBool isLegal(OpULInt row, OpULInt col) const;
+			OpULInt coord2Idx(OpULInt row, OpULInt col) const;
+		public:
+			OpULInt getDim() const; // 获取维度
+			OpFloat getVal(OpULInt row, OpULInt col) const; // 获取对应行列的值(非法索引将返回NaN)
+			OpFloat& getValRef(OpULInt row, OpULInt col); // 获取对应行列的值的引用(非法索引将抛出异常)
+			OpFloat trace() const; // 求迹(对角线之和)
+			OpBool isZeros(OpFloat zero) const; // 判断是否为零阵(所有元素绝对值均小于zero)
+			void setDim(OpULInt dim); // 设置维度(原数据失效)
+			void setVal(OpULInt row, OpULInt col, OpFloat val); // 写入对应行列的值(非法索引将抛出异常)
+			void setVal(OpULInt dim, Container::OpFloatArr vals); // 写入矩阵(一维模式)
+			void toZeros(); // 转为零阵(原数据失效)
+			void toZeros(OpULInt dim); // 转为指定维度的零阵(原数据失效)
+			void toEyes(); // 转为单位对角阵(原数据失效)
+			void toEyes(OpULInt dim); // 转为指定维度的单位对角阵(原数据失效)
+			void toOnes(); // 转为单位阵(原数据失效)
+			void toOnes(OpULInt dim); // 转为指定维度的单位阵(原数据失效)
+			void piecewiseProd(OpFloat val); // 逐位运算-乘
+			void piecewiseDiv(OpFloat val); // 逐位运算-除
+			void piecewiseInv(); // 逐位运算-取负
+		public:
+			OpDenseMat& operator+=(const OpDenseMat& mat);
+			OpDenseMat& operator-=(const OpDenseMat& mat);
+			OpDenseMat& operator*=(OpFloat val);
+			OpDenseMat& operator/=(OpFloat val);
+		public:
+			OpDenseMat();
+			OpDenseMat(OpULInt dim);
+			OpDenseMat(OpULInt dim, Container::OpFloatArr vals);
+		};
+
+		// OpSpraseMat：稀疏矩阵(行压缩模式)
+		class OpSpraseMat
+		{
+		protected:
+			using SMIdxTab = std::vector<OpULInt>;
+			using SMValTab = std::vector<OpFloat>;
+
+			OpULInt dim_; // 矩阵维度
+			SMIdxTab col_; // 矩阵稀疏元素列号
+			SMIdxTab off_; // 矩阵稀疏元素行偏移
+			SMValTab data_; // 矩阵稀疏元素
+
+			friend class OpPSDExpr;
+			friend std::ostream& operator<<(std::ostream& stream, const OpSpraseMat& mat);
+		private:
+			OpBool isLegal(OpULInt row, OpULInt col) const;
+			OpULInt coord2Idx(OpULInt row, OpULInt col) const;
+			OpULInt insert(OpULInt row, OpULInt col, OpFloat val);
+		public:
+			OpULInt getDim() const; // 获取维度
+			OpULInt getNZ() const; // 获取非零元素数量
+			OpFloat getVal(OpULInt row, OpULInt col) const; // 获取对应行列的值(不存在将返回0，非法索引将返回NaN)
+			OpFloat& getValRef(OpULInt row, OpULInt col); // 获取对应行列的值的引用(不存在将插入元素，非法索引将抛出异常)
+			OpFloat trace() const; // 求迹(对角线之和)
+			OpBool isZeros(OpFloat zero) const; // 判断是否为零阵(所有元素绝对值均小于zero)
+			void setDim(OpULInt dim); // 设置维度(原数据失效)
+			void setVal(OpULInt row, OpULInt col, OpFloat val); // 写入对应行列的值(不存在将插入元素，非法索引将抛出异常)
+			void setVal(OpULInt dim, Container::OpULIntArr rows, Container::OpULIntArr cols, Container::OpFloatArr vals); // 写入矩阵(一维模式)
+			void clear(); // 清空矩阵(原数据失效)
+			void toZeros(); // 转为零阵(原数据失效)
+			void toZeros(OpULInt dim); // 转为指定维度的零阵(原数据失效)
+			void toEyes(); // 转为单位对角阵(原数据失效)
+			void toEyes(OpULInt dim); // 转为指定维度的单位对角阵(原数据失效)
+			void toOnes(); // 转为单位阵(原数据失效)
+			void toOnes(OpULInt dim); // 转为指定维度的单位阵(原数据失效)
+			void piecewiseProd(OpFloat val); // 逐位运算-乘
+			void piecewiseDiv(OpFloat val); // 逐位运算-除
+			void piecewiseInv(); // 逐位运算-取负
+		public:
+			OpSpraseMat& operator+=(const OpSpraseMat& mat);
+			OpSpraseMat& operator-=(const OpSpraseMat& mat);
+			OpSpraseMat& operator*=(OpFloat val);
+			OpSpraseMat& operator/=(OpFloat val);
+		public:
+			class OpSMIter // 稀疏矩阵非零元素迭代器
+			{
+			private:
+				using SMIdxTerm = SMIdxTab::const_iterator;
+				using SMValTerm = SMValTab::const_iterator;
+
+				SMIdxTerm citer_;
+				SMValTerm viter_;
+
+				friend class OpSpraseMat;
+			public:
+				OpBool operator==(const OpSMIter& iter) const; // 判等运算
+				OpBool operator!=(const OpSMIter& iter) const; // 判非运算
+				OpSMIter& operator--(); // 前缀自减运算
+				OpSMIter& operator++(); // 前缀自加运算
+				OpULInt getCol() const; // 获取当前元素列号
+				OpFloat getVal() const; // 获取当前元素值
+			protected:
+				OpSMIter(SMIdxTerm col, SMValTerm val);
+			};
+
+			OpSMIter getNZBegin(OpULInt row) const; // 得到一行的非零元素初始迭代器(非法索引将抛出异常)
+			OpSMIter getNZEnd(OpULInt row) const; // 得到一行的非零元素尾后迭代器(非法索引将抛出异常)
+		public:
+			OpSpraseMat();
+			OpSpraseMat(OpULInt dim);
+			OpSpraseMat(OpULInt dim, Container::OpULIntArr rows, Container::OpULIntArr cols, Container::OpFloatArr vals);
+		};
+
+		// OpPSDExpr：OPUA半定表达式 \sum(A*X)+b^{T}*x+c, X>=0
+		class OpPSDExpr
+			: public OpExpr
+		{
+		public:
+		protected:
+			using PSDTermTab = std::unordered_map<Variable::OpPSDVarI*, OpPSDRealMat>;
+
+			OpLinExpr linexpr_; // 线性项
+			PSDTermTab psdterm_; // 半定项
+
+			friend std::ostream& operator<<(std::ostream& stream, const OpPSDExpr& expr);
+			friend OpPSDExpr operator+(const OpPSDExpr& expr1, const OpPSDExpr& expr2);
+			friend OpPSDExpr operator-(const OpPSDExpr& expr1, const OpPSDExpr& expr2);
+			friend OpPSDExpr operator+(const OpPSDExpr& expr);
+			friend OpPSDExpr operator-(const OpPSDExpr& expr);
+			friend OpPSDExpr operator*(const OpPSDExpr& expr, OpFloat val);
+			friend OpPSDExpr operator*(OpFloat val, const OpPSDExpr& expr);
+			friend OpPSDExpr operator*(Variable::OpPSDVar var, const OpPSDRealMat& mat);
+			friend OpPSDExpr operator*(const OpPSDRealMat& mat, Variable::OpPSDVar var);
+			friend OpPSDExpr operator/(const OpPSDExpr& expr, OpFloat val);
+		public:
+			OpULInt getSize() const; // 获取线性项与半定项数目
+			OpEnv getEnv() const; // 获取环境变量(默认返回线性项中第一个变量的环境变量，其次是半定项中第一个变量的环境变量，否则为空环境变量)
+			OpFloat getCoeff(Variable::OpVar var) const; // 获取变量的线性项系数
+			const OpPSDRealMat& getCoeff(Variable::OpPSDVar var) const; // 获取PSD变量的PSD项系数
+			OpLinExpr getLinTerm() const; // 获得线性项部分
+			OpPSDExpr getPSDTerm() const; // 获得半定项部分
+			OpFloat getConstant() const; // 获取常量
+			void setLinTerm(OpFloat val); // 设置PSD表达式常数项
+			void setLinTerm(Variable::OpVar var, OpFloat coeff); // 设置PSD表达式线性项
+			void setPSDTerm(Variable::OpPSDVar var, const OpPSDRealMat& coeff); // 设置PSD表达式PSD项
+			void addLinTerm(OpFloat val); // 在PSD表达式中追加线性项
+			void addLinTerm(Variable::OpVar var, OpFloat coeff); // 在PSD表达式中追加线性项
+			void addPSDTerm(Variable::OpPSDVar var, const OpPSDRealMat& coeff); // 在PSD表达式中追加PSD项
+			void subPSDTerm(Variable::OpPSDVar var, const OpPSDRealMat& coeff); // 在PSD表达式中追减PSD项
+			void removeLinTerm(Variable::OpVar var); // 从PSD表达式中移除线性项
+			void removePSDTerm(Variable::OpPSDVar var); // 从PSD表达式中移除PSD项
+			void clear(); // 清除PSD表达式
+			void simplify(OpFloat zero = Constant::AbsEpsilon); // 表达式化简
+			void piecewiseProd(OpFloat val); // 逐位运算-乘(相当于expr *= val)
+			void piecewiseDiv(OpFloat val); // 逐位运算-除(相当于expr /= val)
+			void piecewiseInv(); // 逐位运算-取负(相当于expr = -expr)
+		public:
+			OpPSDExpr& operator+=(const OpPSDExpr& expr);
+			OpPSDExpr& operator-=(const OpPSDExpr& expr);
+			OpPSDExpr& operator*=(OpFloat val);
+			OpPSDExpr& operator/=(OpFloat val);
+		public:
+			class OpPSDEIter // PSD迭代器
+			{
+			private:
+				using PSDTerm = PSDTermTab::const_iterator;
+
+				PSDTerm iter_;
+
+				friend class OpPSDExpr;
+			public:
+				OpBool operator==(const OpPSDEIter& iter) const; // 判等运算
+				OpBool operator!=(const OpPSDEIter& iter) const; // 判非运算
+				OpPSDEIter& operator--(); // 前缀自减运算
+				OpPSDEIter& operator++(); // 前缀自加运算
+				Variable::OpPSDVar getVar() const; // 获取当前PSD项的变量
+				const OpPSDRealMat& getCoeff() const; // 获取当前PSD项的系数
+			protected:
+				OpPSDEIter(PSDTerm iter);
+			};
+
+			OpLinExpr::OpLEIter getLBegin() const; // 得到线性项初始迭代器
+			OpLinExpr::OpLEIter getLEnd() const; // 得到线性项尾后迭代器
+			OpPSDEIter getPSDBegin() const; // 得到PSD项初始迭代器
+			OpPSDEIter getPSDEnd() const; // 得到PSD项尾后迭代器
+		public:
+			OpPSDExpr(OpFloat constant = 0.0);
+			OpPSDExpr(Variable::OpVar var, OpFloat coeff = 1.0);
+			OpPSDExpr(const OpLinExpr& expr);
+		};
+
 		class OpNLExpr
 			: public OpExpr
 		{
@@ -316,7 +528,10 @@ namespace OPUA
 			void setFunction(OpNLFunc func); // 设置非线性函数		
 			void setParam(OpFloat param); // 设置非线性函数参数
 			void addVar(Variable::OpVar var);  // 向变量表中追加一个变量
+			void addVar(Variable::OpVarArr vars); // 向变量表中追加一组变量
 			void removeVar(Variable::OpVar var);  // 从变量表中移除一个变量
+			void removeVar(Variable::OpVarArr vars);  // 从变量表中移除一组变量
+			void removeVar(OpULInt n = 0); // 从变量表中移除末尾的多个变量
 			void clear(); // 清除非线性表达式
 		public:
 			class OpNLEIter

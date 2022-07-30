@@ -23,9 +23,9 @@ OPUA由以下基本模块构成：
 
 * **OPUA.Environment**: 环境变量模块，提供统一的内存管理
 * **OPUA.Containter**: 容器模块，提供OPUA的基本容器，如动态数组和字典
-* **OPUA.Variable**: 决策变量模块，提供OPUA的决策变量模型，包括0-1变量、离散变量、连续变量等
+* **OPUA.Variable**: 决策变量模块，提供OPUA的决策变量模型，包括0-1变量、离散变量、连续变量、半定变量等
 * **OPUA.Expression**: 表达式模块，提供OPUA的表达式模型，包括线性表达式、二次表达式和非线性表达式等
-* **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、SOS约束、非线性约束、条件约束、逻辑约束、特殊约束等
+* **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、锥约束、半定约束、SOS约束、非线性约束、条件约束、逻辑约束、特殊约束等
 * **OPUA.Objective**: 目标函数模块，提供OPUA的目标函数模型
 * **OPUA.Model**: 优化问题模块，提供OPUA的优化问题模型
 * **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP、COPT、IPOPT等
@@ -78,6 +78,8 @@ Variable::OpVar var2(env, Variable::OpVarType::Con, 0.0, 100.0);
 Variable::OpVar var3(env, Variable::OpVarType::Bool, 0, 1);
 // 整数变量
 Variable::OpVar var4(env, Variable::OpVarType::Int, 0.0, 10);
+// 半定变量
+Variable::OpPSDVar var5(env, 3);
 ```
 
 接着，我们创建各类约束条件。需要提醒的是，OPUA重载了+、-、*、/运算符，允许表达式参与数学运算，并通过<=、>=、==运算符直接创建约束条件：
@@ -88,11 +90,17 @@ auto linexpr1 = var1 + 2 * var2 + 3 * var3 + 0.5;
 auto linexpr2 = linexpr1 / 2;
 // 二次表达式
 auto quadexpr1 = linexpr1 * linexpr1;
+// 半定表达式
+auto A1 = Expression::OpPSDRealMat(3);
+A1.toEyes();
+auto psdexpr1 = A1 * var5 + linexpr1;
 // 线性约束
 auto lincon1 = linexpr1 >= 5;
 auto lincon2 = 4 == linexpr2;
 // 二次约束
 auto quadcon1 = quadexpr1 <= linexpr1;
+// 半定约束
+auto psdcon1 = psdexpr1 == 0;
 // SOS约束
 auto sos1con1 = OpSOSCon(env, OpConSense::SOS1, linexpr1);
 // 非线性约束

@@ -1,5 +1,6 @@
-#include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_COPT
+#include "OPUA.Solver.h"
+#include "OPUA.Exception.h"
 #include <coptcpp_inc/coptcpp_pch.h>
 #endif
 
@@ -48,15 +49,21 @@ OPUA::Solver::OpCOPTCfgCvt::OpCOPTCfgCvt()
 
 /* OPUA::Solver::OpCOPTSolI */
 
+typedef CoptException COPTExc;
 typedef Envr COPTEnv;
 typedef Model COPTModel;
 typedef Var COPTVar;
+typedef PsdVar COPTPSDVar;
+typedef SymMatrix COPTSymMat;
 typedef VarArray COPTVarArr;
 typedef PsdVar COPTPSDVar;
 typedef Expr COPTLinExpr;
 typedef QuadExpr COPTQuadExpr;
+typedef PsdExpr COPTPSDExpr;
 typedef Constraint COPTLinCon;
 typedef QConstraint COPTQuadCon;
+typedef Cone COPTConicCon;
+typedef PsdConstraint COPTPSDCon;
 typedef Sos COPTSOSCon;
 typedef GenConstr COPTGenCon;
 typedef PsdConstraint COPTPSDCon;
@@ -73,8 +80,11 @@ protected:
 	// OPUA-COPT映射信息
 
 	std::unordered_map<OpLInt, COPTVar> vardict_; // COPT变量表
+	std::unordered_map<OpLInt, COPTPSDVar> pvdict_; // COPTPSD变量表
 	std::unordered_map<OpLInt, COPTLinCon> lcdict_; // COPT线性约束表
 	std::unordered_map<OpLInt, COPTQuadCon> qcdict_; // COPT二次约束表
+	std::unordered_map<OpLInt, COPTConicCon> cocdict_; // COPT锥约束表
+	std::unordered_map<OpLInt, COPTPSDCon> pcdict_; // COPT半定约束表
 	std::unordered_map<OpLInt, COPTSOSCon> scdict_; // COPTSOS约束表
 	std::unordered_map<OpLInt, COPTGenCon> nlcdict_; // COPT指示器约束表
 	OpCOPTCfgCvt cfgcvt_; // 配置翻译器
@@ -82,15 +92,21 @@ protected:
 	friend class OPUA::Solver::OpCOPTSol;
 private:
 	COPTVar addCOPTVar(OPUA::Variable::OpVar var); // 从OPUA变量创建一个COPT变量
+	COPTPSDVar addCOPTPSDVar(OPUA::Variable::OpPSDVar var); // 从OPUA变量创建一个COPT变量
 	char senseConvert1(OPUA::Constraint::OpConSense sense); // 将OPUA约束类型转换为COPT约束类型
 	int senseConvert2(OPUA::Constraint::OpConSense sense); // 将OPUA约束类型转换为COPT约束类型
+	int senseConvert3(OPUA::Constraint::OpConicSense sense); // 将OPUA约束类型转换为COPT约束类型
 	COPTLinExpr addCOPTLE(const OPUA::Expression::OpLinExpr & expr); // 由OPUA线性表达式创建一个COPT线性表达式
 	COPTQuadExpr addCOPTQE(const OPUA::Expression::OpQuadExpr& expr); // 由OPUA二次表达式创建一个COPT二次表达式
+	COPTSymMat addCOPTSymMat(const OPUA::Expression::OpPSDRealMat& mat); // 由OPUA稠密实半定矩阵创建一个COPT实对称阵
+	COPTPSDExpr addCOPTPSDE(const OPUA::Expression::OpPSDExpr& expr); // 由OPUA半定表达式创建一个COPT半定表达式
 	COPTLinCon addCOPTRange(Constraint::OpLinCon con);  // 从OPUA线性约束创建一个COPT线性约束
 	COPTLinCon addCOPTLC(OPUA::Constraint::OpLinCon con); // 从OPUA线性约束创建一个COPT线性约束
 	COPTLinCon addCOPTLC(OPUA::Constraint::OpLinCon con, OpBool lb); // 从OPUA线性约束创建一个COPT线性约束
 	COPTQuadCon addCOPTQC(OPUA::Constraint::OpQuadCon con); // 从OPUA二次约束创建一个COPT二次约束
 	COPTQuadCon addCOPTQC(OPUA::Constraint::OpQuadCon con, OpBool lb); // 从OPUA二次约束创建一个COPT二次约束
+	COPTConicCon addCOPTCone(OPUA::Constraint::OpConicCon con); // 从OPUA锥约束创建一个COPT锥约束
+	COPTPSDCon addCOPTPSDC(OPUA::Constraint::OpPSDCon con); // 从OPUA半定约束创建一个COPT半定约束
 	COPTSOSCon addCOPTSOS(OPUA::Constraint::OpSOSCon con); // 从OPUASOS约束创建一个COPTSOS约束
 	COPTGenCon addCOPTGenIndicator(OPUA::Constraint::OpCdtCon con); // 从OPUA条件约束创建一个COPTGenCon指示器约束
 	COPTGenCon addCOPTGenIndicator(OPUA::Constraint::OpCdtCon con, OpBool lb); // 从OPUA条件约束创建一个COPTGenCon指示器约束
@@ -133,10 +149,19 @@ COPTVar OPUA::Solver::OpCOPTSolI::addCOPTVar(OPUA::Variable::OpVar var)
 	case OPUA::Variable::OpVarType::Con:
 		vtype = COPT_CONTINUOUS;
 		break;
+	case OPUA::Variable::OpVarType::Sem:
+		throw OpExcBase("[Solver::OpCOPTSolI::addCOPTVar]: Exception->can not handle Variable::OpVarType::Sem");
+		break;
 	default:
+		throw OpExcBase("[Solver::OpCOPTSolI::addCOPTVar]: Exception->can not handle other variable type");
 		break;
 	}
 	return tmdl_.AddVar(lb, ub, 0.0, vtype, var.getName().c_str());
+}
+
+COPTPSDVar OPUA::Solver::OpCOPTSolI::addCOPTPSDVar(OPUA::Variable::OpPSDVar var)
+{
+	return tmdl_.AddPsdVar(var.getDim(), var.getName().c_str());
 }
 
 char OPUA::Solver::OpCOPTSolI::senseConvert1(OPUA::Constraint::OpConSense sense)
@@ -154,6 +179,7 @@ char OPUA::Solver::OpCOPTSolI::senseConvert1(OPUA::Constraint::OpConSense sense)
 		tmp = COPT_GREATER_EQUAL;
 		break;
 	default:
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert1]: Exception->can not handle other sense");
 		break;
 	}
 	return tmp;
@@ -169,6 +195,39 @@ int OPUA::Solver::OpCOPTSolI::senseConvert2(OPUA::Constraint::OpConSense sense)
 		break;
 	case OPUA::Constraint::OpConSense::SOS2:
 		tmp = COPT_SOS_TYPE2;
+		break;
+	default:
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert1]: Exception->can not handle other sos sense");
+		break;
+	}
+	return tmp;
+}
+
+int OPUA::Solver::OpCOPTSolI::senseConvert3(OPUA::Constraint::OpConicSense sense)
+{
+	auto tmp(COPT_CONE_QUAD);
+	switch (sense)
+	{
+	case OPUA::Constraint::OpConicSense::Unknow: // 无法处理
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert3]: Exception->can not handle Constraint::OpConicSense::Unknow");
+		break;
+	case OPUA::Constraint::OpConicSense::SOC:
+		tmp = COPT_CONE_QUAD;
+		break;
+	case OPUA::Constraint::OpConicSense::RSOC:
+		tmp = COPT_CONE_RQUAD;
+		break;
+	case OPUA::Constraint::OpConicSense::PC: // 无法处理
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert3]: Exception->can not handle Constraint::OpConicSense::PC");
+		break;
+	case OPUA::Constraint::OpConicSense::DPC: // 无法处理
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert3]: Exception->can not handle Constraint::OpConicSense::DPC");
+		break;
+	case OPUA::Constraint::OpConicSense::EC: // 无法处理
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert3]: Exception->can not handle Constraint::OpConicSense::EC");
+		break;
+	case OPUA::Constraint::OpConicSense::DEC: // 无法处理
+		throw OpExcBase("[Solver::OpCOPTSolI::senseConvert3]: Exception->can not handle Constraint::OpConicSense::DEC");
 		break;
 	default:
 		break;
@@ -191,6 +250,37 @@ COPTQuadExpr OPUA::Solver::OpCOPTSolI::addCOPTQE(const OPUA::Expression::OpQuadE
 		tmp.AddTerm(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
 	for (auto iter = expr.getQBegin(); iter != expr.getQEnd(); ++iter)
 		tmp.AddTerm(vardict_.at(iter.getVar1().getIndex()), vardict_.at(iter.getVar2().getIndex()), iter.getCoeff());
+	return tmp;
+}
+
+COPTSymMat OPUA::Solver::OpCOPTSolI::addCOPTSymMat(const OPUA::Expression::OpPSDRealMat& mat)
+{
+	int dim(mat.getDim());
+	int len(dim * (dim + 1) / 2);
+	int count(0);
+	std::vector<int> rows(len);
+	std::vector<int> cols(len);
+	std::vector<double> vals(len);
+	for (int i = 0; i < dim; i++)
+	{
+		for (int j = 0; j < i + 1; j++)
+		{
+			rows[count] = i;
+			cols[count] = j;
+			vals[count] = mat.getVal(i, j);
+			count++;
+		}
+	}
+	return tmdl_.AddSparseMat(dim, len, rows.data(), cols.data(), vals.data());
+}
+
+COPTPSDExpr OPUA::Solver::OpCOPTSolI::addCOPTPSDE(const OPUA::Expression::OpPSDExpr& expr)
+{
+	COPTPSDExpr tmp(expr.getConstant());
+	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
+		tmp.AddTerm(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	for (auto iter = expr.getPSDBegin(); iter != expr.getPSDEnd(); ++iter)
+		tmp.AddTerm(pvdict_.at(iter.getVar().getIndex()), addCOPTSymMat(iter.getCoeff()));
 	return tmp;
 }
 
@@ -225,6 +315,22 @@ COPTQuadCon OPUA::Solver::OpCOPTSolI::addCOPTQC(OPUA::Constraint::OpQuadCon con,
 		return tmdl_.AddQConstr(addCOPTQE(con.getExpr()), COPT_GREATER_EQUAL, con.getLb(), con.getName().c_str());
 	else
 		return tmdl_.AddQConstr(addCOPTQE(con.getExpr()), COPT_LESS_EQUAL, con.getUb(), con.getName().c_str());
+}
+
+COPTConicCon OPUA::Solver::OpCOPTSolI::addCOPTCone(OPUA::Constraint::OpConicCon con)
+{
+	COPTVarArr cvars;
+	cvars.Reserve(con.getConicExpr().getSize());
+	for (auto iter = con.getConicExpr().getNLBegin(); iter != con.getConicExpr().getNLEnd(); ++iter)
+		cvars.PushBack(vardict_.at(iter.getVar().getIndex()));
+	return tmdl_.AddCone(cvars, senseConvert3(con.getSense()));
+}
+
+COPTPSDCon OPUA::Solver::OpCOPTSolI::addCOPTPSDC(OPUA::Constraint::OpPSDCon con)
+{
+	double lb(OPUA::Constant::IsInfinity(con.getLb()) ? -COPT_INFINITY : con.getLb());
+	double ub(OPUA::Constant::IsInfinity(con.getUb()) ? COPT_INFINITY : con.getUb());
+	return tmdl_.AddPsdConstr(addCOPTPSDE(con.getExpr()), lb, ub, con.getName().c_str());
 }
 
 COPTSOSCon OPUA::Solver::OpCOPTSolI::addCOPTSOS(OPUA::Constraint::OpSOSCon con)
@@ -269,8 +375,11 @@ void OPUA::Solver::OpCOPTSolI::init()
 void OPUA::Solver::OpCOPTSolI::clear()
 {
 	vardict_.clear();
+	pvdict_.clear();
 	lcdict_.clear();
 	qcdict_.clear();
+	cocdict_.clear();
+	pcdict_.clear();
 	scdict_.clear();
 	nlcdict_.clear();
 	tmdl_ = COPTModel(nullptr);
@@ -279,66 +388,100 @@ void OPUA::Solver::OpCOPTSolI::clear()
 
 void OPUA::Solver::OpCOPTSolI::extract(OPUA::Model::OpModel mdl)
 {
-	// 首先清除原模型
-	clear();
-	init();
-	// 加载现有模型
-	for (auto iter = mdl.getCBegin<OPUA::Variable::OpVar>(); iter != mdl.getCEnd<OPUA::Variable::OpVar>(); ++iter)
-		vardict_.emplace(iter.getKey(), addCOPTVar(iter.getVal()));
-	for (auto iter = mdl.getCBegin<OPUA::Constraint::OpLinCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpLinCon>(); ++iter)
+	try
 	{
-		auto& con(iter.getVal());
-		if (OPUA::Constant::IsEqual(con.getLb(), con.getUb()))
-			lcdict_.emplace(iter.getKey(), addCOPTLC(con));
-		else
-			lcdict_.emplace(iter.getKey(), addCOPTRange(con));
-	}
-	for (auto iter = mdl.getCBegin<OPUA::Constraint::OpQuadCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpQuadCon>(); ++iter)
-	{
-		auto& con(iter.getVal());
-		if (OPUA::Constant::IsEqual(con.getLb(), con.getUb()))
+		// 首先清除原模型
+		clear();
+		init();
+		// 加载现有模型
+		for (auto iter = mdl.getCBegin<OPUA::Variable::OpVar>(); iter != mdl.getCEnd<OPUA::Variable::OpVar>(); ++iter)
+			vardict_.emplace(iter.getKey(), addCOPTVar(iter.getVal()));
+		for (auto iter = mdl.getCBegin<OPUA::Variable::OpPSDVar>(); iter != mdl.getCEnd<OPUA::Variable::OpPSDVar>(); ++iter)
+			pvdict_.emplace(iter.getKey(), addCOPTPSDVar(iter.getVal()));
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpLinCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpLinCon>(); ++iter)
 		{
-			qcdict_.emplace(iter.getKey(), addCOPTQC(con));
+			auto& con(iter.getVal());
+			if (OPUA::Constant::IsEqual(con.getLb(), con.getUb()))
+				lcdict_.emplace(iter.getKey(), addCOPTLC(con));
+			else
+				lcdict_.emplace(iter.getKey(), addCOPTRange(con));
 		}
-		else
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpQuadCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpQuadCon>(); ++iter)
 		{
-			if (!OPUA::Constant::IsInfinity(con.getLb()))
-				qcdict_.emplace(iter.getKey(), addCOPTQC(con, true));
-			if (!OPUA::Constant::IsInfinity(con.getUb()))
-				qcdict_.emplace(iter.getKey(), addCOPTQC(con, false));
-		}
-	}
-	for (auto iter = mdl.getCBegin<OPUA::Constraint::OpSOSCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpSOSCon>(); ++iter)
-		scdict_.emplace(iter.getKey(), addCOPTSOS(iter.getVal()));
-	for (auto iter = mdl.getCBegin<OPUA::Constraint::OpCdtCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpCdtCon>(); ++iter)
-	{
-		auto& con(iter.getVal());
-		if (con.isIndicator())
-		{
-			auto& con2(con.getCon(false));
-			if (OPUA::Constant::IsEqual(con2.getLb(), con2.getUb()))
+			auto& con(iter.getVal());
+			if (OPUA::Constant::IsEqual(con.getLb(), con.getUb()))
 			{
-				nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con));
+				qcdict_.emplace(iter.getKey(), addCOPTQC(con));
 			}
 			else
 			{
-				if (!OPUA::Constant::IsInfinity(con2.getLb()))
-					nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con, true));
-				if (!OPUA::Constant::IsInfinity(con2.getUb()))
-					nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con, false));
+				if (!OPUA::Constant::IsInfinity(con.getLb()))
+					qcdict_.emplace(iter.getKey(), addCOPTQC(con, true));
+				if (!OPUA::Constant::IsInfinity(con.getUb()))
+					qcdict_.emplace(iter.getKey(), addCOPTQC(con, false));
 			}
 		}
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpConicCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpConicCon>(); ++iter)
+			cocdict_.emplace(iter.getKey(), addCOPTCone(iter.getVal()));
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpPSDCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpPSDCon>(); ++iter)
+			pcdict_.emplace(iter.getKey(), addCOPTPSDC(iter.getVal()));
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpSOSCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpSOSCon>(); ++iter)
+			scdict_.emplace(iter.getKey(), addCOPTSOS(iter.getVal()));
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpNLCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpNLCon>(); ++iter)
+			throw OpExcBase("[Solver::OpCOPTSolI::extract]: Exception->can not handle Constraint::OpNLCon");
+		for (auto iter = mdl.getCBegin<OPUA::Constraint::OpCdtCon>(); iter != mdl.getCEnd<OPUA::Constraint::OpCdtCon>(); ++iter)
+		{
+			auto& con(iter.getVal());
+			if (con.isIndicator())
+			{
+				auto& con2(con.getCon(false));
+				if (OPUA::Constant::IsEqual(con2.getLb(), con2.getUb()))
+				{
+					nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con));
+				}
+				else
+				{
+					if (!OPUA::Constant::IsInfinity(con2.getLb()))
+						nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con, true));
+					if (!OPUA::Constant::IsInfinity(con2.getUb()))
+						nlcdict_.emplace(iter.getKey(), addCOPTGenIndicator(con, false));
+				}
+			}
+			else
+				throw OpExcBase("[Solver::OpCOPTSolI::extract]: Exception->can not handle if-else constraint");
+		}
+		switch (mdl.getObj().getSense())
+		{
+		case OPUA::Objective::OpObjSense::Min:
+			tmdl_.SetQuadObjective(addCOPTQE(mdl.getObj().getQuadExpr() + mdl.getObj().getLinExpr()), COPT_MINIMIZE);
+			break;
+		case OPUA::Objective::OpObjSense::Max:
+			tmdl_.SetQuadObjective(addCOPTQE(mdl.getObj().getQuadExpr() + mdl.getObj().getLinExpr()), COPT_MAXIMIZE);
+			break;
+		default:
+			throw OpExcBase("[Solver::OpCOPTSolI::extract]: Exception->can not handle other objective function sense");
+			break;
+		}
 	}
-	switch (mdl.getObj().getSense())
+	catch (OpExcBase& e)
 	{
-	case OPUA::Objective::OpObjSense::Min:
-		tmdl_.SetQuadObjective(addCOPTQE(mdl.getObj().getQuadExpr() + mdl.getObj().getLinExpr()), COPT_MINIMIZE);
-		break;
-	case OPUA::Objective::OpObjSense::Max:
-		tmdl_.SetQuadObjective(addCOPTQE(mdl.getObj().getQuadExpr() + mdl.getObj().getLinExpr()), COPT_MAXIMIZE);
-		break;
-	default:
-		break;
+		clear();
+		throw e;
+	}
+	catch (COPTExc& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (std::exception& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (...)
+	{
+		clear();
+		throw OpExcBase("[Solver::OpCOPTSolI::extract]: Exception->unknow exception!");
 	}
 }
 

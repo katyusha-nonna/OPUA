@@ -1,9 +1,9 @@
-#include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_GRB
+#include "OPUA.Solver.h"
+#include "OPUA.Exception.h"
 #include <gurobi_c++.h>
-#endif
-
 using namespace OPUA;
+#endif
 
 #ifdef OPUA_COMPILE_GRB
 /* OPUA::Solver::OpGRBCfgCvt */
@@ -213,6 +213,7 @@ GRBVar Solver::OpGRBSolI::addGRBVar(Variable::OpVar var)
 		vtype = GRB_SEMICONT;
 		break;
 	default:
+		throw OpExcBase("[Solver::OpGRBSolI::addGRBVar]: Exception->can not handle other variable type");
 		break;
 	}
 	return gmdl_->addVar(lb, ub, 0.0, vtype, var.getName());
@@ -233,6 +234,7 @@ char Solver::OpGRBSolI::senseConvert1(Constraint::OpConSense sense)
 		tmp = GRB_GREATER_EQUAL;
 		break;
 	default:
+		throw OpExcBase("[Solver::OpGRBSolI::senseConvert1]: Exception->can not handle other sense");
 		break;
 	}
 	return tmp;
@@ -250,6 +252,7 @@ int Solver::OpGRBSolI::senseConvert2(Constraint::OpConSense sense)
 		tmp = GRB_SOS_TYPE2;
 		break;
 	default:
+		throw OpExcBase("[Solver::OpGRBSolI::senseConvert1]: Exception->can not handle other sos sense");
 		break;
 	}
 	return tmp;
@@ -328,8 +331,10 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGen(Constraint::OpNLCon con)
 	switch (con.getFunction())
 	{
 	case Expression::OpNLFunc::Unknow: // 无法处理
+		throw OpExcBase("[Solver::OpGRBSolI::addGRBGen]: Exception->can not handle Expression::OpNLFunc::Unknow");
 		break;
 	case Expression::OpNLFunc::Sum: // 无法处理
+		throw OpExcBase("[Solver::OpGRBSolI::addGRBGen]: Exception->can not handle Expression::OpNLFunc::Sum");
 		break;
 	case Expression::OpNLFunc::Abs:
 		tmp = addGRBGenAbs(con);
@@ -374,6 +379,7 @@ GRBGenConstr Solver::OpGRBSolI::addGRBGen(Constraint::OpNLCon con)
 		tmp = addGRBGenTan(con);
 		break;
 	default:
+		throw OpExcBase("[Solver::OpGRBSolI::addGRBGen]: Exception->can not handle other NL function");
 		break;
 	}
 	return tmp;
@@ -526,70 +532,98 @@ void Solver::OpGRBSolI::clear()
 
 void Solver::OpGRBSolI::extract(Model::OpModel mdl)
 {
-	// 首先清除原模型
-	clear();
-	init();
-	// 加载现有模型
-	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
-		vardict_.emplace(iter.getKey(), addGRBVar(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
+	try
 	{
-		auto& con(iter.getVal());
-		if (Constant::IsEqual(con.getLb(), con.getUb()))
-			lcdict_.emplace(iter.getKey(), addGRBLC(con));
-		else
-			lcdict_.emplace(iter.getKey(), addGRBRange(con));
-	}	
-	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
-	{
-		auto& con(iter.getVal());
-		if (Constant::IsEqual(con.getLb(), con.getUb()))
+		// 首先清除原模型
+		clear();
+		init();
+		// 加载现有模型
+		for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
+			vardict_.emplace(iter.getKey(), addGRBVar(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Variable::OpPSDVar>(); iter != mdl.getCEnd<Variable::OpPSDVar>(); ++iter)
+			throw OpExcBase("[Solver::OpGRBSolI::extract]: Exception->can not handle Variable::OpPSDVar");
+		for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
 		{
-			qcdict_.emplace(iter.getKey(), addGRBQC(con));
+			auto& con(iter.getVal());
+			if (Constant::IsEqual(con.getLb(), con.getUb()))
+				lcdict_.emplace(iter.getKey(), addGRBLC(con));
+			else
+				lcdict_.emplace(iter.getKey(), addGRBRange(con));
 		}
-		else
+		for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
 		{
-			if (!Constant::IsInfinity(con.getLb()))
-				qcdict_.emplace(iter.getKey(), addGRBQC(con, true));
-			if (!Constant::IsInfinity(con.getUb()))
-			qcdict_.emplace(iter.getKey(), addGRBQC(con, false));
-		}
-	}
-	for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
-		scdict_.emplace(iter.getKey(), addGRBSOS(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
-		nlcdict_.emplace(iter.getKey(), addGRBGen(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
-	{
-		auto& con(iter.getVal());
-		if (con.isIndicator())
-		{
-			auto& con2(con.getCon(false));
-			if (Constant::IsEqual(con2.getLb(), con2.getUb()))
+			auto& con(iter.getVal());
+			if (Constant::IsEqual(con.getLb(), con.getUb()))
 			{
-				nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con));
+				qcdict_.emplace(iter.getKey(), addGRBQC(con));
 			}
 			else
 			{
-				if (!Constant::IsInfinity(con2.getLb()))
-					nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, true));
-				if (!Constant::IsInfinity(con2.getUb()))
-					nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, false));
+				if (!Constant::IsInfinity(con.getLb()))
+					qcdict_.emplace(iter.getKey(), addGRBQC(con, true));
+				if (!Constant::IsInfinity(con.getUb()))
+					qcdict_.emplace(iter.getKey(), addGRBQC(con, false));
 			}
-		}		
-	}		
-	switch (mdl.getObj().getSense())
+		}
+		for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
+			scdict_.emplace(iter.getKey(), addGRBSOS(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
+			nlcdict_.emplace(iter.getKey(), addGRBGen(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
+		{
+			auto& con(iter.getVal());
+			if (con.isIndicator())
+			{
+				auto& con2(con.getCon(false));
+				if (Constant::IsEqual(con2.getLb(), con2.getUb()))
+				{
+					nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con));
+				}
+				else
+				{
+					if (!Constant::IsInfinity(con2.getLb()))
+						nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, true));
+					if (!Constant::IsInfinity(con2.getUb()))
+						nlcdict_.emplace(iter.getKey(), addGRBGenIndicator(con, false));
+				}
+			}
+			else
+				throw OpExcBase("[Solver::OpGRBSolI::extract]: Exception->can not handle if-else constraint");
+		}
+		switch (mdl.getObj().getSense())
+		{
+		case Objective::OpObjSense::Min:
+			gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
+			gmdl_->set(GRB_IntAttr_ModelSense, GRB_MINIMIZE);
+			break;
+		case Objective::OpObjSense::Max:
+			gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
+			gmdl_->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
+			break;
+		default:
+			throw OpExcBase("[Solver::OpGRBSolI::extract]: Exception->can not handle other objective function sense");
+			break;
+		}
+	}
+	catch (OpExcBase& e)
 	{
-	case Objective::OpObjSense::Min:
-		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
-		gmdl_->set(GRB_IntAttr_ModelSense, GRB_MINIMIZE);
-		break;
-	case Objective::OpObjSense::Max:
-		gmdl_->setObjective(addGRBQE(mdl.getObj().getQuadExpr()) + addGRBLE(mdl.getObj().getLinExpr()));
-		gmdl_->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
-		break;
-	default:
-		break;
+		clear();
+		throw e;
+	}
+	catch (GRBException& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (std::exception& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (...)
+	{
+		clear();
+		throw OpExcBase("[Solver::OpGRBSolI::extract]: Exception->unknow exception!");
 	}
 }
 

@@ -14,6 +14,10 @@
 #define OPUA_SCIP_VERSION_701
 #endif
 
+#ifndef OPUA_MSK_VERSION_9320
+#define OPUA_MSK_VERSION_9320
+#endif
+
 #ifndef OPUA_COPT_VERSION_501
 #define OPUA_COPT_VERSION_501
 #endif
@@ -30,6 +34,7 @@ namespace OPUA
 		class OpCPXCfgCvt;
 		class OpGRBCfgCvt;
 		class OpSCIPCfgCvt;
+		class OpMSKCfgCvt;
 		class OpCOPTCfgCvt;
 		class OpIPOPTCfgCvt;
 
@@ -277,6 +282,40 @@ namespace OPUA
 			OpSCIPSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
 		public:
 			virtual ~OpSCIPSol();
+		};
+
+		/*
+			OpMSKSol：求解器Mosek的接口类
+			求解参数说明见doc/OPUA.Solver.MSK_API.md
+		*/
+		class OpMSKSol
+			: public OpBase, public OpSolState
+		{
+		public:
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成MSK模型对象
+			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态
+			virtual OpFloat getObjValue() const; // 获取目标函数解
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpMSKSolI* getImpl() const; // 获取Impl
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
+		public:
+			OpBool operator==(const OpMSKSol& sol) const;
+			OpBool operator!=(const OpMSKSol& sol) const;
+		public:
+			OpMSKSol(); // 默认构造函数(默认为空)
+			OpMSKSol(OpMSKSolI* impl); // 从impl构造
+			OpMSKSol(OpEnv env); // 从env构造
+			OpMSKSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
+		public:
+			virtual ~OpMSKSol();
 		};
 
 		/*

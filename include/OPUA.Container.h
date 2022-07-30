@@ -17,6 +17,7 @@ namespace OPUA
 
 		typedef OpArray<OpBool> OpBoolArr;
 		typedef OpArray<OpLInt> OpLIntArr;
+		typedef OpArray<OpULInt> OpULIntArr;
 		typedef OpArray<OpFloat> OpFloatArr;
 
 		// OpArrayI£ºOpArrayµÄImplÀà

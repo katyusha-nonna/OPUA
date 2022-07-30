@@ -10,10 +10,15 @@ namespace OPUA
 	{
 		class OpVarI;
 		class OpVar;
+		class OpPSDVarI;
+		class OpPSDVar;
 
 		typedef Container::OpArray<OpVar> OpVarArr; // 决策变量数组
 		typedef Container::OpArray<OpVarArr> OpVarMat; // 决策变量矩阵
 		typedef Container::OpDict<OpLInt, OpVar> OpVarIdxDict; // 决策变量索引字典
+		typedef Container::OpArray<OpPSDVar> OpPSDVArr; // PSD决策变量数组
+		typedef Container::OpArray<OpPSDVArr> OpPSDVMat; // PSD决策变量矩阵
+		typedef Container::OpDict<OpLInt, OpPSDVar> OpPSDVIdxDict; // PSD决策变量索引字典
 
 		// OpVarType：变量类型
 		enum class OpVarType
@@ -55,6 +60,27 @@ namespace OPUA
 			OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name); // 从env构造并指定部分参数
 		public:
 			virtual ~OpVar();
+		};
+
+		// OpPSDVar：OPUA特殊变量-半正定变量类
+		class OpPSDVar
+			: public OpBase
+		{
+		public:
+			void setDim(OpULInt dim); // 设置变量维度
+			void setName(OpStr name); // 设置变量名称
+			OpULInt getDim() const; // 获取变量维度
+			OpStr getName() const; // 获取变量名称
+			OpPSDVarI* getImpl() const; // 获取impl
+		public:
+			OpBool operator==(const OpPSDVar& var) const;
+			OpBool operator!=(const OpPSDVar& var) const;
+		public:
+			OpPSDVar(); // 默认构造函数(默认为空)
+			OpPSDVar(OpPSDVarI* impl); // 从impl构造
+			OpPSDVar(OpEnv env); // 从env构造
+			OpPSDVar(OpEnv env, OpULInt dim); // 从env构造并指定部分参数
+			OpPSDVar(OpEnv env, OpULInt dim, OpStr name); // 从env构造并指定部分参数
 		};
 	}
 }

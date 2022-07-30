@@ -1,9 +1,11 @@
-#include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_CPX
+#include "OPUA.Solver.h"
+#include "OPUA.Exception.h"
+#include "OPUA.Common.h"
 #include <ilcplex/ilocplex.h>
-#endif
 
 using namespace OPUA;
+#endif
 
 #ifdef OPUA_COMPILE_CPX
 /* OPUA::Solver::OpCPXCfgCvt */
@@ -348,7 +350,11 @@ IloNumVar::Type Solver::OpCPXSolI::typeConvert(Variable::OpVarType type)
 	case Variable::OpVarType::Con:
 		tmp = IloNumVar::Type::Float;
 		break;
+	case Variable::OpVarType::Sem:
+		throw OpExcBase("[Solver::OpCPXSolI::typeConvert]: Exception->can not handle Variable::OpVarType::Sem");
+		break;
 	default:
+		throw OpExcBase("[Solver::OpCPXSolI::typeConvert]: Exception->can not handle other variable type");
 		break;
 	}
 	return tmp;
@@ -407,6 +413,7 @@ IloConstraint Solver::OpCPXSolI::addCPXSOS(Constraint::OpSOSCon con)
 	auto& expr(con.getSOSExpr());
 	IloNumVarArray vars(cenv_);
 	IloNumArray weights(cenv_);
+	OpAutoFree guard([&]() { vars.end(); weights.end(); });
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
 	{
 		weights.add(iter.getCoeff());
@@ -421,10 +428,9 @@ IloConstraint Solver::OpCPXSolI::addCPXSOS(Constraint::OpSOSCon con)
 		tmp = IloSOS2(cenv_, vars, weights, con.getName().c_str());
 		break;
 	default:
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXSOS]: Exception->can not handle other sos sense");
 		break;
 	}
-	vars.end();
-	weights.end();
 	return tmp;
 }
 
@@ -434,8 +440,9 @@ IloConstraint Solver::OpCPXSolI::addCPXNLC(Constraint::OpNLCon con)
 	switch (con.getFunction())
 	{
 	case Expression::OpNLFunc::Unknow: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Unknow");
 		break;
-	case Expression::OpNLFunc::Sum: // 无法处理
+	case Expression::OpNLFunc::Sum:
 		tmp = addCPXSum(con);
 		break;
 	case Expression::OpNLFunc::Abs:
@@ -460,21 +467,28 @@ IloConstraint Solver::OpCPXSolI::addCPXNLC(Constraint::OpNLCon con)
 		tmp = addCPXExp(con);
 		break;
 	case Expression::OpNLFunc::Exp2: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Exp2");
 		break;
 	case Expression::OpNLFunc::Log1: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Log1");
 		break;
 	case Expression::OpNLFunc::Log2:
 		tmp = addCPXLog(con);
 		break;
 	case Expression::OpNLFunc::Log3: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Log3");
 		break;
 	case Expression::OpNLFunc::Sin: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Sin");
 		break;
 	case Expression::OpNLFunc::Cos: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Cos");
 		break;
 	case Expression::OpNLFunc::Tan: // 无法处理
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle Expression::OpNLFunc::Tan");
 		break;
 	default:
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXNLC]: Exception->can not handle other NL function");
 		break;
 	}
 	return tmp;
@@ -582,6 +596,7 @@ IloObjective Solver::OpCPXSolI::addCPXObj(Objective::OpObj obj)
 	IloObjective tmp(nullptr);
 	IloNumExpr lins(addCPXLE(obj.getLinExpr()));
 	IloNumExpr quads(addCPXQE(obj.getQuadExpr()));
+	OpAutoFree guard([&]() { lins.end(); quads.end(); });
 	switch (obj.getSense())
 	{
 	case Objective::OpObjSense::Min:
@@ -591,11 +606,10 @@ IloObjective Solver::OpCPXSolI::addCPXObj(Objective::OpObj obj)
 		tmp = IloMaximize(cenv_, lins + quads);
 		break;
 	default:
+		throw OpExcBase("[Solver::OpCPXSolI::addCPXObj]: Exception->can not handle other objective function sense");
 		break;
 	}
 	tmp.setName(obj.getName().c_str());
-	lins.end();
-	quads.end();
 	return tmp;
 }
 
@@ -623,34 +637,63 @@ void Solver::OpCPXSolI::clear()
 
 void Solver::OpCPXSolI::extract(Model::OpModel mdl)
 {
-	// 首先清除原模型
-	clear();
-	init();
-	// 加载现有模型
-	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
-		vardict_.emplace(iter.getKey(), addCPXVar(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
-		lcdict_.emplace(iter.getKey(), addCPXLC(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
-		qcdict_.emplace(iter.getKey(), addCPXQC(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
-		scdict_.emplace(iter.getKey(), addCPXSOS(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
-		nlcdict_.emplace(iter.getKey(), addCPXNLC(iter.getVal()));
-	for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
-		nlcdict_.emplace(iter.getKey(), addCPXIfThen(iter.getVal()));
-	objdict_.emplace(mdl.getObj().getIndex(), addCPXObj(mdl.getObj()));
-	
-	for (auto& lc : lcdict_)
-		cmdl_.add(lc.second);
-	for (auto& qc : qcdict_)
-		cmdl_.add(qc.second);
-	for (auto& sc : scdict_)
-		cmdl_.add(sc.second);
-	for (auto& nlc : nlcdict_)
-		cmdl_.add(nlc.second);
-	for (auto& o : objdict_)
-		cmdl_.add(o.second);
+	try
+	{
+		// 首先清除原模型
+		clear();
+		init();
+		// 加载现有模型
+		for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
+			vardict_.emplace(iter.getKey(), addCPXVar(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Variable::OpPSDVar>(); iter != mdl.getCEnd<Variable::OpPSDVar>(); ++iter)
+			throw OpExcBase("[Solver::OpCPXSolI::extract]: Exception->can not handle Variable::OpPSDVar");
+		for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
+			lcdict_.emplace(iter.getKey(), addCPXLC(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
+			qcdict_.emplace(iter.getKey(), addCPXQC(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpConicCon>(); iter != mdl.getCEnd<Constraint::OpConicCon>(); ++iter)
+			throw OpExcBase("[Solver::OpCPXSolI::extract]: Exception->can not handle Constraint::OpConicCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpPSDCon>(); iter != mdl.getCEnd<Constraint::OpPSDCon>(); ++iter)
+			throw OpExcBase("[Solver::OpCPXSolI::extract]: Exception->can not handle Constraint::OpPSDCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
+			scdict_.emplace(iter.getKey(), addCPXSOS(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
+			nlcdict_.emplace(iter.getKey(), addCPXNLC(iter.getVal()));
+		for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
+			nlcdict_.emplace(iter.getKey(), addCPXIfThen(iter.getVal()));
+		objdict_.emplace(mdl.getObj().getIndex(), addCPXObj(mdl.getObj()));
+
+		for (auto& lc : lcdict_)
+			cmdl_.add(lc.second);
+		for (auto& qc : qcdict_)
+			cmdl_.add(qc.second);
+		for (auto& sc : scdict_)
+			cmdl_.add(sc.second);
+		for (auto& nlc : nlcdict_)
+			cmdl_.add(nlc.second);
+		for (auto& o : objdict_)
+			cmdl_.add(o.second);
+	}
+	catch (OpExcBase& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (IloException& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (std::exception& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (...)
+	{
+		clear();
+		throw OpExcBase("[Solver::OpCPXSolI::extract]: Exception->unknow exception!");
+	}
 }
 
 void Solver::OpCPXSolI::solve()

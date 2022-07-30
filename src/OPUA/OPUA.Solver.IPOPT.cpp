@@ -1,10 +1,11 @@
-#include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_IPOPT
+#include "OPUA.Solver.h"
+#include "OPUA.Exception.h"
 #include <cppad/ipopt/solve.hpp>
 #include <functional>
-#endif
 
 using namespace OPUA;
+#endif
 
 #ifdef OPUA_COMPILE_IPOPT
 /* OPUA::Solver::OpIPOPTCfgCvt */
@@ -167,95 +168,143 @@ void Solver::OpIPOPTSolI::clear()
 
 void Solver::OpIPOPTSolI::extract(Model::OpModel mdl)
 {
-	// 首先清除原模型
-	clear();
-	init();
-	// 统计数目
-	const auto NX(mdl.getSize<Variable::OpVar>());
-	const auto NC1(mdl.getSize<Constraint::OpLinCon>());
-	const auto NC2(mdl.getSize<Constraint::OpQuadCon>());
-	const auto NC(NC1 + NC2);
-	// 加载变量
-	xi_->resize(NX);
-	xl_->resize(NX);
-	xu_->resize(NX);
-	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
+	try
 	{
-		auto var(iter.getVal());
-		varidxs_.emplace(iter.getKey(), *nx_);
-		(*xi_)[*nx_] = 0.0; // 初值暂时统一设为0
-		(*xl_)[*nx_] = var.getLb();
-		(*xu_)[*nx_] = var.getUb();
-		(*nx_)++;
-	}
-	// 加载约束边界
-	gl_->resize(NC);
-	gu_->resize(NC);
-	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
-	{
-		auto con(iter.getVal());
-		lcidxs_.emplace(iter.getKey(), *ng_);
-		(*gl_)[*ng_] = con.getLb();
-		(*gu_)[*ng_] = con.getUb();
-		(*ng_)++;
-	}
-	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
-	{
-		auto con(iter.getVal());
-		qcidxs_.emplace(iter.getKey(), *ng_);
-		(*gl_)[*ng_] = con.getLb();
-		(*gu_)[*ng_] = con.getUb();
-		(*ng_)++;
-	}
-	// 加载目标函数和约束表达式
-	switch (mdl.getObj().getSense())
-	{
-	case Objective::OpObjSense::Min:
-		*dir_ = true;
-		break;
-	case Objective::OpObjSense::Max:
-		*dir_ = false;
-		break;
-	default:
-		break;
-	}
-	fg_->handle = [&, mdl](ADvector& f, const ADvector& x) ->void {
-		assert(f.size() == *ng_ + 1);
-		assert(x.size() == *nx_);
-		size_t count(1);
-		// 目标函数
-		auto& obj(f[0]);
-		auto obj0(mdl.getObj().getLinExpr() + mdl.getObj().getQuadExpr());
-		obj = CppAD::AD<double>(obj0.getConstant());
-		for (auto iter = obj0.getLBegin(); iter != obj0.getLEnd(); ++iter)
-			obj += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
-		for (auto iter = obj0.getQBegin(); iter != obj0.getQEnd(); ++iter)
-			obj += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
-		if (!(*dir_))
-			obj *= -1;
-		// 线性约束
+		// 首先清除原模型
+		clear();
+		init();
+		// 统计数目
+		const auto NX(mdl.getSize<Variable::OpVar>());
+		const auto NC1(mdl.getSize<Constraint::OpLinCon>());
+		const auto NC2(mdl.getSize<Constraint::OpQuadCon>());
+		const auto NC(NC1 + NC2);
+		// 加载变量
+		xi_->resize(NX);
+		xl_->resize(NX);
+		xu_->resize(NX);
+		for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
+		{
+			auto var(iter.getVal());
+			switch (var.getType())
+			{
+			case Variable::OpVarType::Bool:
+				throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Variable::OpVarType::Bool");
+				break;
+			case Variable::OpVarType::Int:
+				throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Variable::OpVarType::Int");
+				break;
+			case Variable::OpVarType::Con:
+				break;
+			case Variable::OpVarType::Sem:
+				throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Variable::OpVarType::Sem");
+				break;
+			default:
+				throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle other variable type");
+				break;
+			}
+			varidxs_.emplace(iter.getKey(), *nx_);
+			(*xi_)[*nx_] = 0.0; // 初值暂时统一设为0
+			(*xl_)[*nx_] = var.getLb();
+			(*xu_)[*nx_] = var.getUb();
+			(*nx_)++;
+		}
+		for (auto iter = mdl.getCBegin<Variable::OpPSDVar>(); iter != mdl.getCEnd<Variable::OpPSDVar>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Variable::OpPSDVar");
+		// 加载约束边界
+		gl_->resize(NC);
+		gu_->resize(NC);
 		for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
 		{
 			auto con(iter.getVal());
-			auto& gExpr(f[count]);
-			gExpr = CppAD::AD<double>(con.getExpr().getConstant());
-			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-				gExpr+= iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
-			count++;
+			lcidxs_.emplace(iter.getKey(), *ng_);
+			(*gl_)[*ng_] = con.getLb();
+			(*gu_)[*ng_] = con.getUb();
+			(*ng_)++;
 		}
-		// 二次约束
 		for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
 		{
 			auto con(iter.getVal());
-			auto& gExpr(f[count]);
-			gExpr = CppAD::AD<double>(con.getExpr().getConstant());
-			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-				gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
-			for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
-				gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
-			count++;
+			qcidxs_.emplace(iter.getKey(), *ng_);
+			(*gl_)[*ng_] = con.getLb();
+			(*gu_)[*ng_] = con.getUb();
+			(*ng_)++;
 		}
-	};
+		for (auto iter = mdl.getCBegin<Constraint::OpConicCon>(); iter != mdl.getCEnd<Constraint::OpConicCon>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Constraint::OpConicCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpPSDCon>(); iter != mdl.getCEnd<Constraint::OpPSDCon>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Constraint::OpPSDCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Constraint::OpSOSCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Constraint::OpNLCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle Constraint::OpCdtCon");
+		// 加载目标函数和约束表达式
+		switch (mdl.getObj().getSense())
+		{
+		case Objective::OpObjSense::Min:
+			*dir_ = true;
+			break;
+		case Objective::OpObjSense::Max:
+			*dir_ = false;
+			break;
+		default:
+			throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->can not handle other objective function sense");
+			break;
+		}
+		fg_->handle = [&, mdl](ADvector& f, const ADvector& x) ->void {
+			assert(f.size() == *ng_ + 1);
+			assert(x.size() == *nx_);
+			size_t count(1);
+			// 目标函数
+			auto& obj(f[0]);
+			auto obj0(mdl.getObj().getLinExpr() + mdl.getObj().getQuadExpr());
+			obj = CppAD::AD<double>(obj0.getConstant());
+			for (auto iter = obj0.getLBegin(); iter != obj0.getLEnd(); ++iter)
+				obj += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+			for (auto iter = obj0.getQBegin(); iter != obj0.getQEnd(); ++iter)
+				obj += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
+			if (!(*dir_))
+				obj *= -1;
+			// 线性约束
+			for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
+			{
+				auto con(iter.getVal());
+				auto& gExpr(f[count]);
+				gExpr = CppAD::AD<double>(con.getExpr().getConstant());
+				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
+					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+				count++;
+			}
+			// 二次约束
+			for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
+			{
+				auto con(iter.getVal());
+				auto& gExpr(f[count]);
+				gExpr = CppAD::AD<double>(con.getExpr().getConstant());
+				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
+					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+				for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
+					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
+				count++;
+			}
+		};
+	}
+	catch (OpExcBase& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (std::exception& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (...)
+	{
+		clear();
+		throw OpExcBase("[Solver::OpIPOPTSolI::extract]: Exception->unknow exception!");
+	}
 }
 
 void Solver::OpIPOPTSolI::solve()

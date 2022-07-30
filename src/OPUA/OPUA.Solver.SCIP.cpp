@@ -1,11 +1,12 @@
-#include "OPUA.Solver.h"
 #ifdef OPUA_COMPILE_SCIP
+#include "OPUA.Solver.h"
+#include "OPUA.Exception.h"
 #include <objscip/objscip.h>
 #include <objscip/objscipdefplugins.h>
-#endif
 #include <iostream>
 
 using namespace OPUA;
+#endif
 
 #ifdef OPUA_COMPILE_SCIP
 /* OPUA::Solver::OpSCIPCfgCvt */
@@ -74,9 +75,10 @@ protected:
 	void clear(); // 清除所有组件与映射信息(仅用于析构函数)
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
-	OpFloat getValue(Variable::OpVar var); // 获取变量的解
-	OpFloat getValue(const Expression::OpLinExpr& expr); // 获取线性表达式的解
-	OpFloat getValue(const Expression::OpQuadExpr& expr); // 获取二次表达式的解
+	OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+	OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取线性表达式的解
+	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取二次表达式的解
+	OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
 	OpFloat getObjValue(); // 获取目标函数的解
 	SCIP_STATUS getStatus(); // 获取求解状态
 	void write(OpStr path); // 
@@ -99,6 +101,10 @@ void Solver::OpSCIPSolI::initSCIP()
 
 void Solver::OpSCIPSolI::clearSCIP()
 {
+	for (auto& v : varidxs_)
+		if (v.second != SIZE_MAX)
+			SCIPreleaseVar(scip_, &(vars_[v.second]));
+	vars_ = std::vector<SCIP_VAR*>();
 	for (auto& lc : lcidxs_)
 		if (lc.second != SIZE_MAX)
 			SCIPreleaseCons(scip_, &(cons_[lc.second]));
@@ -109,10 +115,6 @@ void Solver::OpSCIPSolI::clearSCIP()
 		if (nlc.second != SIZE_MAX)
 			SCIPreleaseCons(scip_, &(cons_[nlc.second]));
 	cons_ = std::vector<SCIP_CONS*>();
-	for (auto& v : varidxs_)
-		if (v.second != SIZE_MAX)
-			SCIPreleaseVar(scip_, &(vars_[v.second]));
-	vars_ = std::vector<SCIP_VAR*>();
 	sol_ = nullptr;
 	if (scip_)
 	{
@@ -135,7 +137,6 @@ void Solver::OpSCIPSolI::update()
 {
 	if (modified_)
 	{
-		clearSCIP();
 		initSCIP();
 		size_t count(0);
 		vars_.resize(varidxs_.size(), nullptr);
@@ -214,7 +215,9 @@ void Solver::OpSCIPSolI::update()
 				SCIPaddExprtreesNonlinear(scip_, tmp, 1, &nltree, nullptr);
 				SCIPaddCons(scip_, tmp);
 				nlc.second = count;
-			}		
+			}
+			else
+				OpExcBase("[Solver::OpSCIPSolI::update]: Exception->create NL expression failed");
 			count++;
 		}
 		// 解析目标函数
@@ -231,15 +234,19 @@ SCIP_VARTYPE Solver::OpSCIPSolI::senseConvert1(Variable::OpVarType sense)
 	switch (sense)
 	{
 	case Variable::OpVarType::Bool:
-		svtype = SCIP_VARTYPE_BINARY;
+		svtype = SCIP_VARTYPE::SCIP_VARTYPE_BINARY;
 		break;
 	case Variable::OpVarType::Int:
-		svtype = SCIP_VARTYPE_INTEGER;
+		svtype = SCIP_VARTYPE::SCIP_VARTYPE_INTEGER;
 		break;
 	case Variable::OpVarType::Con:
-		svtype = SCIP_VARTYPE_CONTINUOUS;
+		svtype = SCIP_VARTYPE::SCIP_VARTYPE_CONTINUOUS;
+		break;
+	case Variable::OpVarType::Sem:
+		throw OpExcBase("[Solver::OpSCIPSolI::senseConvert1]: Exception->can not handle Variable::OpVarType::Sem");
 		break;
 	default:
+		throw OpExcBase("[Solver::OpSCIPSolI::senseConvert1]: Exception->can not handle other variable type");
 		break;
 	}
 	return svtype;
@@ -251,12 +258,13 @@ SCIP_OBJSENSE Solver::OpSCIPSolI::senseConvert2(Objective::OpObjSense sense)
 	switch (sense)
 	{
 	case OPUA::Objective::OpObjSense::Min:
-		sobjs = SCIP_OBJSENSE_MINIMIZE;
+		sobjs = SCIP_OBJSENSE::SCIP_OBJSENSE_MINIMIZE;
 		break;
 	case OPUA::Objective::OpObjSense::Max:
-		sobjs = SCIP_OBJSENSE_MAXIMIZE;
+		sobjs = SCIP_OBJSENSE::SCIP_OBJSENSE_MAXIMIZE;
 		break;
 	default:
+		throw OpExcBase("[Solver::OpSCIPSolI::senseConvert2]: Exception->can not handle other objective function sense");
 		break;
 	}
 	return sobjs;
@@ -321,8 +329,10 @@ SCIP_EXPR* Solver::OpSCIPSolI::createNewExprOfNLE(const Expression::OpNLExpr& ex
 	switch (expr.getFunction())
 	{
 	case OPUA::Expression::OpNLFunc::Unknow: // 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Unknow");
 		break;
 	case OPUA::Expression::OpNLFunc::Sum: // 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Sum");
 		break;
 	case OPUA::Expression::OpNLFunc::Abs:
 		rhs = createNewExprByOp(expr, SCIP_EXPR_ABS, false);
@@ -340,18 +350,22 @@ SCIP_EXPR* Solver::OpSCIPSolI::createNewExprOfNLE(const Expression::OpNLExpr& ex
 		rhs = createNewExprByOp(expr, SCIP_EXPR_SQRT, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Pow: // 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Pow");
 		break;
 	case OPUA::Expression::OpNLFunc::Exp1:
 		rhs = createNewExprByOp(expr, SCIP_EXPR_EXP, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Exp2:// 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Exp2");
 		break;
 	case OPUA::Expression::OpNLFunc::Log1:// 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Log1");
 		break;
 	case OPUA::Expression::OpNLFunc::Log2:
 		rhs = createNewExprByOp(expr, SCIP_EXPR_LOG, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Log3:// 无法处理
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Log3");
 		break;
 	case OPUA::Expression::OpNLFunc::Sin:
 		rhs = createNewExprByOp(expr, SCIP_EXPR_SIN, false);
@@ -363,6 +377,7 @@ SCIP_EXPR* Solver::OpSCIPSolI::createNewExprOfNLE(const Expression::OpNLExpr& ex
 		rhs = createNewExprByOp(expr, SCIP_EXPR_TAN, false);
 		break;
 	default:
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle other NL function");
 		break;
 	}
 	return rhs;
@@ -376,28 +391,58 @@ void Solver::OpSCIPSolI::init()
 void Solver::OpSCIPSolI::clear()
 {
 	clearSCIP();
+	clearMaps();
 }
 
 void Solver::OpSCIPSolI::extract(Model::OpModel mdl)
 {
-	// 首先清除原有模型
-	clearMaps();
-	// 加载新模型
-	for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
-		varidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
-	for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
-		lcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
-	for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
-		qcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
-	for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
-		nlcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
-	obj0_ = mdl.getObj().getLinExpr();
-	sense_ = senseConvert2(mdl.getObj().getSense());
+	try
+	{
+		// 首先清除原有模型
+		clear();
+		// 加载新模型
+		for (auto iter = mdl.getCBegin<Variable::OpVar>(); iter != mdl.getCEnd<Variable::OpVar>(); ++iter)
+			varidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
+		for (auto iter = mdl.getCBegin<Variable::OpPSDVar>(); iter != mdl.getCEnd<Variable::OpPSDVar>(); ++iter)
+			throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->can not handle Variable::OpPSDVar");
+		for (auto iter = mdl.getCBegin<Constraint::OpLinCon>(); iter != mdl.getCEnd<Constraint::OpLinCon>(); ++iter)
+			lcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
+		for (auto iter = mdl.getCBegin<Constraint::OpQuadCon>(); iter != mdl.getCEnd<Constraint::OpQuadCon>(); ++iter)
+			qcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
+		for (auto iter = mdl.getCBegin<Constraint::OpConicCon>(); iter != mdl.getCEnd<Constraint::OpConicCon>(); ++iter)
+			throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->can not handle Constraint::OpConicCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpPSDCon>(); iter != mdl.getCEnd<Constraint::OpPSDCon>(); ++iter)
+			throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->can not handle Constraint::OpPSDCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpSOSCon>(); iter != mdl.getCEnd<Constraint::OpSOSCon>(); ++iter)
+			throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->can not handle Constraint::OpSOSCon");
+		for (auto iter = mdl.getCBegin<Constraint::OpNLCon>(); iter != mdl.getCEnd<Constraint::OpNLCon>(); ++iter)
+			nlcidxs_.emplace(iter.getVal().getImpl(), SIZE_MAX);
+		for (auto iter = mdl.getCBegin<Constraint::OpCdtCon>(); iter != mdl.getCEnd<Constraint::OpCdtCon>(); ++iter)
+			throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->can not handle Constraint::OpCdtCon");
+		obj0_ = mdl.getObj().getLinExpr();
+		sense_ = senseConvert2(mdl.getObj().getSense());
+		// 更新SCIP模型
+		update();
+	}
+	catch (OpExcBase& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (std::exception& e)
+	{
+		clear();
+		throw e;
+	}
+	catch (...)
+	{
+		clear();
+		throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->unknow exception!");
+	}
 }
 
 void Solver::OpSCIPSolI::solve()
 {
-	update();
 	if (scip_)
 	{
 		SCIPsolve(scip_);
@@ -405,12 +450,12 @@ void Solver::OpSCIPSolI::solve()
 	}
 }
 
-OpFloat Solver::OpSCIPSolI::getValue(Variable::OpVar var)
+OpFloat Solver::OpSCIPSolI::getValue(Variable::OpVar var) const
 {
 	return SCIPgetSolVal(scip_, sol_, vars_[varidxs_.at(var.getImpl())]);
 }
 
-OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpLinExpr& expr)
+OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpLinExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -418,7 +463,7 @@ OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpLinExpr& expr)
 	return result;
 }
 
-OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpQuadExpr& expr)
+OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpQuadExpr& expr) const
 {
 	OpFloat result(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
@@ -426,6 +471,11 @@ OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpQuadExpr& expr)
 	for (auto iter = expr.getQBegin(); iter != expr.getQEnd(); ++iter)
 		result += iter.getCoeff() * getValue(iter.getVar1()) * getValue(iter.getVar2());
 	return result;
+}
+
+OpFloat Solver::OpSCIPSolI::getValue(Objective::OpObj obj) const
+{
+	return getValue(obj.getLinExpr()) + getValue(obj.getQuadExpr());
 }
 
 OpFloat Solver::OpSCIPSolI::getObjValue()
@@ -440,7 +490,6 @@ SCIP_STATUS Solver::OpSCIPSolI::getStatus()
 
 void Solver::OpSCIPSolI::write(OpStr path)
 {
-	update();
 	if (scip_)
 	{
 		if (path.size())
@@ -530,7 +579,7 @@ OpFloat Solver::OpSCIPSol::getValue(const Expression::OpQuadExpr& expr) const
 
 OpFloat Solver::OpSCIPSol::getValue(Objective::OpObj obj) const
 {
-	return 0.0;
+	return static_cast<OpSCIPSolI*>(impl_)->getValue(obj);
 }
 
 OpFloat Solver::OpSCIPSol::getDual(Constraint::OpLinCon con) const

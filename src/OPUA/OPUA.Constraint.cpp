@@ -133,6 +133,7 @@ OpInt Constraint::OpLinConI::standardize()
 		cexpr_.piecewiseInv();
 		return 1;
 	}
+	return -2;
 }
 
 OpStr Constraint::OpLinConI::getName() const
@@ -308,6 +309,273 @@ Constraint::OpQuadConI::~OpQuadConI()
 
 }
 
+/* OPUA::Constraint::OpConicConI */
+
+class Constraint::OpConicConI
+	: public OpImplBase
+{
+protected:
+	OpConicSense csense_; // 约束符号
+	Expression::OpNLExpr cvars_; // 约束变量表
+	OpStr cname_;
+
+	friend class OpConicCon;
+protected:
+	void setSense(OpConicSense sense); // 设置(改变)锥集合的类型
+	void setName(OpStr name); // 设置约束名称
+	void addVar(Variable::OpVar var); // 向锥集合变量表中添加一个变量(有序)
+	void addVar(Variable::OpVarArr vars); // 向锥集合变量表中添加一组变量(有序)
+	void removeVar(Variable::OpVar var);  // 从锥集合变量表中移除一个变量
+	void removeVar(Variable::OpVarArr vars);  // 从锥集合变量表中移除一组变量
+	void removeVar(OpULInt n = 0); // 从锥集合变量表中移除末尾的多个变量
+	OpConicSense getSense() const; // 获取锥集合的类型
+	const Expression::OpNLExpr& getConicExpr() const; // 获取表示锥集合变量表的表达式
+	OpStr getName() const; // 获取约束名称
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
+protected:
+	OpConicConI(OpEnvI* env); // 从env构造
+	OpConicConI(OpEnvI* env, OpConicSense sense); // 从env构造并指定部分参数
+	OpConicConI(OpEnvI* env, OpConicSense sense, const Expression::OpNLExpr& expr); // 从env构造并指定部分参数
+	OpConicConI(OpEnvI* env, OpConicSense sense, const Expression::OpNLExpr& expr, OpStr name); // 从env构造并指定部分参数
+	OpConicConI(OpEnvI* env, OpConicSense sense, Variable::OpVarArr vars); // 从env构造并指定部分参数
+	OpConicConI(OpEnvI* env, OpConicSense sense, Variable::OpVarArr vars, OpStr name); // 从env构造并指定部分参数
+public:
+	virtual ~OpConicConI();
+};
+
+void Constraint::OpConicConI::setSense(OpConicSense sense)
+{
+	if (!locked_)
+		csense_ = sense;
+}
+
+void Constraint::OpConicConI::setName(OpStr name)
+{
+	cname_ = name;
+}
+
+void Constraint::OpConicConI::addVar(Variable::OpVar var)
+{
+	if (!locked_)
+		cvars_.addVar(var);
+}
+
+void Constraint::OpConicConI::addVar(Variable::OpVarArr vars)
+{
+	if (!locked_)
+		cvars_.addVar(vars);
+}
+
+void Constraint::OpConicConI::removeVar(Variable::OpVar var)
+{
+	if (!locked_)
+		cvars_.removeVar(var);
+}
+
+void Constraint::OpConicConI::removeVar(Variable::OpVarArr vars)
+{
+	if (!locked_)
+		cvars_.removeVar(vars);
+}
+
+void Constraint::OpConicConI::removeVar(OpULInt n)
+{
+	if (!locked_)
+		cvars_.removeVar(n);
+}
+
+Constraint::OpConicSense Constraint::OpConicConI::getSense() const
+{
+	return csense_;
+}
+
+const Expression::OpNLExpr& Constraint::OpConicConI::getConicExpr() const
+{
+	return cvars_;
+}
+
+OpStr Constraint::OpConicConI::getName() const
+{
+	return cname_;
+}
+
+OpULInt Constraint::OpConicConI::getMemoryUsage() const
+{
+	return sizeof(*this);
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env)
+	: OpImplBase('C', env),
+	csense_(OpConicSense::Unknow),
+	cvars_(Expression::OpNLFunc::Unknow),
+	cname_("conic_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env, OpConicSense sense)
+	: OpImplBase('C', env),
+	csense_(sense),
+	cvars_(Expression::OpNLFunc::Unknow),
+	cname_("conic_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env, OpConicSense sense, const Expression::OpNLExpr& expr)
+	: OpImplBase('C', env),
+	csense_(sense),
+	cvars_(expr),
+	cname_("conic_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env, OpConicSense sense, const Expression::OpNLExpr& expr, OpStr name)
+	: OpImplBase('C', env),
+	csense_(sense),
+	cvars_(expr),
+	cname_(name)
+{
+
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env, OpConicSense sense, Variable::OpVarArr vars)
+	: OpImplBase('C', env),
+	csense_(sense),
+	cvars_(Expression::OpNLFunc::Unknow, vars),
+	cname_("conic_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpConicConI::OpConicConI(OpEnvI* env, OpConicSense sense, Variable::OpVarArr vars, OpStr name)
+	: OpImplBase('C', env),
+	csense_(sense),
+	cvars_(Expression::OpNLFunc::Unknow, vars),
+	cname_(name)
+{
+
+}
+
+Constraint::OpConicConI::~OpConicConI()
+{
+
+}
+
+/* OPUA::Constraint::OpPSDConI */
+
+class Constraint::OpPSDConI
+	: public OpImplBase
+{
+protected:
+	OpFloat clb_;
+	OpFloat cub_;
+	Expression::OpPSDExpr cexpr_;
+	OpStr cname_;
+
+	friend class OpPSDCon;
+protected:
+	void setName(OpStr name); // 设置约束名称
+	void setExpr(const Expression::OpPSDExpr& expr); // 设置约束表达式
+	void setLb(OpFloat lb); // 设置约束下限
+	void setUb(OpFloat ub); // 设置约束上限
+	OpStr getName() const; // 获取约束名称
+	const Expression::OpPSDExpr& getExpr() const; // 获取约束表达式
+	OpFloat getLb() const; // 获取约束下限
+	OpFloat getUb() const; // 获取约束上限
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
+protected:
+	OpPSDConI(OpEnvI* env); // 从env构造
+	OpPSDConI(OpEnvI* env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub); // 从env构造并指定部分参数
+	OpPSDConI(OpEnvI* env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub, OpStr name); // 从env构造并指定部分参数
+public:
+	virtual ~OpPSDConI();
+};
+
+void Constraint::OpPSDConI::setName(OpStr name)
+{
+	cname_ = name;
+}
+
+void Constraint::OpPSDConI::setExpr(const Expression::OpPSDExpr& expr)
+{
+	if (!locked_)
+		cexpr_ = expr;
+}
+
+void Constraint::OpPSDConI::setLb(OpFloat lb)
+{
+	if (!locked_)
+		clb_ = lb;
+}
+
+void Constraint::OpPSDConI::setUb(OpFloat ub)
+{
+	if (!locked_)
+		cub_ = ub;
+}
+
+OpStr Constraint::OpPSDConI::getName() const
+{
+	return cname_;
+}
+
+const Expression::OpPSDExpr& Constraint::OpPSDConI::getExpr() const
+{
+	return cexpr_;
+}
+
+OpFloat Constraint::OpPSDConI::getLb() const
+{
+	return clb_;
+}
+
+OpFloat Constraint::OpPSDConI::getUb() const
+{
+	return cub_;
+}
+
+OpULInt Constraint::OpPSDConI::getMemoryUsage() const
+{
+	return sizeof(*this);
+}
+
+Constraint::OpPSDConI::OpPSDConI(OpEnvI* env)
+	: OpImplBase('C', env),
+	clb_(-Constant::Infinity),
+	cub_(Constant::Infinity),
+	cexpr_(0.0),
+	cname_("psdc_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpPSDConI::OpPSDConI(OpEnvI* env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub)
+	: OpImplBase('C', env),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
+	cname_("psdc_" + std::to_string(idx_))
+{
+
+}
+
+Constraint::OpPSDConI::OpPSDConI(OpEnvI* env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub, OpStr name)
+	: OpImplBase('C', env),
+	clb_(lb),
+	cub_(ub),
+	cexpr_(expr),
+	cname_(name)
+{
+
+}
+
+Constraint::OpPSDConI::~OpPSDConI()
+{
+
+}
+
 /* OPUA::Constraint::OpSOSConI */
 
 class Constraint::OpSOSConI
@@ -323,11 +591,12 @@ protected:
 	void setSense(OpConSense sense); // 设置(改变)约束的符号
 	void setName(OpStr name); // 设置约束名称
 	void addVar(Variable::OpVar var, OpFloat weight); // 向SOS中添加一个变量(重复添加则追加权重)
-
+	void addVar(Variable::OpVarArr vars, Container::OpFloatArr weights); // 向SOS中添加一组变量(重复添加则追加权重)
 	OpConSense getSense() const; // 获取约束的符号
 	OpStr getName() const; // 获取约束名称
 	const Expression::OpLinExpr& getSOSExpr() const; // 获取表示SOS集合的表达式(变量*权重)
 	void removeVar(Variable::OpVar var);  // 从SOS中移除一个变量
+	void removeVar(Variable::OpVarArr vars);  // 从SOS中移除一组变量
 	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpSOSConI(OpEnvI* env);
@@ -357,6 +626,13 @@ void Constraint::OpSOSConI::addVar(Variable::OpVar var, OpFloat weight)
 		cvars_.addLinTerm(var, weight);
 }
 
+void Constraint::OpSOSConI::addVar(Variable::OpVarArr vars, Container::OpFloatArr weights)
+{
+	if (!locked_)
+		for (OpULInt i = 0; i < vars.getSize(); i++)
+			cvars_.addLinTerm(vars[i], weights[i]);
+}
+
 Constraint::OpConSense Constraint::OpSOSConI::getSense() const
 {
 	return csense_;
@@ -376,6 +652,13 @@ void Constraint::OpSOSConI::removeVar(Variable::OpVar var)
 {
 	if (!locked_)
 		cvars_.removeVar(var);
+}
+
+void Constraint::OpSOSConI::removeVar(Variable::OpVarArr vars)
+{
+	if (!locked_)
+		for (OpULInt i = 0; i < vars.getSize(); i++)
+			cvars_.removeVar(vars[i]);
 }
 
 OpULInt Constraint::OpSOSConI::getMemoryUsage() const
@@ -801,7 +1084,7 @@ Constraint::OpLinCon::OpLinCon(OpEnv env, OpFloat lb, const Expression::OpLinExp
 	impl_ = new OpLinConI(env.getImpl(), lb, expr, ub, name);
 }
 
-OPUA::Constraint::OpLinCon::~OpLinCon()
+Constraint::OpLinCon::~OpLinCon()
 {
 
 }
@@ -888,7 +1171,206 @@ Constraint::OpQuadCon::OpQuadCon(OpEnv env, OpFloat lb, const Expression::OpQuad
 	impl_ = new OpQuadConI(env.getImpl(), lb, expr, ub, name);
 }
 
-OPUA::Constraint::OpQuadCon::~OpQuadCon()
+Constraint::OpQuadCon::~OpQuadCon()
+{
+
+}
+
+/* OPUA::Constraint::OpConicCon */
+
+void Constraint::OpConicCon::setSense(OpConicSense sense)
+{
+	static_cast<OpConicConI*>(impl_)->setSense(sense);
+}
+
+void Constraint::OpConicCon::setName(OpStr name)
+{
+	static_cast<OpConicConI*>(impl_)->setName(name);
+}
+
+void Constraint::OpConicCon::addVar(Variable::OpVar var)
+{
+	static_cast<OpConicConI*>(impl_)->addVar(var);
+}
+
+void Constraint::OpConicCon::addVar(Variable::OpVarArr vars)
+{
+	static_cast<OpConicConI*>(impl_)->addVar(vars);
+}
+
+void Constraint::OpConicCon::removeVar(Variable::OpVar var)
+{
+	static_cast<OpConicConI*>(impl_)->removeVar(var);
+}
+
+void Constraint::OpConicCon::removeVar(Variable::OpVarArr vars)
+{
+	static_cast<OpConicConI*>(impl_)->removeVar(vars);
+}
+
+void Constraint::OpConicCon::removeVar(OpULInt n)
+{
+	static_cast<OpConicConI*>(impl_)->removeVar(n);
+}
+
+Constraint::OpConicSense Constraint::OpConicCon::getSense() const
+{
+	return static_cast<OpConicConI*>(impl_)->getSense();
+}
+
+const Expression::OpNLExpr& Constraint::OpConicCon::getConicExpr() const
+{
+	return static_cast<OpConicConI*>(impl_)->getConicExpr();
+}
+
+OpStr Constraint::OpConicCon::getName() const
+{
+	return static_cast<OpConicConI*>(impl_)->getName();
+}
+
+Constraint::OpConicConI* Constraint::OpConicCon::getImpl() const
+{
+	return static_cast<OpConicConI*>(impl_);
+}
+
+OpBool Constraint::OpConicCon::operator==(const OpConicCon& con) const
+{
+	return impl_ == con.impl_;
+}
+
+OpBool Constraint::OpConicCon::operator!=(const OpConicCon& con) const
+{
+	return impl_ != con.impl_;
+}
+
+Constraint::OpConicCon::OpConicCon()
+{
+
+}
+
+Constraint::OpConicCon::OpConicCon(OpConicConI* impl)
+{
+	impl_ = impl;
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env)
+{
+	impl_ = new OpConicConI(env.getImpl());
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env, OpConicSense sense)
+{
+	impl_ = new OpConicConI(env.getImpl());
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env, OpConicSense sense, const Expression::OpNLExpr& expr)
+{
+	impl_ = new OpConicConI(env.getImpl(), sense, expr);
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env, OpConicSense sense, const Expression::OpNLExpr& expr, OpStr name)
+{
+	impl_ = new OpConicConI(env.getImpl(), sense, expr, name);
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env, OpConicSense sense, Variable::OpVarArr vars)
+{
+	impl_ = new OpConicConI(env.getImpl(), sense, vars);
+}
+
+Constraint::OpConicCon::OpConicCon(OpEnv env, OpConicSense sense, Variable::OpVarArr vars, OpStr name)
+{
+	impl_ = new OpConicConI(env.getImpl(), sense, vars, name);
+}
+
+Constraint::OpConicCon::~OpConicCon()
+{
+
+}
+
+/* OPUA::Constraint::OpPSDCon */
+
+void Constraint::OpPSDCon::setName(OpStr name)
+{
+	static_cast<OpPSDConI*>(impl_)->setName(name);
+}
+
+void Constraint::OpPSDCon::setExpr(const Expression::OpPSDExpr& expr)
+{
+	static_cast<OpPSDConI*>(impl_)->setExpr(expr);
+}
+
+void Constraint::OpPSDCon::setLb(OpFloat lb)
+{
+	static_cast<OpPSDConI*>(impl_)->setLb(lb);
+}
+
+void Constraint::OpPSDCon::setUb(OpFloat ub)
+{
+	static_cast<OpPSDConI*>(impl_)->setUb(ub);
+}
+
+OpStr Constraint::OpPSDCon::getName() const
+{
+	return static_cast<OpPSDConI*>(impl_)->getName();
+}
+
+const Expression::OpPSDExpr& Constraint::OpPSDCon::getExpr() const
+{
+	return static_cast<OpPSDConI*>(impl_)->getExpr();
+}
+
+OpFloat Constraint::OpPSDCon::getLb() const
+{
+	return static_cast<OpPSDConI*>(impl_)->getLb();
+}
+
+OpFloat Constraint::OpPSDCon::getUb() const
+{
+	return static_cast<OpPSDConI*>(impl_)->getUb();
+}
+
+Constraint::OpPSDConI* Constraint::OpPSDCon::getImpl() const
+{
+	return static_cast<OpPSDConI*>(impl_);
+}
+
+OpBool Constraint::OpPSDCon::operator==(const OpPSDCon& con) const
+{
+	return impl_ == con.impl_;
+}
+
+OpBool Constraint::OpPSDCon::operator!=(const OpPSDCon& con) const
+{
+	return impl_ != con.impl_;
+}
+
+Constraint::OpPSDCon::OpPSDCon()
+{
+
+}
+
+Constraint::OpPSDCon::OpPSDCon(OpPSDConI* impl)
+{
+	impl_ = impl;
+}
+
+Constraint::OpPSDCon::OpPSDCon(OpEnv env)
+{
+	impl_ = new OpPSDConI(env.getImpl());
+}
+
+Constraint::OpPSDCon::OpPSDCon(OpEnv env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub)
+{
+	impl_ = new OpPSDConI(env.getImpl(), lb, expr, ub);
+}
+
+Constraint::OpPSDCon::OpPSDCon(OpEnv env, OpFloat lb, const Expression::OpPSDExpr& expr, OpFloat ub, OpStr name)
+{
+	impl_ = new OpPSDConI(env.getImpl(), lb, expr, ub, name);
+}
+
+Constraint::OpPSDCon::~OpPSDCon()
 {
 
 }
@@ -910,6 +1392,11 @@ void Constraint::OpSOSCon::addVar(Variable::OpVar var, OpFloat weight)
 	static_cast<OpSOSConI*>(impl_)->addVar(var, weight);
 }
 
+void Constraint::OpSOSCon::addVar(Variable::OpVarArr vars, Container::OpFloatArr weights)
+{
+	static_cast<OpSOSConI*>(impl_)->addVar(vars, weights);
+}
+
 Constraint::OpConSense Constraint::OpSOSCon::getSense() const
 {
 	return static_cast<OpSOSConI*>(impl_)->getSense();
@@ -928,6 +1415,11 @@ const Expression::OpLinExpr& Constraint::OpSOSCon::getSOSExpr() const
 void Constraint::OpSOSCon::removeVar(Variable::OpVar var)
 {
 	static_cast<OpSOSConI*>(impl_)->removeVar(var);
+}
+
+void Constraint::OpSOSCon::removeVar(Variable::OpVarArr vars)
+{
+	static_cast<OpSOSConI*>(impl_)->removeVar(vars);
 }
 
 Constraint::OpSOSConI* Constraint::OpSOSCon::getImpl() const
@@ -985,7 +1477,7 @@ Constraint::OpSOSCon::OpSOSCon(OpEnv env, OpConSense sense, Variable::OpVarArr v
 	impl_ = new OpSOSConI(env.getImpl(), sense, vars, weights, name);
 }
 
-OPUA::Constraint::OpSOSCon::~OpSOSCon()
+Constraint::OpSOSCon::~OpSOSCon()
 {
 
 }
@@ -1114,12 +1606,12 @@ Constraint::OpCdtConI* Constraint::OpCdtCon::getImpl() const
 	return static_cast<OpCdtConI*>(impl_);
 }
 
-void OPUA::Constraint::OpCdtCon::lock()
+void Constraint::OpCdtCon::lock()
 {
 	static_cast<OpCdtConI*>(impl_)->lock();
 }
 
-void OPUA::Constraint::OpCdtCon::unlock()
+void Constraint::OpCdtCon::unlock()
 {
 	static_cast<OpCdtConI*>(impl_)->unlock();
 }
@@ -1178,17 +1670,28 @@ Constraint::OpCdtCon::~OpCdtCon()
 
 OpStr Constraint::ConSense2Str(OpConSense sense)
 {
-	OpStr str(" ? ");
-	if (sense == OpConSense::Equal)
+	OpStr str;
+	switch (sense)
+	{
+	case OpConSense::Equal:
 		str = " == ";
-	else if (sense == OpConSense::LessEqual)
+		break;
+	case OpConSense::LessEqual:
 		str = " <= ";
-	else if (sense == OpConSense::GreatEqual)
+		break;
+	case OpConSense::GreatEqual:
 		str = " >= ";
-	else if (sense == OpConSense::SOS1)
+		break;
+	case OpConSense::SOS1:
 		str = " SOS1 ";
-	else if (sense == OpConSense::SOS2)
+		break;
+	case OpConSense::SOS2:
 		str = " SOS2 ";
+		break;
+	default:
+		str = " ? ";
+		break;
+	}
 	return str;
 }
 
@@ -1226,7 +1729,7 @@ Constraint::OpLinCon Constraint::operator<=(const Expression::OpLinExpr& lhs, co
 	return con;
 }
 
-Constraint::OpLinCon Constraint::operator<=(OpLinCon lhs, double rhs)
+Constraint::OpLinCon Constraint::operator<=(OpLinCon lhs, OpFloat rhs)
 {
 	if (lhs.getImpl())
 		lhs.setUb(rhs);
@@ -1253,7 +1756,7 @@ Constraint::OpLinCon Constraint::operator>=(const Expression::OpLinExpr& lhs, co
 	return con;
 }
 
-Constraint::OpLinCon Constraint::operator>=(OpLinCon lhs, double rhs)
+Constraint::OpLinCon Constraint::operator>=(OpLinCon lhs, OpFloat rhs)
 {
 	if (lhs.getImpl())
 		lhs.setLb(rhs);
@@ -1314,7 +1817,7 @@ Constraint::OpQuadCon Constraint::operator<=(const Expression::OpQuadExpr& lhs, 
 	return con;
 }
 
-Constraint::OpQuadCon Constraint::operator<=(OpQuadCon lhs, double rhs)
+Constraint::OpQuadCon Constraint::operator<=(OpQuadCon lhs, OpFloat rhs)
 {
 	if (lhs.getImpl())
 		lhs.setUb(rhs);
@@ -1341,7 +1844,7 @@ Constraint::OpQuadCon Constraint::operator>=(const Expression::OpQuadExpr& lhs, 
 	return con;
 }
 
-Constraint::OpQuadCon Constraint::operator>=(OpQuadCon lhs, double rhs)
+Constraint::OpQuadCon Constraint::operator>=(OpQuadCon lhs, OpFloat rhs)
 {
 	if (lhs.getImpl())
 		lhs.setLb(rhs);
@@ -1365,6 +1868,168 @@ Constraint::OpQuadCon Constraint::operator==(const Expression::OpQuadExpr& lhs, 
 		con = OpQuadCon(OpEnv(renv), lb, expr, ub);
 	else if (lenv && !renv)
 		con = OpQuadCon(OpEnv(lenv), lb, expr, ub);
+	return con;
+}
+
+Constraint::OpQuadCon Constraint::OpStdSOCByQC(OpEnv env, Variable::OpVarArr X)
+{
+	OpQuadCon con(nullptr);
+	if (X.getSize() >= 2)
+	{
+		Expression::OpQuadExpr expr(0.0);
+		expr.addQuadTerm(X[0], X[0], 1.0);
+		for (OpULInt i = 1; i < X.getSize(); i++)
+			expr.addQuadTerm(X[i], X[i], -1.0);
+		con = OpQuadCon(env, 0.0, expr, Constant::Infinity);
+	}
+	return con;
+}
+
+Constraint::OpQuadCon Constraint::OpStdRSOCByQC(OpEnv env, Variable::OpVarArr X)
+{
+	OpQuadCon con(nullptr);
+	if (X.getSize() >= 3)
+	{
+		Expression::OpQuadExpr expr(0.0);
+		expr.addQuadTerm(X[0], X[1], 2.0);
+		for (OpULInt i = 2; i < X.getSize(); i++)
+			expr.addQuadTerm(X[i], X[i], -1.0);
+		con = OpQuadCon(env, 0.0, expr, Constant::Infinity);
+	}
+	return con;
+}
+
+std::ostream& Constraint::operator<<(std::ostream& stream, OpConicCon con)
+{
+	auto& expr(con.getConicExpr());
+	switch (con.getSense())
+	{
+	case OpConicSense::Unknow:
+		break;
+	case OpConicSense::SOC:
+		stream << expr.getVar(0).getName() << " >= ( ";
+		for (OpULInt i = 1; i < expr.getSize() - 1; i++)
+			stream << expr.getVar(i).getName() << "^^2 + ";
+		stream << expr.getVar(expr.getSize() - 1).getName() << "^^2 ) ^^0.5";
+		break;
+	case OpConicSense::RSOC:
+		stream << "2 * " << expr.getVar(0).getName() << " * " << expr.getVar(1).getName() << " >= ";
+		for (OpULInt i = 2; i < expr.getSize() - 1; i++)
+			stream << expr.getVar(i).getName() << "^^2 + ";
+		stream << expr.getVar(expr.getSize() - 1).getName() << "^^2";
+		break;
+	case OpConicSense::PC:
+		stream << expr.getVar(0).getName() << "^^" << expr.getParam() << " * " << expr.getVar(1).getName() << "^^" << (1 - expr.getParam()) << " >= ( ";
+		for (OpULInt i = 2; i < expr.getSize() - 1; i++)
+			stream << expr.getVar(i).getName() << "^^2 + ";
+		stream << expr.getVar(expr.getSize() - 1).getName() << "^^2 ) ^^0.5";
+		break;
+	case OpConicSense::DPC:
+		stream << "( " << expr.getVar(0).getName() << " / " << expr.getParam() << " )^^" << expr.getParam() << " * "
+			<< "( " << expr.getVar(1).getName() << " / " << (1 - expr.getParam()) << " )^^" << (1 - expr.getParam()) << " >= ( ";
+		for (OpULInt i = 2; i < expr.getSize() - 1; i++)
+			stream << expr.getVar(i).getName() << "^^2 + ";
+		stream << expr.getVar(expr.getSize() - 1).getName() << "^^2 ) ^^0.5";
+		break;
+	case OpConicSense::EC:
+		stream << expr.getVar(0).getName() << " >= " 
+			<< expr.getVar(1).getName() << " * Exp1 ( " << expr.getVar(2).getName() << " / " << expr.getVar(1).getName() << " )";
+		break;
+	case OpConicSense::DEC:
+		stream << expr.getVar(0).getName() << " >= -1 * "
+			<< expr.getVar(2).getName() << " * Exp1 ( -1 ) * Exp1 ( " << expr.getVar(1).getName() << " / " << expr.getVar(2).getName() << " )";
+		break;
+	default:
+		break;
+	}
+	return stream;
+}
+
+std::ostream& Constraint::operator<<(std::ostream& stream, OpPSDCon con)
+{
+	if (!Constant::IsNInfinity(con.getLb()))
+		stream << con.getLb() << " <= ";
+	else
+		stream << "-inf <= ";
+	stream << con.getExpr();
+	if (!Constant::IsPInfinity(con.getUb()))
+		stream << " <= " << con.getUb();
+	else
+		stream << " <= inf";
+	return stream;
+}
+
+Constraint::OpPSDCon Constraint::operator<=(const Expression::OpPSDExpr& lhs, const Expression::OpPSDExpr& rhs)
+{
+	OpPSDCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(Constant::Infinity);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv)
+	{
+		if (lenv == renv)
+			con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
+	}
+	else if (!lenv && renv)
+		con = OpPSDCon(OpEnv(renv), lb, expr, ub);
+	else if (lenv && !renv)
+		con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
+	return con;
+}
+
+Constraint::OpPSDCon Constraint::operator<=(OpPSDCon lhs, OpFloat rhs)
+{
+	if (lhs.getImpl())
+		lhs.setUb(rhs);
+	return lhs;
+}
+
+Constraint::OpPSDCon Constraint::operator>=(const Expression::OpPSDExpr& lhs, const Expression::OpPSDExpr& rhs)
+{
+	OpPSDCon con(nullptr);
+	OpFloat lb(-Constant::Infinity);
+	OpFloat ub(lhs.getConstant() - rhs.getConstant());
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv)
+	{
+		if (lenv == renv)
+			con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
+	}
+	else if (!lenv && renv)
+		con = OpPSDCon(OpEnv(renv), lb, expr, ub);
+	else if (lenv && !renv)
+		con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
+	return con;
+}
+
+Constraint::OpPSDCon Constraint::operator>=(OpPSDCon lhs, OpFloat rhs)
+{
+	if (lhs.getImpl())
+		lhs.setLb(rhs);
+	return lhs;
+}
+
+Constraint::OpPSDCon Constraint::operator==(const Expression::OpPSDExpr& lhs, const Expression::OpPSDExpr& rhs)
+{
+	OpPSDCon con(nullptr);
+	OpFloat lb(lhs.getConstant() - rhs.getConstant());
+	OpFloat ub(lb);
+	auto expr(rhs - lhs);
+	expr.setLinTerm(0.0);
+	auto lenv(lhs.getEnv().getImpl()), renv(rhs.getEnv().getImpl());
+	if (lenv && renv)
+	{
+		if (lenv == renv)
+			con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
+	}
+	else if (!lenv && renv)
+		con = OpPSDCon(OpEnv(renv), lb, expr, ub);
+	else if (lenv && !renv)
+		con = OpPSDCon(OpEnv(lenv), lb, expr, ub);
 	return con;
 }
 

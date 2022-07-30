@@ -412,7 +412,25 @@ Solver::OpSolStatus Solver::IntGRBStatus2OpStatus(OpLInt status)
 
 Solver::OpSolStatus Solver::IntSCIPStatus2OpStatus(OpLInt status)
 {
-	return OpSolStatus::Unknown;
+	OpSolStatus lookupTable[16] = {
+		OpSolStatus::Unknown, /*SCIP_STATUS_UNKNOWN = 0 */
+		OpSolStatus::Unknown, /*SCIP_STATUS_USERINTERRUPT = 1*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_NODELIMIT  = 2*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_TOTALNODELIMIT  = 3*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_STALLNODELIMIT  = 4*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_TIMELIMIT  = 5*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_MEMLIMIT  = 6*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_GAPLIMIT  = 7*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_SOLLIMIT  = 8*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_BESTSOLLIMIT  = 9*/
+		OpSolStatus::Unknown, /*SCIP_STATUS_RESTARTLIMIT  = 10*/
+		OpSolStatus::Optimal, /*SCIP_STATUS_OPTIMAL  = 11*/
+		OpSolStatus::Infeasible, /*SCIP_STATUS_INFEASIBLE  = 12*/
+		OpSolStatus::Unbounded, /*SCIP_STATUS_UNBOUNDED  = 13*/
+		OpSolStatus::InfeasibleOrUnbounded, /*SCIP_STATUS_INFORUNBD  = 14*/
+		OpSolStatus::Unknown /*SCIP_STATUS_TERMINATE  = 15*/
+	};
+	return lookupTable[status];
 }
 
 Solver::OpSolStatus Solver::IntMSKStatus2OpStatus(OpLInt status)

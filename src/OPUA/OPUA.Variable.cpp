@@ -188,50 +188,192 @@ Variable::OpVarI* Variable::OpVar::getImpl() const
 
 OpBool Variable::OpVar::operator==(const OpVar& var) const
 {
-	return impl_ == var.getImpl();
+	return impl_ == var.impl_;
 }
 
 OpBool Variable::OpVar::operator!=(const OpVar& var) const
 {
-	return impl_ != var.getImpl();
+	return impl_ != var.impl_;
 }
 
-OPUA::Variable::OpVar::OpVar()
+Variable::OpVar::OpVar()
 {
 
 }
 
-OPUA::Variable::OpVar::OpVar(OpVarI* impl)
+Variable::OpVar::OpVar(OpVarI* impl)
 {
 	impl_ = impl;
 }
 
-OPUA::Variable::OpVar::OpVar(OpEnv env)
+Variable::OpVar::OpVar(OpEnv env)
 {
 	impl_ = new OpVarI(env.getImpl());
 }
 
-OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type)
+Variable::OpVar::OpVar(OpEnv env, OpVarType type)
 {
 	impl_ = new OpVarI(env.getImpl(), type);
 }
 
-OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub)
+Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub)
 {
 	impl_ = new OpVarI(env.getImpl(), type, lb, ub);
 }
 
-OPUA::Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name)
+Variable::OpVar::OpVar(OpEnv env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name)
 {
 	impl_ = new OpVarI(env.getImpl(), type, lb, ub, name);
 }
 
-OPUA::Variable::OpVar::~OpVar()
+Variable::OpVar::~OpVar()
 {
 
 }
 
-OpStr OPUA::Variable::VarType2Str(OpVarType type)
+/* OPUA::Variable::OpPSDVarI */
+
+class Variable::OpPSDVarI
+	: public OpImplBase
+{
+protected:
+	OpULInt vdim_; // PSD变量维度
+	OpStr vname_; // PSD变量名称
+
+	friend class Variable::OpPSDVar;
+protected:
+	void setDim(OpULInt dim); // 设置变量维度
+	void setName(OpStr name); // 设置变量名称
+
+	OpULInt getDim() const; // 获取变量维度
+	OpStr getName() const; // 获取变量名称
+	virtual OpULInt getMemoryUsage() const; // 获取内存占用
+protected:
+	OpPSDVarI(OpEnvI* env);
+	OpPSDVarI(OpEnvI* env, OpULInt dim);
+	OpPSDVarI(OpEnvI* env, OpULInt dim, OpStr name);
+public:
+	virtual ~OpPSDVarI();
+};
+
+void Variable::OpPSDVarI::setDim(OpULInt dim)
+{
+	if (!locked_)
+		vdim_ = dim;
+}
+
+void Variable::OpPSDVarI::setName(OpStr name)
+{
+	vname_ = name;
+}
+
+OpULInt Variable::OpPSDVarI::getDim() const
+{
+	return vdim_;
+}
+
+OpStr Variable::OpPSDVarI::getName() const
+{
+	return vname_;
+}
+
+OpULInt Variable::OpPSDVarI::getMemoryUsage() const
+{
+	return sizeof(*this);
+}
+
+Variable::OpPSDVarI::OpPSDVarI(OpEnvI* env)
+	: OpImplBase('V', env),
+	vdim_(0),
+	vname_("psd_" + std::to_string(idx_))
+{
+
+}
+
+Variable::OpPSDVarI::OpPSDVarI(OpEnvI* env, OpULInt dim)
+	: OpImplBase('V', env),
+	vdim_(dim),
+	vname_("psd_" + std::to_string(idx_))
+{
+
+}
+
+Variable::OpPSDVarI::OpPSDVarI(OpEnvI* env, OpULInt dim, OpStr name)
+	: OpImplBase('V', env),
+	vdim_(dim),
+	vname_(name)
+{
+
+}
+
+Variable::OpPSDVarI::~OpPSDVarI()
+{
+
+}
+
+/* OPUA::Variable::OpPSDVarI */
+
+void Variable::OpPSDVar::setDim(OpULInt dim)
+{
+	static_cast<OpPSDVarI*>(impl_)->setDim(dim);
+}
+
+void Variable::OpPSDVar::setName(OpStr name)
+{
+	static_cast<OpPSDVarI*>(impl_)->setName(name);
+}
+
+OpULInt Variable::OpPSDVar::getDim() const
+{
+	return static_cast<OpPSDVarI*>(impl_)->getDim();
+}
+
+OpStr Variable::OpPSDVar::getName() const
+{
+	return static_cast<OpPSDVarI*>(impl_)->getName();
+}
+
+Variable::OpPSDVarI* Variable::OpPSDVar::getImpl() const
+{
+	return static_cast<OpPSDVarI*>(impl_);
+}
+
+OpBool Variable::OpPSDVar::operator==(const OpPSDVar& var) const
+{
+	return impl_ == var.impl_;
+}
+
+OpBool Variable::OpPSDVar::operator!=(const OpPSDVar& var) const
+{
+	return impl_ != var.impl_;
+}
+
+Variable::OpPSDVar::OpPSDVar()
+{
+
+}
+
+Variable::OpPSDVar::OpPSDVar(OpPSDVarI* impl)
+{
+	impl_ = impl;
+}
+
+Variable::OpPSDVar::OpPSDVar(OpEnv env)
+{
+	impl_ = new OpPSDVarI(env.getImpl());
+}
+
+Variable::OpPSDVar::OpPSDVar(OpEnv env, OpULInt dim)
+{
+	impl_ = new OpPSDVarI(env.getImpl(), dim);
+}
+
+Variable::OpPSDVar::OpPSDVar(OpEnv env, OpULInt dim, OpStr name)
+{
+	impl_ = new OpPSDVarI(env.getImpl(), dim, name);
+}
+
+OpStr Variable::VarType2Str(OpVarType type)
 {
 	OpStr str(" ? ");
 	if (type == OpVarType::Bool)
@@ -245,7 +387,7 @@ OpStr OPUA::Variable::VarType2Str(OpVarType type)
 	return str;
 }
 
-std::ostream& OPUA::Variable::operator<<(std::ostream& stream, OpVar var)
+std::ostream& Variable::operator<<(std::ostream& stream, OpVar var)
 {
 	stream << var.getName()
 		<< "(" << VarType2Str(var.getType()) << ", "
