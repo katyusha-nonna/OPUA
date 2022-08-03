@@ -321,6 +321,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 		rsolver_ = new OpIPOPTSol(env);
 		break;
 #endif
+#ifdef OPUA_COMPILE_GLPK
+	case OpSolType::GLPK:
+		rsolver_ = new OpGLPKSol(env);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -360,6 +365,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
 #ifdef OPUA_COMPILE_IPOPT
 	case OpSolType::IPOPT:
 		rsolver_ = new OpIPOPTSol(env, mdl);
+		break;
+#endif
+#ifdef OPUA_COMPILE_GLPK
+	case OpSolType::GLPK:
+		rsolver_ = new OpGLPKSol(env, mdl);
 		break;
 #endif
 	default:
@@ -478,29 +488,60 @@ Solver::OpSolStatus Solver::IntIPOPTStatus2OpStatus(OpLInt status)
 	return lookupTable[status];
 }
 
+Solver::OpSolStatus Solver::IntGLPKStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[7] = {
+		OpSolStatus::Unknown, /*NULL = 0*/
+		OpSolStatus::Unknown, /*GLP_UNDEF = 1*/
+		OpSolStatus::Feasible, /*GLP_FEAS = 2*/
+		OpSolStatus::Infeasible, /*GLP_INFEAS = 3*/
+		OpSolStatus::Infeasible, /*GLP_NOFEAS = 4*/
+		OpSolStatus::Optimal, /*GLP_OPT = 5*/
+		OpSolStatus::Unbounded /*GLP_UNBND = 6*/
+	};
+	return lookupTable[status];
+}
+
 Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 {
 	OpSolStatus result(OpSolStatus::Unknown);
 	switch (stype)
 	{
+#ifdef OPUA_COMPILE_CPX
 	case OpSolType::CPX:
 		result = IntCPXStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_GRB
 	case OpSolType::GRB:
 		result = IntGRBStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_SCIP
 	case OpSolType::SCIP:
 		result = IntSCIPStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_MSK
 	case OpSolType::MSK:
 		result = IntMSKStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_COPT
 	case OpSolType::COPT:
 		result = IntCOPTStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_IPOPT
 	case OpSolType::IPOPT:
 		result = IntIPOPTStatus2OpStatus(status);
 		break;
+#endif
+#ifdef OPUA_COMPILE_GLPK
+	case OpSolType::GLPK:
+		result = IntGLPKStatus2OpStatus(status);
+		break;
+#endif
 	default:
 		break;
 	}

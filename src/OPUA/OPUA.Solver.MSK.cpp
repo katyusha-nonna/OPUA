@@ -9,7 +9,7 @@ using namespace OPUA;
 #ifdef OPUA_COMPILE_MSK
 /* OPUA::Solver::OpMSKCfgCvt */
 
-// COPT配置翻译器
+// Mosek配置翻译器
 class Solver::OpMSKCfgCvt
 {
 protected:
@@ -445,8 +445,7 @@ OpFloat Solver::OpMSKSolI::getValue(const Expression::OpQuadExpr& expr) const
 
 OpFloat Solver::OpMSKSolI::getValue(Objective::OpObj obj) const
 {
-	// 目前只包含线性项
-	return getValue(obj.getLinExpr());
+	return getValue(obj.getLinExpr()) + getValue(obj.getQuadExpr());
 }
 
 OpFloat Solver::OpMSKSolI::getDual(Constraint::OpLinCon con) const

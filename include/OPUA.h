@@ -16,6 +16,7 @@
 				4. SCIP(已支持)
 				5. COPT(已支持)
 				6. IPOPT(已支持)
+				7. GLPK(已支持)
 																																					By: Katyusha
 *																																					2021/11/07@XJTU
 */
