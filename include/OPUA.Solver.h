@@ -30,6 +30,10 @@
 #define OPUA_GLPK_VERSION_50
 #endif
 
+#ifndef OPUA_CBC_VERSION_2108
+#define OPUA_CBC_VERSION_2108
+#endif
+
 namespace OPUA
 {
 	namespace Solver
@@ -42,6 +46,7 @@ namespace OPUA
 		class OpCOPTCfgCvt;
 		class OpIPOPTCfgCvt;
 		class OpGLPKCfgCvt;
+		class OpCBCCfgCvt;
 
 		class OpSolState;
 		class OpCPXSolI;
@@ -58,6 +63,8 @@ namespace OPUA
 		class OpIPOPTSol;
 		class OpGLPKSolI;
 		class OpGLPKSol;
+		class OpCBCSolI;
+		class OpCBCSol;
 		class OpAdapSol;
 
 		// OPUA支持的求解器类型
@@ -70,7 +77,8 @@ namespace OPUA
 			MSK,
 			COPT,
 			IPOPT,
-			GLPK
+			GLPK,
+			CBC
 		};
 
 		// OPUA求解状态
@@ -429,6 +437,40 @@ namespace OPUA
 		};
 
 		/*
+			OpCBCSol：求解器CBC的接口类
+			求解参数说明见doc/OPUA.Solver.CBC_API.md
+		*/
+		class OpCBCSol
+			: public OpBase, public OpSolState
+		{
+		public:
+			virtual void extract(Model::OpModel mdl); // 抽取OPUA模型，形成CBC模型对象
+			virtual void solve(); // 执行求解
+			virtual void solveFixed(); // 固定整数变量解并执行求解
+			virtual void setParam(const OpConfig& cfg); // 设置配置
+			virtual OpLInt getStatus() const; // 获取求解状态(注：CBC的求解状态代码被OPUA重新定义)
+			virtual OpFloat getObjValue() const; // 获取目标函数解
+			virtual OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
+			virtual OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取表达式的解(速度较慢)
+			virtual OpFloat getValue(Objective::OpObj obj) const; // 获取目标函数解(速度较慢)
+			virtual OpFloat getDual(Constraint::OpLinCon con) const; // 获取对偶解
+			OpCBCSolI* getImpl() const; // 获取Impl
+			virtual void write(OpStr path) const; // 将模型写入文件
+			virtual void release0(); // 释放内存(这个接口是给OpAdapSol用的，手动释放请调用release())
+		public:
+			OpBool operator==(const OpCBCSol& sol) const;
+			OpBool operator!=(const OpCBCSol& sol) const;
+		public:
+			OpCBCSol(); // 默认构造函数(默认为空)
+			OpCBCSol(OpCBCSolI* impl); // 从impl构造
+			OpCBCSol(OpEnv env); // 从env构造
+			OpCBCSol(OpEnv env, Model::OpModel mdl); // 从env构造并指定部分参数
+		public:
+			virtual ~OpCBCSol();
+		};
+
+		/*
 			OpAdapSol：求解器自适应接口类
 		*/
 		class OpAdapSol
@@ -476,7 +518,22 @@ namespace OPUA
 		OpSolStatus IntIPOPTStatus2OpStatus(OpLInt status);
 		// 求解状态转换函数(GLPK)
 		OpSolStatus IntGLPKStatus2OpStatus(OpLInt status);
+		// 求解状态转换函数(CBC)
+		OpSolStatus IntCBCStatus2OpStatus(OpLInt status);
 		// 求解状态转换函数(通用)
 		OpSolStatus IntStatus2OpStatus(OpSolType stype, OpLInt status);
+
+		/*
+			求解器缩写代码转换函数
+			G - GRB
+			C - CPX
+			S - SCIP
+			M - MSK
+			T - COPT
+			K - GLPK
+			B - CBC
+			I - IPOPT
+		*/
+		OpSolType CharSolType2OpSolType(OpChar type);
 	}
 }

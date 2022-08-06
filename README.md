@@ -10,6 +10,7 @@ OPUA(Optimization Program Universal API)是一套优化求解器通用接口工�
 * COPT(已支持)
 * IPOPT(已支持)
 * GLPK(已支持)
+* CBC(已支持)
 
 <p align="right">
 By: Katyusha
@@ -29,7 +30,7 @@ OPUA由以下基本模块构成：
 * **OPUA.Constraint**: 约束条件变量模块，提供OPUA的约束条件模型，包括：线性约束、二次约束、锥约束、半定约束、SOS约束、非线性约束、条件约束、逻辑约束、特殊约束等
 * **OPUA.Objective**: 目标函数模块，提供OPUA的目标函数模型
 * **OPUA.Model**: 优化问题模块，提供OPUA的优化问题模型
-* **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP、COPT、IPOPT、GLPK等
+* **OPUA.Solver**: 求解器模块，提供OPUA对主流求解器的求解接口，包括：GRB、CPX、MSK、SCIP、COPT、IPOPT、GLPK、CBC等
 
 除此之外包含以下进阶模块：
 
@@ -56,6 +57,7 @@ OPUA提供了编译开关控制优化求解器或第三方库的编译，在编�
 | COPT | OPUA_COMPILE_COPT |  |  |
 | IPOPT | OPUA_COMPILE_IPOPT | CppAD |  |
 | GLPK | OPUA_COMPILE_GLPK |  |  |
+| CBC | OPUA_COMPILE_CBC |  |  |
 | Eigen | OPUA_COMPILE_EIGEN |  | _CRT_SECURE_NO_WARNINGS |
 
 **警告！**：Mosek求解器不可与其他求解器一同编译，Mosek需要在IDE中设置“属性->配置属性->C/C++->代码生成->运行库”为“多线程(/MT)”，其余求解器需设置为“多线程DLL(/MD)”。

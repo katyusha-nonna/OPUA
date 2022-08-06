@@ -128,11 +128,11 @@ int Solver::OpGLPKSolI::typeConvert2(OpFloat lb0, OpFloat ub0)
 	auto ub(Constant::IsInfinity(ub0) ? false : true);
 	if (lb && ub)
 	{
-		//if (Constant::IsEqual(lb0, ub0))
-		//	tmp = GLP_FX;
-		//else
-		//	tmp = GLP_DB;
-		tmp = GLP_DB;
+		if (Constant::IsEqual(lb0, ub0))
+			tmp = GLP_FX;
+		else
+			tmp = GLP_DB;
+		//tmp = GLP_DB;
 	}	
 	else if (lb && !ub)
 		tmp = GLP_LO;

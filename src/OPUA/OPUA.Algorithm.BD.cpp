@@ -938,28 +938,7 @@ void Algorithm::OpAlgoBD::OpBDIterInfo::init(const OpMSSPModelI* mdl, const Solv
 		subObjs.emplace(std::make_pair(s, Objective::OpMinimize(localEnv, mdl->sps_.at(s).sspo_)));
 		subModels.emplace(std::make_pair(s, Model::OpModel(localEnv, "BD_Sub_Prob_" + std::to_string(s))));
 	}
-	
-	switch (config.getCfg<OpChar>("OPUA.Algorithm.BD.MIPSolverMode"))
-	{
-	case 'C':
-		solverMode = Solver::OpSolType::CPX;
-		break;
-	case 'G':
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	case 'S':
-		solverMode = Solver::OpSolType::SCIP;
-		break;
-	case 'M':
-		solverMode = Solver::OpSolType::MSK;
-		break;
-	case 'T':
-		solverMode = Solver::OpSolType::COPT;
-		break;
-	default:
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	}
+	solverMode = Solver::CharSolType2OpSolType(config.getCfg<OpChar>("OPUA.Algorithm.BD.MIPSolverMode"));
 }
 
 void Algorithm::OpAlgoBD::OpBDIterInfo::clear()

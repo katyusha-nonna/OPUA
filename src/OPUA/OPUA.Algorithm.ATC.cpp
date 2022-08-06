@@ -1097,27 +1097,7 @@ void Algorithm::OpAlgoATC::OpATCIterInfo::init(const OpHierarchicalModelI* mdl, 
 	rhoUpdateFactor = config.getCfg<OpFloat>("OPUA.Algorithm.ATC.RhoUpdateFactor");
 	lambdaInitValue = config.getCfg<OpFloat>("OPUA.Algorithm.ATC.LambdaInitVal");
 	rhoInitValue = config.getCfg<OpFloat>("OPUA.Algorithm.ATC.RhoInitVal");
-	switch (config.getCfg<OpChar>("OPUA.Algorithm.ATC.MIPSolverMode"))
-	{
-	case 'C':
-		solverMode = Solver::OpSolType::CPX;
-		break;
-	case 'G':
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	case 'S':
-		solverMode = Solver::OpSolType::SCIP;
-		break;
-	case 'M':
-		solverMode = Solver::OpSolType::MSK;
-		break;
-	case 'T':
-		solverMode = Solver::OpSolType::COPT;
-		break;
-	default:
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	}
+	solverMode = Solver::CharSolType2OpSolType(config.getCfg<OpChar>("OPUA.Algorithm.ATC.MIPSolverMode"));
 	for (const auto& node : mdl->nodes_)
 	{
 		nodeIdxs.emplace(node.first);

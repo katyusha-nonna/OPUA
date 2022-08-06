@@ -1,4 +1,5 @@
 #include "OPUA.Variable.h"
+#include <iostream>
 
 using namespace OPUA;
 

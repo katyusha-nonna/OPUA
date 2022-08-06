@@ -1083,28 +1083,7 @@ void Algorithm::OpAlgoCCG::OpCCGIterInfo::init(const OpRobustModelI* mdl, const 
 	deterministicAddCons = Constraint::OpLCArr(localEnv);
 	deterministicObj = Objective::OpObj(localEnv, Objective::OpObjSense::Min);
 	deterministicModel = Model::OpModel(localEnv, "CCG_Deterministic_Prob");
-
-	switch (config.getCfg<OpChar>("OPUA.Algorithm.CCG.MIPSolverMode"))
-	{
-	case 'C':
-		solverMode = Solver::OpSolType::CPX;
-		break;
-	case 'G':
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	case 'S':
-		solverMode = Solver::OpSolType::SCIP;
-		break;
-	case 'M':
-		solverMode = Solver::OpSolType::MSK;
-		break;
-	case 'T':
-		solverMode = Solver::OpSolType::COPT;
-		break;
-	default:
-		solverMode = Solver::OpSolType::GRB;
-		break;
-	}
+	solverMode = Solver::CharSolType2OpSolType(config.getCfg<OpChar>("OPUA.Algorithm.CCG.MIPSolverMode"));
 }
 
 void Algorithm::OpAlgoCCG::OpCCGIterInfo::clear()

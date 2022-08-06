@@ -326,6 +326,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env)
 		rsolver_ = new OpGLPKSol(env);
 		break;
 #endif
+#ifdef OPUA_COMPILE_CBC
+	case OpSolType::CBC:
+		rsolver_ = new OpCBCSol(env);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -370,6 +375,11 @@ Solver::OpAdapSol::OpAdapSol(OpSolType type, OpEnv env, Model::OpModel mdl)
 #ifdef OPUA_COMPILE_GLPK
 	case OpSolType::GLPK:
 		rsolver_ = new OpGLPKSol(env, mdl);
+		break;
+#endif
+#ifdef OPUA_COMPILE_CBC
+	case OpSolType::CBC:
+		rsolver_ = new OpCBCSol(env, mdl);
 		break;
 #endif
 	default:
@@ -502,6 +512,18 @@ Solver::OpSolStatus Solver::IntGLPKStatus2OpStatus(OpLInt status)
 	return lookupTable[status];
 }
 
+Solver::OpSolStatus Solver::IntCBCStatus2OpStatus(OpLInt status)
+{
+	OpSolStatus lookupTable[5] = {
+		OpSolStatus::Unknown, /*Unknown = 0*/
+		OpSolStatus::Feasible, /*Feasible = 1*/
+		OpSolStatus::Optimal, /*Optimal = 2*/
+		OpSolStatus::Infeasible, /*Infeasible = 3*/
+		OpSolStatus::Unbounded /*Unbounded = 4*/
+	};
+	return lookupTable[status];
+}
+
 Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 {
 	OpSolStatus result(OpSolStatus::Unknown);
@@ -542,8 +564,48 @@ Solver::OpSolStatus Solver::IntStatus2OpStatus(OpSolType stype, OpLInt status)
 		result = IntGLPKStatus2OpStatus(status);
 		break;
 #endif
+#ifdef OPUA_COMPILE_CBC
+	case OpSolType::CBC:
+		result = IntCBCStatus2OpStatus(status);
+		break;
+#endif
 	default:
 		break;
 	}
 	return result;
+}
+
+Solver::OpSolType Solver::CharSolType2OpSolType(OpChar type)
+{
+	auto solverMode(Solver::OpSolType::Unknown);
+	switch (type)
+	{
+	case 'B':
+		solverMode = Solver::OpSolType::CBC;
+		break;
+	case 'C':
+		solverMode = Solver::OpSolType::CPX;
+		break;
+	case 'G':
+		solverMode = Solver::OpSolType::GRB;
+		break;
+	case 'I':
+		solverMode = Solver::OpSolType::IPOPT;
+		break;
+	case 'K':
+		solverMode = Solver::OpSolType::GLPK;
+		break;
+	case 'M':
+		solverMode = Solver::OpSolType::MSK;
+		break;
+	case 'S':
+		solverMode = Solver::OpSolType::SCIP;
+		break;
+	case 'T':
+		solverMode = Solver::OpSolType::COPT;
+		break;
+	default:
+		break;
+	}
+	return solverMode;
 }

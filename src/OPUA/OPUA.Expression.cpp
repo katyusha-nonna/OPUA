@@ -1,4 +1,5 @@
 #include "OPUA.Expression.h"
+#include <iostream>
 #include <algorithm>
 
 using namespace OPUA;
