@@ -705,7 +705,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Variable::OpVar var)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -717,7 +717,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Variable::OpVarArr vars)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -729,7 +729,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Constraint::OpLinCon con)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -741,7 +741,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Constraint::OpLCArr cons)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -753,7 +753,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Constraint::OpQuadCon con)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -765,7 +765,7 @@ void Algorithm::OpHierarchicalModelI::add(OpLInt idx, Constraint::OpQCArr cons)
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::add]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -777,7 +777,7 @@ void Algorithm::OpHierarchicalModelI::setObj(OpLInt idx, const Expression::OpQua
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::setObj]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -789,7 +789,7 @@ void Algorithm::OpHierarchicalModelI::setValue(OpLInt idx, Variable::OpVar var, 
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::setValue]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -801,7 +801,7 @@ OpFloat Algorithm::OpHierarchicalModelI::getValue(OpLInt idx, Variable::OpVar va
 	auto iter = nodes_.find(idx);
 	if (iter == nodes_.end())
 	{
-		throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+		throw OpExcBase("[Algorithm::OpHierarchicalModelI::getValue]: Exception->"
 			+ std::to_string(idx)
 			+ " non-exist");
 	}
@@ -822,7 +822,7 @@ OpFloat Algorithm::OpHierarchicalModelI::getObjValue(OpLInt idx) const
 		auto iter = nodes_.find(idx);
 		if (iter == nodes_.end())
 		{
-			throw OpExcBase("[Algorithm::OpHierarchicalModelI::link]: Exception->"
+			throw OpExcBase("[Algorithm::OpHierarchicalModelI::getObjValue]: Exception->"
 				+ std::to_string(idx)
 				+ " non-exist");
 		}
@@ -850,11 +850,7 @@ OpBool Algorithm::OpHierarchicalModelI::isLeaf(OpLInt idx) const
 
 OpBool Algorithm::OpHierarchicalModelI::isNode(OpLInt idx) const
 {
-	auto iter = links_.find(idx);
-	if (iter == links_.end())
-		return false;
-	else
-		return true;
+	return links_.find(idx) != links_.end();
 }
 
 void Algorithm::OpHierarchicalModelI::write(OpStr root)
@@ -892,7 +888,7 @@ Algorithm::OpHierarchicalModelI::~OpHierarchicalModelI()
 	clear();
 }
 
-/* OPUA:;Algorithm::OpHierarchicalModelI */
+/* OPUA:;Algorithm::OpHierarchicalModel */
 
 OpLInt Algorithm::OpHierarchicalModel::initRoot(OpLInt idx)
 {
@@ -996,7 +992,7 @@ Algorithm::OpHierarchicalModelI* Algorithm::OpHierarchicalModel::getImpl() const
 
 void Algorithm::OpHierarchicalModel::release()
 {
-	// 这里重写了release()方法，因为OpRobustModelI中包含了OPUA组件
+	// 这里重写了release()方法，因为OpHierarchicalModelI中包含了OPUA组件
 	// 必须先执行preRelease()减少这些组件的引用计数，保证OpHierarchicalModelI调用析构函数时，能正常释放这些组件
 	if (impl_)
 	{
@@ -1438,7 +1434,7 @@ OpBool Algorithm::OpAlgoATC::solve(const Solver::OpConfig& config)
 		// 计时器
 		OpTimer globalWatch(true);
 		OpTimer localWatch(true);
-		std::cout << "[OPUA::Algorithm::OpAlgoATC::solvee](Thread: " << tid << "): Start" << std::endl;
+		std::cout << "[OPUA::Algorithm::OpAlgoATC::solve](Thread: " << tid << "): Start" << std::endl;
 		std::cout << "[OPUA::Algorithm::OpAlgoATC::solve](Thread: " << tid << "): init" << std::endl;
 		// 初始化
 		init();
@@ -1470,7 +1466,7 @@ OpBool Algorithm::OpAlgoATC::solve(const Solver::OpConfig& config)
 	}
 	catch (...)
 	{
-		std::cerr << "[OPUA::Algorithm::OpAlgoCCG::solve](Thread: " << tid << ")Exception: unknown" << std::endl;
+		std::cerr << "[OPUA::Algorithm::OpAlgoADMM::solve](Thread: " << tid << ")Exception: unknown" << std::endl;
 	}
 	return successful;
 }

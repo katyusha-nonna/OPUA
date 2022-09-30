@@ -15,6 +15,9 @@ namespace OPUA
 		class OpHierarchicalModelI;
 		class OpHierarchicalModel;
 		class OpAlgoATC;
+		class OpNonHierarchicalModelI;
+		class OpNonHierarchicalModel;
+		class OpAlgoADMM;
 
 		class OpAutoKKTSet;
 		class OpAutoDualSet;
@@ -331,6 +334,85 @@ namespace OPUA
 		void DefaultCfg4ATC(Solver::OpConfig& config);
 		// 为ATC算法生成默认配置
 		Solver::OpConfig DefaultCfg4ATC();
+
+		/*
+			OPUA非分层模型类
+			标准形式：
+
+				备注：
+					[1] 该模型为分布式模型(无层级结构)；
+					[2] 该模型暂时只允许两个子问题间的变量建立关联，多个子问题之间变量建立关联需要分别构建虚拟变量，并在子问题内部添加一致性约束
+		*/
+		class OpNonHierarchicalModel
+			: public OpBase
+		{
+		public:
+			void initSolution(); // 初始化解(在模型形成完毕后，设置变量解、对偶变量解之前执行)
+			OpLInt addSub(OpLInt idx = -1); // 生成子问题模型idx(默认自动分配)，并返回索引			
+			void link(OpLInt idx1, OpLInt idx2); // 初始化idx1和idx2之间的关联			
+			void link(OpLInt idx1, OpLInt idx2, Variable::OpVar var1, Variable::OpVar var2, OpBool init = true); // 添加idx1和idx2之间的一对关联变量var1和var2
+			void link(OpLInt idx1, OpLInt idx2, Variable::OpVarArr vars1, Variable::OpVarArr vars2, OpBool init = true); // 添加idx1和idx2之间的一组关联变量var1和var2
+			void add(OpLInt idx, Variable::OpVar var); // 添加idx的局部决策变量
+			void add(OpLInt idx, Variable::OpVarArr vars); // 添加idx的局部决策变量
+			void add(OpLInt idx, Constraint::OpLinCon con); // 添加idx的局部线性约束
+			void add(OpLInt idx, Constraint::OpLCArr cons); // 添加idx的局部线性约束集
+			void add(OpLInt idx, Constraint::OpQuadCon con); // 添加idx的局部二次约束
+			void add(OpLInt idx, Constraint::OpQCArr cons); // 添加idx的局部二次约束集
+			void setObj(OpLInt idx, const Expression::OpQuadExpr& expr); // 设置idx的局部目标函数
+			void setValue(OpLInt idx, Variable::OpVar var, OpFloat val);	 // 设置idx中变量var的解
+			OpFloat getValue(OpLInt idx, Variable::OpVar var) const; // 获取idx中变量var的解
+			OpFloat getObjValue(OpLInt idx) const; // 获取idx目标函数解(idx取负值则返回整体解)
+			OpBool isNode(OpLInt idx) const; // idx是否为节点的合法索引
+			void write(OpStr root); // 导出模型
+			OpNonHierarchicalModelI* getImpl() const; // 获取impl
+			void release(); // 释放内存
+		public:
+			OpBool operator==(const OpNonHierarchicalModel& model) const;
+			OpBool operator!=(const OpNonHierarchicalModel& model) const;
+		public:
+			OpNonHierarchicalModel(); // 默认构造函数(默认为空)
+			OpNonHierarchicalModel(OpNonHierarchicalModelI* impl); // 从impl构造
+			OpNonHierarchicalModel(OpEnv env); // 从env构造
+			OpNonHierarchicalModel(OpEnv env, OpStr name); // 从env构造并指定部分参数
+		public:
+			virtual ~OpNonHierarchicalModel();
+		};
+
+		/*
+			OPUA中用于求解非分层模型的ADMM算法
+			参考文献：Li Z, Shahidehpour M, Wu W, et al. Decentralized multiarea robust generation unit and tie-line scheduling under wind power uncertainty[J]. IEEE Transactions on Sustainable Energy, 2015, 6(4): 1377-1388.
+			求解参数说明：
+					OPUA.Algorithm.ADMM.InitMode / OpLInt / 0 / {0, 1} / 注释：乘子初始化模式(0-乘子按统一值初始化 / 1-乘子按指定值初始化)
+					OPUA.Algorithm.ADMM.LambdaInitVal / OpFloat / 1 / [-inf, inf] / 注释：线性乘子(统一)初始值
+					OPUA.Algorithm.ADMM.RhoInitVal / OpFloat / 0.5 / [-inf, inf] / 注释：二次乘子(统一)初始值
+					OPUA.Algorithm.ADMM.ADMMIterMax / OpLInt / 1000 / [0, inf] / 注释：最大迭代次数
+					OPUA.Algorithm.ADMM.ADMMGap1 / OpFloat / 1e-3 / [0, 1] / 注释：ADMM收敛判据(必要性条件)
+					OPUA.Algorithm.ADMM.ADMMGap2 / OpFloat / 1e-3 / [0, 1] / 注释：ADMM收敛判据(充分性条件)
+					OPUA.Algorithm.ADMM.ADMMShakeGap / OpFloat / 1e-3 / [0, 1] / 注释：ADMM震荡间隙判据
+					OPUA.Algorithm.ADMM.ADMMShakeCount / OpLInt / 3 / [2, inf] / 注释：ADMM震荡次数判据
+					OPUA.Algorithm.ADMM.ADMMShakeAutoQuit / OpBool / true / {true, false} / 注释：ADMM震荡自动退出的开关
+					OPUA.Algorithm.ADMM.MIPSolverMode / OpChar / 'G' / {'G', 'C', 'S', 'M', 'T', 'K', 'B'} /  注释：MIP求解器选择：G-GRB / C-CPX / S-SCIP / M-MSK / T-COPT / K-GLPK / B-CBC
+		*/
+		class OpAlgoADMM
+		{
+		protected:
+			OpNonHierarchicalModelI* mdl_; // 分层模型
+
+			struct OpADMMIterInfo; // ADMM迭代信息
+		public:
+			void extract(OpNonHierarchicalModel model); // 抽取OPUA非分层模型	
+			OpBool solve(const Solver::OpConfig& config); // 求解模型
+		public:
+			OpAlgoADMM(); // 默认构造函数
+			OpAlgoADMM(OpNonHierarchicalModel model); // 构造并抽取OPUA模型
+		public:
+			~OpAlgoADMM();
+		};
+
+		// 为ADMM算法生成默认配置
+		void DefaultCfg4ADMM(Solver::OpConfig& config);
+		// 为ATC算法生成默认配置
+		Solver::OpConfig DefaultCfg4ADMM();
 
 		/*
 			算法类别：Bilinear(整数*连续)线性化

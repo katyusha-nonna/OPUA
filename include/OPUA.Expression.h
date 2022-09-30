@@ -239,7 +239,7 @@ namespace OPUA
 		protected:
 			using QuadTermTab = std::unordered_map<
 				std::pair<Variable::OpVarI*, Variable::OpVarI*>,
-				double,
+				OpFloat,
 				PairHasher,
 				PairEqualityComparer>;
 

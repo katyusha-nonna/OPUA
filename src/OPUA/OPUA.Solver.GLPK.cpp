@@ -159,17 +159,34 @@ int Solver::OpGLPKSolI::addGLPKLC(Constraint::OpLinCon con)
 {
 	auto idx(glp_add_rows(kmdl_, 1));
 	auto& expr(con.getExpr());
-	std::vector<int> ind(1 + expr.getSize(), -1);
-	std::vector<double> val(1 + expr.getSize(), 0);
+	auto valid(expr.getSize());
+	double constItem(expr.getConstant());
+	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
+	{
+		auto var(iter.getVar());
+		if (var.getFixed())
+		{
+			constItem += iter.getCoeff() * var.getFixedValue();
+			valid--;
+		}
+	}
+	std::vector<int> ind(1 + valid, -1);
+	std::vector<double> val(1 + valid, 0);
+	double lb(con.getLb() - constItem);
+	double ub(con.getUb() - constItem);
 	int count(1);
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
 	{
-		ind[count] = vardict_.at(iter.getVar().getIndex());
-		val[count] = iter.getCoeff();
-		count++;
+		auto var(iter.getVar());
+		if (!var.getFixed())
+		{
+			ind[count] = vardict_.at(var.getIndex());
+			val[count] = iter.getCoeff();
+			count++;
+		}
 	}
-	glp_set_mat_row(kmdl_, idx, expr.getSize(), ind.data(), val.data());
-	glp_set_row_bnds(kmdl_, idx, typeConvert2(con.getLb(), con.getUb()), con.getLb(), con.getUb());
+	glp_set_mat_row(kmdl_, idx, valid, ind.data(), val.data());
+	glp_set_row_bnds(kmdl_, idx, typeConvert2(lb, ub), lb, ub);
 	glp_set_row_name(kmdl_, idx, con.getName().c_str());
 	return idx;
 }
@@ -180,7 +197,11 @@ void Solver::OpGLPKSolI::setGLPKObj(Objective::OpObj obj)
 		throw OpExcBase("[Solver::OpGLPKSolI::setGLPKObj]: Exception->can not handle quadratic objective function");
 	auto& expr(obj.getLinExpr());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		glp_set_obj_coef(kmdl_, vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			glp_set_obj_coef(kmdl_, vardict_.at(var.getIndex()), iter.getCoeff());
+	}
 	switch (obj.getSense())
 	{
 	case Objective::OpObjSense::Min:
@@ -355,19 +376,26 @@ OpFloat Solver::OpGLPKSolI::getObjValue() const
 OpFloat Solver::OpGLPKSolI::getValue(Variable::OpVar var) const
 {
 	auto result(Constant::NaN);
-	switch (ktype_)
+	if (var.getFixed())
 	{
-	case OpGLPKProbSolType::Simplex:
-		result = glp_get_col_prim(kmdl_, vardict_.at(var.getIndex()));
-		break;
-	case OpGLPKProbSolType::Interior:
-		result = glp_ipt_col_prim(kmdl_, vardict_.at(var.getIndex()));
-		break;
-	case OpGLPKProbSolType::MIP:
-		result = glp_mip_col_val(kmdl_, vardict_.at(var.getIndex()));
-		break;
-	default:
-		break;
+		result = var.getFixedValue();
+	}
+	else
+	{
+		switch (ktype_)
+		{
+		case OpGLPKProbSolType::Simplex:
+			result = glp_get_col_prim(kmdl_, vardict_.at(var.getIndex()));
+			break;
+		case OpGLPKProbSolType::Interior:
+			result = glp_ipt_col_prim(kmdl_, vardict_.at(var.getIndex()));
+			break;
+		case OpGLPKProbSolType::MIP:
+			result = glp_mip_col_val(kmdl_, vardict_.at(var.getIndex()));
+			break;
+		default:
+			break;
+		}
 	}
 	return result;
 }

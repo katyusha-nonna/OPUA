@@ -239,7 +239,13 @@ COPTLinExpr OPUA::Solver::OpCOPTSolI::addCOPTLE(const OPUA::Expression::OpLinExp
 {
 	COPTLinExpr tmp(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp.AddTerm(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp.AddTerm(vardict_.at(var.getIndex()), iter.getCoeff());
+		else
+			tmp.AddConstant(iter.getCoeff() * var.getFixedValue());	
+	}
 	return tmp;
 }
 
@@ -247,9 +253,26 @@ COPTQuadExpr OPUA::Solver::OpCOPTSolI::addCOPTQE(const OPUA::Expression::OpQuadE
 {
 	COPTQuadExpr tmp(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp.AddTerm(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp.AddTerm(vardict_.at(var.getIndex()), iter.getCoeff());
+		else
+			tmp.AddConstant(iter.getCoeff() * var.getFixedValue());
+	}
 	for (auto iter = expr.getQBegin(); iter != expr.getQEnd(); ++iter)
-		tmp.AddTerm(vardict_.at(iter.getVar1().getIndex()), vardict_.at(iter.getVar2().getIndex()), iter.getCoeff());
+	{
+		auto var1(iter.getVar1()), var2(iter.getVar2());
+		auto fix1(var1.getFixed()), fix2(var2.getFixed());
+		if (!fix1 && !fix2)
+			tmp.AddTerm(vardict_.at(var1.getIndex()), vardict_.at(var2.getIndex()), iter.getCoeff());
+		else if (fix1 && !fix2)
+			tmp.AddTerm(vardict_.at(var2.getIndex()), iter.getCoeff() * var1.getFixedValue());
+		else if (!fix1 && fix2)
+			tmp.AddTerm(vardict_.at(var1.getIndex()), iter.getCoeff() * var2.getFixedValue());
+		else
+			tmp.AddConstant(iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue());
+	}
 	return tmp;
 }
 
@@ -276,9 +299,7 @@ COPTSymMat OPUA::Solver::OpCOPTSolI::addCOPTSymMat(const OPUA::Expression::OpPSD
 
 COPTPSDExpr OPUA::Solver::OpCOPTSolI::addCOPTPSDE(const OPUA::Expression::OpPSDExpr& expr)
 {
-	COPTPSDExpr tmp(expr.getConstant());
-	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp.AddTerm(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	COPTPSDExpr tmp(addCOPTLE(expr.getLinTerm()));
 	for (auto iter = expr.getPSDBegin(); iter != expr.getPSDEnd(); ++iter)
 		tmp.AddTerm(pvdict_.at(iter.getVar().getIndex()), addCOPTSymMat(iter.getCoeff()));
 	return tmp;
@@ -530,7 +551,7 @@ OPUA::OpFloat OPUA::Solver::OpCOPTSolI::getObjValue() const
 OPUA::OpFloat OPUA::Solver::OpCOPTSolI::getValue(OPUA::Variable::OpVar var) const
 {
 	auto coptvar(vardict_.at(var.getIndex()));
-	return coptvar.Get(COPT_DBLINFO_VALUE);
+	return var.getFixed() ? var.getFixedValue() : coptvar.Get(COPT_DBLINFO_VALUE);
 }
 
 OPUA::OpFloat OPUA::Solver::OpCOPTSolI::getValue(const OPUA::Expression::OpLinExpr& expr) const

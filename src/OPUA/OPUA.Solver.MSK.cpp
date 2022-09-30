@@ -177,18 +177,40 @@ mosek::fusion::Expression::t Solver::OpMSKSolI::addMSKLE(const Expression::OpLin
 	mosek::fusion::Expression::t linterm(nullptr);
 	if (expr.getSize())
 	{
-		auto coeffs = monty::new_array_ptr<double, 1>(expr.getSize());
-		auto vars = monty::new_array_ptr<mosek::fusion::Expression::t, 1>(expr.getSize());
-		decltype(vars)::element_type::index_type count(0);
+		auto valid(expr.getSize());
+		auto constItem(expr.getConstant());
 		for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
 		{
-			(*coeffs)[count] = iter.getCoeff();
-			(*vars)[count] = vardict_.at(iter.getVar().getIndex());
-			count++;
+			auto var(iter.getVar());
+			if (var.getFixed())
+			{
+				constItem += iter.getCoeff() * var.getFixedValue();
+				valid--;
+			}			
 		}
-		linterm = mosek::fusion::Expr::add(
-			mosek::fusion::Expr::dot(mosek::fusion::Expr::vstack(vars), coeffs),
-			mosek::fusion::Expr::constTerm(expr.getConstant()));
+		if (valid)
+		{
+			auto coeffs = monty::new_array_ptr<double, 1>(valid);
+			auto vars = monty::new_array_ptr<mosek::fusion::Expression::t, 1>(valid);
+			decltype(vars)::element_type::index_type count(0);
+			for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
+			{
+				auto var(iter.getVar());
+				if (!var.getFixed())
+				{
+					(*coeffs)[count] = iter.getCoeff();
+					(*vars)[count] = vardict_.at(var.getIndex());
+					count++;
+				}
+			}
+			linterm = mosek::fusion::Expr::add(
+				mosek::fusion::Expr::dot(mosek::fusion::Expr::vstack(vars), coeffs),
+				mosek::fusion::Expr::constTerm(constItem));
+		}
+		else
+		{
+			linterm = mosek::fusion::Expr::constTerm(constItem);
+		}
 	}
 	else
 	{
@@ -422,7 +444,7 @@ OpFloat Solver::OpMSKSolI::getObjValue() const
 
 OpFloat Solver::OpMSKSolI::getValue(Variable::OpVar var) const
 {
-	return (*vardict_.at(var.getIndex())->level())[0];
+	return var.getFixed() ? var.getFixedValue() : (*vardict_.at(var.getIndex())->level())[0];
 }
 
 OpFloat Solver::OpMSKSolI::getValue(const Expression::OpLinExpr& expr) const

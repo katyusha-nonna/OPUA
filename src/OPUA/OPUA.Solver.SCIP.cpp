@@ -158,15 +158,22 @@ void Solver::OpSCIPSolI::update()
 		{
 			auto& tmp(cons_[count]);
 			Constraint::OpLinCon con(lc.first);
+			double constItem(con.getExpr().getConstant());
 			SCIPcreateConsLinear(scip_, &(tmp), con.getName().c_str(),
 				0, nullptr, nullptr, -SCIPinfinity(scip_), SCIPinfinity(scip_),
 				TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
 			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-				SCIPaddCoefLinear(scip_, tmp, vars_[varidxs_.at(iter.getVar().getImpl())], iter.getCoeff());
+			{
+				auto var(iter.getVar());
+				if (!var.getFixed())
+					SCIPaddCoefLinear(scip_, tmp, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
+				else
+					constItem += iter.getCoeff() * var.getFixedValue();
+			}
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsLinear(scip_, tmp, con.getLb() - con.getExpr().getConstant());
+				SCIPchgLhsLinear(scip_, tmp, con.getLb() - constItem);
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsLinear(scip_, tmp, con.getUb() - con.getExpr().getConstant());
+				SCIPchgRhsLinear(scip_, tmp, con.getUb() - constItem);
 			SCIPaddCons(scip_, tmp);
 			lc.second = count++;
 		}
@@ -175,23 +182,46 @@ void Solver::OpSCIPSolI::update()
 		{
 			auto& tmp(cons_[count]);
 			Constraint::OpQuadCon con(qc.first);
+			double constItem(con.getExpr().getConstant());
 			SCIPcreateConsQuadratic(scip_, &(tmp), con.getName().c_str(),
 				0, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0.0, 0.0,
 				TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE);
 			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-				SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(iter.getVar().getImpl())], iter.getCoeff());
+			{
+				auto var(iter.getVar());
+				if (!var.getFixed())
+					SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
+				else
+					constItem += iter.getCoeff() * var.getFixedValue();
+			}
 			for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
 			{
-				auto var1(iter.getVar1().getImpl()), var2(iter.getVar2().getImpl());
-				if (var1 == var2)
-					SCIPaddSquareCoefQuadratic(scip_, tmp, vars_[varidxs_.at(var1)], iter.getCoeff());
+				auto var1(iter.getVar1()), var2(iter.getVar2());
+				if (var1.getImpl() == var2.getImpl())
+				{
+					if (!var1.getFixed())
+						SCIPaddSquareCoefQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], iter.getCoeff());
+					else
+						constItem += iter.getCoeff() * var1.getFixedValue() * var1.getFixedValue();
+				}
 				else
-					SCIPaddBilinTermQuadratic(scip_, tmp, vars_[varidxs_.at(var1)], vars_[varidxs_.at(var2)], iter.getCoeff());
+				{
+					auto fix1(var1.getFixed()), fix2(var2.getFixed());
+					if (!fix1 && !fix2)
+						SCIPaddBilinTermQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], vars_[varidxs_.at(var2.getImpl())], iter.getCoeff());
+					else if (fix1 && !fix2)
+						SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var2.getImpl())], iter.getCoeff() * var1.getFixedValue());
+					else if (!fix1 && fix2)
+						SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], iter.getCoeff() * var2.getFixedValue());
+					else
+						constItem += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+					
+				}
 			}
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsQuadratic(scip_, tmp, con.getLb() - con.getExpr().getConstant());
+				SCIPchgLhsQuadratic(scip_, tmp, con.getLb() - constItem);
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsQuadratic(scip_, tmp, con.getUb() - con.getExpr().getConstant());
+				SCIPchgRhsQuadratic(scip_, tmp, con.getUb() - constItem);
 			SCIPaddCons(scip_, tmp);
 			qc.second = count++;
 		}
@@ -222,7 +252,11 @@ void Solver::OpSCIPSolI::update()
 		}
 		// 解析目标函数
 		for (auto iter = obj0_.getLBegin(); iter != obj0_.getLEnd(); ++iter)
-			SCIPchgVarObj(scip_, vars_[varidxs_.at(iter.getVar().getImpl())], iter.getCoeff());
+		{
+			auto var(iter.getVar());
+			if (!var.getFixed())
+				SCIPchgVarObj(scip_, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
+		}
 		SCIPsetObjsense(scip_, sense_);
 		modified_ = false;
 	}
@@ -452,7 +486,7 @@ void Solver::OpSCIPSolI::solve()
 
 OpFloat Solver::OpSCIPSolI::getValue(Variable::OpVar var) const
 {
-	return SCIPgetSolVal(scip_, sol_, vars_[varidxs_.at(var.getImpl())]);
+	return var.getFixed() ? var.getFixedValue() : SCIPgetSolVal(scip_, sol_, vars_[varidxs_.at(var.getImpl())]);
 }
 
 OpFloat Solver::OpSCIPSolI::getValue(const Expression::OpLinExpr& expr) const

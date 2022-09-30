@@ -31,6 +31,7 @@ namespace OPUA
 
 		OpStr VarType2Str(OpVarType type);
 		std::ostream& operator<<(std::ostream& stream, OpVar var);
+		std::ostream& operator<<(std::ostream& stream, OpPSDVar var);
 
 		// OpVar：OPUA变量类
 		class OpVar
@@ -41,11 +42,15 @@ namespace OPUA
 			void setUb(OpFloat ub); // 设置变量上界
 			void setBound(OpFloat lb, OpFloat ub); // 设置变量上下界
 			void setType(OpVarType type); // 设置(改变)变量的类型
+			void setFixedValue(OpFloat val); // 设置变量固定值
+			void removeFixedValue(); // 解除固定值
 			void setName(OpStr name); // 设置变量名称
 
 			OpFloat getLb() const; // 获取变量上界
 			OpFloat getUb() const; // 获取变量下界
 			OpVarType getType() const; // 获取变量类型
+			OpBool getFixed() const; // 获取变量是否被固定
+			OpFloat getFixedValue() const; // 获取变量固定值
 			OpStr getName() const; // 获取变量名称
 			OpVarI* getImpl() const; // 获取impl
 		public:

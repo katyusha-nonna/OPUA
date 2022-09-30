@@ -371,7 +371,13 @@ IloNumExpr Solver::OpCPXSolI::addCPXLE(const Expression::OpLinExpr& expr)
 {
 	IloNumExpr tmp(cenv_, expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar().getIndex());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp += iter.getCoeff() * vardict_.at(var.getIndex());
+		else
+			tmp += iter.getCoeff() * var.getFixedValue();
+	}
 	return tmp;
 }
 
@@ -379,9 +385,26 @@ IloNumExpr Solver::OpCPXSolI::addCPXQE(const Expression::OpQuadExpr& expr)
 {
 	IloNumExpr tmp(cenv_, expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar().getIndex());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp += iter.getCoeff() * vardict_.at(var.getIndex());
+		else
+			tmp += iter.getCoeff() * var.getFixedValue();
+	}
 	for (auto iter = expr.getQBegin(); iter != expr.getQEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar1().getIndex()) * vardict_.at(iter.getVar2().getIndex());
+	{
+		auto var1(iter.getVar1()), var2(iter.getVar2());
+		auto fix1(var1.getFixed()), fix2(var2.getFixed());
+		if (!fix1 && !fix2)
+			tmp += iter.getCoeff() * vardict_.at(var1.getIndex()) * vardict_.at(var2.getIndex());
+		else if (fix1 && !fix2)
+			tmp += iter.getCoeff() * var1.getFixedValue() * vardict_.at(var2.getIndex());
+		else if (!fix1 && fix2)
+			tmp += iter.getCoeff() * var2.getFixedValue() * vardict_.at(var1.getIndex());
+		else
+			tmp += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+	}
 	return tmp;
 }
 
@@ -742,7 +765,7 @@ OpFloat Solver::OpCPXSolI::getObjValue() const
 
 OpFloat Solver::OpCPXSolI::getValue(Variable::OpVar var) const
 {
-	return csol_.getValue(vardict_.at(var.getIndex()));
+	return var.getFixed() ? var.getFixedValue() : csol_.getValue(vardict_.at(var.getIndex()));
 }
 
 OpFloat Solver::OpCPXSolI::getValue(const Expression::OpLinExpr& expr) const

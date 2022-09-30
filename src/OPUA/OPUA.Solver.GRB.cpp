@@ -262,7 +262,13 @@ GRBLinExpr Solver::OpGRBSolI::addGRBLE(const Expression::OpLinExpr& expr)
 {
 	GRBLinExpr tmp(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar().getIndex());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp += iter.getCoeff() * vardict_.at(var.getIndex());
+		else
+			tmp += iter.getCoeff() * var.getFixedValue();
+	}
 	return tmp;
 }
 
@@ -270,9 +276,26 @@ GRBQuadExpr Solver::OpGRBSolI::addGRBQE(const Expression::OpQuadExpr& expr)
 {
 	GRBQuadExpr tmp(expr.getConstant());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar().getIndex());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			tmp += iter.getCoeff() * vardict_.at(var.getIndex());
+		else
+			tmp += iter.getCoeff() * var.getFixedValue();
+	}
 	for (auto iter = expr.getQBegin(); iter != expr.getQEnd(); ++iter)
-		tmp += iter.getCoeff() * vardict_.at(iter.getVar1().getIndex()) * vardict_.at(iter.getVar2().getIndex());
+	{
+		auto var1(iter.getVar1()), var2(iter.getVar2());
+		auto fix1(var1.getFixed()), fix2(var2.getFixed());
+		if (!fix1 && !fix2)
+			tmp += iter.getCoeff() * vardict_.at(var1.getIndex()) * vardict_.at(var2.getIndex());
+		else if (fix1 && !fix2)
+			tmp += iter.getCoeff() * var1.getFixedValue() * vardict_.at(var2.getIndex());
+		else if (!fix1 && fix2)
+			tmp += iter.getCoeff() * var2.getFixedValue() * vardict_.at(var1.getIndex());
+		else
+			tmp += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+	}
 	return tmp;
 }
 
@@ -668,7 +691,7 @@ OpFloat Solver::OpGRBSolI::getObjValue() const
 
 OpFloat Solver::OpGRBSolI::getValue(Variable::OpVar var) const
 {
-	return vardict_.at(var.getIndex()).get(GRB_DoubleAttr::GRB_DoubleAttr_X);
+	return var.getFixed() ? var.getFixedValue() : vardict_.at(var.getIndex()).get(GRB_DoubleAttr::GRB_DoubleAttr_X);
 }
 
 OpFloat Solver::OpGRBSolI::getValue(const Expression::OpLinExpr& expr) const

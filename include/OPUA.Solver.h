@@ -67,6 +67,11 @@ namespace OPUA
 		class OpCBCSol;
 		class OpAdapSol;
 
+		/*
+			注：[1] 固定变量当前版本仅对线性约束OpLinCon、二次约束OpQuadCon和目标函数OpObj生效，对其他约束无效，因此模型中含有固定变量时不允许出现其他约束
+			支持固定变量功能的求解器接口如下：CPX / GRB / MSK / SCIP / COPT / GLPK / IPOPT / CBC
+		*/
+
 		// OPUA支持的求解器类型
 		enum class OpSolType
 		{

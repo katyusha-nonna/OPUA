@@ -10,8 +10,10 @@ class Variable::OpVarI
 {
 protected:
 	OpVarType  vtype_; // 变量类型
+	OpBool vff_; // 变量是否被固定
 	OpFloat vlb_; // 变量下界
 	OpFloat vub_; // 变量上界
+	OpFloat vfv_; // 变量固定值
 	OpStr vname_; // 变量名称
 
 	friend class Variable::OpVar;
@@ -20,12 +22,16 @@ protected:
 	void setUb(OpFloat ub); // 设置变量上界
 	void setBound(OpFloat lb, OpFloat ub); // 设置变量上下界
 	void setType(OpVarType type); // 设置(改变)变量的类型
+	void setFixedValue(OpFloat val); // 设置变量固定值
+	void removeFixedValue(); // 解除固定值
 	void setName(OpStr name); // 设置变量名称
 
 	OpFloat getLb() const; // 获取变量上界
 	OpFloat getUb() const; // 获取变量下界
 	OpVarType getType() const; // 获取变量类型
 	OpStr getName() const; // 获取变量名称
+	OpBool getFixed() const; // 获取变量是否被固定
+	OpFloat getFixedValue() const; // 获取变量固定值
 	virtual OpULInt getMemoryUsage() const; // 获取内存占用
 protected:
 	OpVarI(OpEnvI* env);
@@ -60,6 +66,21 @@ void Variable::OpVarI::setType(OpVarType type)
 		vtype_ = type;
 }
 
+void Variable::OpVarI::setFixedValue(OpFloat val)
+{
+	if (!locked_)
+	{
+		vfv_ = val;
+		vff_ = true;
+	}
+}
+
+void Variable::OpVarI::removeFixedValue()
+{
+	if (!locked_)
+		vff_ = false;
+}
+
 void Variable::OpVarI::setName(OpStr name)
 {
 	vname_ = name;
@@ -85,6 +106,16 @@ OpStr Variable::OpVarI::getName() const
 	return vname_;
 }
 
+OpBool Variable::OpVarI::getFixed() const
+{
+	return vff_;
+}
+
+OpFloat Variable::OpVarI::getFixedValue() const
+{
+	return vfv_;
+}
+
 OpULInt Variable::OpVarI::getMemoryUsage() const
 {
 	return sizeof(*this);
@@ -93,8 +124,10 @@ OpULInt Variable::OpVarI::getMemoryUsage() const
 Variable::OpVarI::OpVarI(OpEnvI* env)
 	: OpImplBase('V', env), 
 	vtype_(OpVarType::Con), 
+	vff_(false), 
 	vlb_(-Constant::Infinity), 
 	vub_(Constant::Infinity), 
+	vfv_(Constant::NaN), 
 	vname_("x_" + std::to_string(idx_))
 {
 
@@ -103,8 +136,10 @@ Variable::OpVarI::OpVarI(OpEnvI* env)
 Variable::OpVarI::OpVarI(OpEnvI* env, OpVarType type)
 	: OpImplBase('V', env), 
 	vtype_(type), 
+	vff_(false), 
 	vlb_(-Constant::Infinity), 
 	vub_(Constant::Infinity), 
+	vfv_(Constant::NaN), 
 	vname_("x_" + std::to_string(idx_))
 {
 
@@ -113,8 +148,10 @@ Variable::OpVarI::OpVarI(OpEnvI* env, OpVarType type)
 Variable::OpVarI::OpVarI(OpEnvI* env, OpVarType type, OpFloat lb, OpFloat ub)
 	: OpImplBase('V', env), 
 	vtype_(type), 
+	vff_(false), 
 	vlb_(lb),
 	vub_(ub), 
+	vfv_(Constant::NaN), 
 	vname_("x_" + std::to_string(idx_))
 {
 
@@ -123,8 +160,10 @@ Variable::OpVarI::OpVarI(OpEnvI* env, OpVarType type, OpFloat lb, OpFloat ub)
 Variable::OpVarI::OpVarI(OpEnvI* env, OpVarType type, OpFloat lb, OpFloat ub, OpStr name)
 	: OpImplBase('V', env), 
 	vtype_(type), 
+	vff_(false), 
 	vlb_(lb), 
 	vub_(ub), 
+	vfv_(Constant::NaN), 
 	vname_(name)
 {
 
@@ -157,6 +196,16 @@ void Variable::OpVar::setType(OpVarType type)
 	static_cast<OpVarI*>(impl_)->setType(type);
 }
 
+void Variable::OpVar::setFixedValue(OpFloat val)
+{
+	static_cast<OpVarI*>(impl_)->setFixedValue(val);
+}
+
+void Variable::OpVar::removeFixedValue()
+{
+	static_cast<OpVarI*>(impl_)->removeFixedValue();
+}
+
 void Variable::OpVar::setName(OpStr name)
 {
 	static_cast<OpVarI*>(impl_)->setName(name);
@@ -175,6 +224,16 @@ OpFloat Variable::OpVar::getUb() const
 Variable::OpVarType Variable::OpVar::getType() const
 {
 	return static_cast<OpVarI*>(impl_)->getType();
+}
+
+OpBool Variable::OpVar::getFixed() const
+{
+	return static_cast<OpVarI*>(impl_)->getFixed();
+}
+
+OpFloat Variable::OpVar::getFixedValue() const
+{
+	return static_cast<OpVarI*>(impl_)->getFixedValue();
 }
 
 OpStr Variable::OpVar::getName() const
@@ -393,5 +452,13 @@ std::ostream& Variable::operator<<(std::ostream& stream, OpVar var)
 	stream << var.getName()
 		<< "(" << VarType2Str(var.getType()) << ", "
 		<< "[" << var.getLb() << ", " << var.getUb() << "])";
+	return stream;
+}
+
+std::ostream& Variable::operator<<(std::ostream& stream, OpPSDVar var)
+{
+	stream << var.getName()
+		<< "(PSD, "
+		<< var.getDim() << "*" << var.getDim() << ")";
 	return stream;
 }

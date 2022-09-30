@@ -261,9 +261,26 @@ void Solver::OpIPOPTSolI::extract(Model::OpModel mdl)
 			auto obj0(mdl.getObj().getLinExpr() + mdl.getObj().getQuadExpr());
 			obj = CppAD::AD<double>(obj0.getConstant());
 			for (auto iter = obj0.getLBegin(); iter != obj0.getLEnd(); ++iter)
-				obj += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+			{
+				auto var(iter.getVar());
+				if (!var.getFixed())
+					obj += iter.getCoeff() * x[varidxs_.at(var.getIndex())];
+				else
+					obj += iter.getCoeff() * var.getFixedValue();
+			}
 			for (auto iter = obj0.getQBegin(); iter != obj0.getQEnd(); ++iter)
-				obj += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
+			{
+				auto var1(iter.getVar1()), var2(iter.getVar2());
+				auto fix1(var1.getFixed()), fix2(var2.getFixed());
+				if (!fix1 && !fix2)
+					obj += iter.getCoeff() * x[varidxs_.at(var1.getIndex())] * x[varidxs_.at(var2.getIndex())];
+				else if (fix1 && !fix2)
+					obj += iter.getCoeff() * var1.getFixedValue() * x[varidxs_.at(var2.getIndex())];
+				else if (!fix1 && fix2)
+					obj += iter.getCoeff() * var2.getFixedValue() * x[varidxs_.at(var1.getIndex())];
+				else
+					obj += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+			}
 			if (!(*dir_))
 				obj *= -1;
 			// 线性约束
@@ -273,7 +290,13 @@ void Solver::OpIPOPTSolI::extract(Model::OpModel mdl)
 				auto& gExpr(f[count]);
 				gExpr = CppAD::AD<double>(con.getExpr().getConstant());
 				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+				{
+					auto var(iter.getVar());
+					if (!var.getFixed())
+						gExpr += iter.getCoeff() * x[varidxs_.at(var.getIndex())];
+					else
+						gExpr += iter.getCoeff() * var.getFixedValue();
+				}
 				count++;
 			}
 			// 二次约束
@@ -283,9 +306,26 @@ void Solver::OpIPOPTSolI::extract(Model::OpModel mdl)
 				auto& gExpr(f[count]);
 				gExpr = CppAD::AD<double>(con.getExpr().getConstant());
 				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar().getIndex())];
+				{
+					auto var(iter.getVar());
+					if (!var.getFixed())
+						gExpr += iter.getCoeff() * x[varidxs_.at(var.getIndex())];
+					else
+						gExpr += iter.getCoeff() * var.getFixedValue();
+				}
 				for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
-					gExpr += iter.getCoeff() * x[varidxs_.at(iter.getVar1().getIndex())] * x[varidxs_.at(iter.getVar2().getIndex())];
+				{
+					auto var1(iter.getVar1()), var2(iter.getVar2());
+					auto fix1(var1.getFixed()), fix2(var2.getFixed());
+					if (!fix1 && !fix2)
+						gExpr += iter.getCoeff() * x[varidxs_.at(var1.getIndex())] * x[varidxs_.at(var2.getIndex())];
+					else if (fix1 && !fix2)
+						gExpr += iter.getCoeff() * var1.getFixedValue() * x[varidxs_.at(var2.getIndex())];
+					else if (!fix1 && fix2)
+						gExpr += iter.getCoeff() * var2.getFixedValue() * x[varidxs_.at(var1.getIndex())];
+					else
+						gExpr += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+				}
 				count++;
 			}
 		};
@@ -345,7 +385,7 @@ OpFloat Solver::OpIPOPTSolI::getObjValue() const
 
 OpFloat Solver::OpIPOPTSolI::getValue(Variable::OpVar var) const
 {
-	return sol_->x[varidxs_.at(var.getIndex())];
+	return var.getFixed() ? var.getFixedValue() : sol_->x[varidxs_.at(var.getIndex())];
 }
 
 OpFloat Solver::OpIPOPTSolI::getValue(const Expression::OpLinExpr& expr) const

@@ -129,18 +129,37 @@ int Solver::OpCBCSolI::addCBCVar(Variable::OpVar var)
 int Solver::OpCBCSolI::addCBCLC(Constraint::OpLinCon con)
 {
 	int idx(binfo_->nlc++);
-	double lb(Constant::IsInfinity(con.getLb()) ? -COIN_DBL_MAX : con.getLb());
-	double ub(Constant::IsInfinity(con.getUb()) ? COIN_DBL_MAX : con.getUb());
 	auto& expr(con.getExpr());
-	std::vector<int> ind(expr.getSize(), -1);
-	std::vector<double> val(expr.getSize(), 0);
+	auto valid(expr.getSize());
+	double constItem(expr.getConstant());
+	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
+	{
+		auto var(iter.getVar());
+		if (var.getFixed())
+		{
+			constItem += iter.getCoeff() * var.getFixedValue();
+			valid--;
+		}
+	}
+	std::vector<int> ind(valid, -1);
+	std::vector<double> val(valid, 0);
 	int count(0);
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
 	{
-		ind[count] = vardict_.at(iter.getVar().getIndex());
-		val[count] = iter.getCoeff();
-		count++;
+		auto var(iter.getVar());
+		if (!var.getFixed())
+		{
+			ind[count] = vardict_.at(var.getIndex());
+			val[count] = iter.getCoeff();
+			count++;
+		}
 	}
+	double lb(con.getLb() - constItem);
+	double ub(con.getUb() - constItem);
+	if (Constant::IsInfinity(lb))
+		lb = -COIN_DBL_MAX;
+	if (Constant::IsInfinity(ub))
+		ub = COIN_DBL_MAX;
 	bmip_->addRow(ind.size(), ind.data(), val.data(), lb, ub);
 	bmip_->setRowName(idx, con.getName());
 	return idx;
@@ -152,7 +171,11 @@ void Solver::OpCBCSolI::setCBCObj(Objective::OpObj obj)
 		throw OpExcBase("[Solver::OpCBCSolI::setCBCObj]: Exception->can not handle quadratic objective function");
 	auto& expr(obj.getLinExpr());
 	for (auto iter = expr.getLBegin(); iter != expr.getLEnd(); ++iter)
-		bmip_->setObjCoeff(vardict_.at(iter.getVar().getIndex()), iter.getCoeff());
+	{
+		auto var(iter.getVar());
+		if (!var.getFixed())
+			bmip_->setObjCoeff(vardict_.at(var.getIndex()), iter.getCoeff());
+	}
 	switch (obj.getSense())
 	{
 	case Objective::OpObjSense::Min:
@@ -293,7 +316,7 @@ OpFloat Solver::OpCBCSolI::getObjValue() const
 
 OpFloat Solver::OpCBCSolI::getValue(Variable::OpVar var) const
 {
-	return bmdl_->getColSolution()[vardict_.at(var.getIndex())];
+	return var.getFixed() ? var.getFixedValue() : bmdl_->getColSolution()[vardict_.at(var.getIndex())];
 }
 
 OpFloat Solver::OpCBCSolI::getValue(const Expression::OpLinExpr& expr) const
