@@ -1065,7 +1065,7 @@ void Algorithm::OpAlgoCCG::OpCCGIterInfo::init(const OpRobustModelI* mdl, const 
 	iter = 0;
 	iterMax = config.getCfg<OpLInt>("OPUA.Algorithm.CCG.IterMax");
 	iterNoImpr = 0;
-	iterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	iterNoImprLimt = std::max((OpLInt)2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
 	etaVal = 0.0;
 	lb = -Constant::Infinity;
 	ub = Constant::Infinity;
@@ -1154,7 +1154,7 @@ void Algorithm::OpAlgoCCG::OpOAIterInfo::init(const OpRobustModelI* mdl, const S
 	oaIter = 1;
 	oaIterMax = 100;
 	oaIterNoImpr = 0;
-	oaIterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	oaIterNoImprLimt = std::max((OpLInt)2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
 	oaGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGGap");
 	oaLbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGLBGap");
 	oaUbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGUBGap");
@@ -1237,7 +1237,7 @@ void Algorithm::OpAlgoCCG::OpADIterInfo::init(const OpRobustModelI* mdl, const S
 	adIter = 1;
 	adIterMax = 100;
 	adIterNoImpr = 0;
-	adIterNoImprLimt = std::max(2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
+	adIterNoImprLimt = std::max((OpLInt)2, config.getCfg<OpLInt>("OPUA.Algorithm.CCG.NoImprovementIterLimit"));
 	adGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGGap");
 	adLbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGLBGap");
 	adUbGap = config.getCfg<OpFloat>("OPUA.Algorithm.CCG.CCGUBGap");

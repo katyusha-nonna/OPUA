@@ -132,9 +132,9 @@ namespace OPUA
 			// ªÒ»°≈‰÷√
 			OpBool getCfg(OpStr key, OpBool flag) const;
 			OpInt getCfg(OpStr key, OpInt flag) const;
-			OpInt getCfg(OpStr key, OpLInt flag) const;
+			OpLInt getCfg(OpStr key, OpLInt flag) const;
 			OpFloat getCfg(OpStr key, OpFloat flag) const;
-			OpInt getCfg(OpStr key, OpChar flag) const;
+			OpChar getCfg(OpStr key, OpChar flag) const;
 			OpStr getCfg(OpStr key, OpStr flag) const;
 			template<typename T> inline auto getCfg(OpStr key) const { return getCfg(key, T()); }
 		public:

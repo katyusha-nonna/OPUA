@@ -98,7 +98,7 @@ OpInt Solver::OpConfig::getCfg(OpStr key, OpInt flag) const
 	return icfg_.at(key);
 }
 
-OpInt Solver::OpConfig::getCfg(OpStr key, OpLInt flag) const
+OpLInt Solver::OpConfig::getCfg(OpStr key, OpLInt flag) const
 {
 	removeStrSpace(key);
 	return lcfg_.at(key);
@@ -110,7 +110,7 @@ OpFloat Solver::OpConfig::getCfg(OpStr key, OpFloat flag) const
 	return fcfg_.at(key);
 }
 
-OpInt Solver::OpConfig::getCfg(OpStr key, OpChar flag) const
+OpChar Solver::OpConfig::getCfg(OpStr key, OpChar flag) const
 {
 	removeStrSpace(key);
 	return ccfg_.at(key);
