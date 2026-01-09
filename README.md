@@ -3,14 +3,14 @@
 OPUA(Optimization Program Universal API)是一套优化求解器通用接口工具，旨在统一主流求解器的接口，使用户可以使用统一的接口进行优化模型的数学建模，以及根据需求选择多种求解器进行求解(类似于Yalmip)。OPUA亦可为优化算法框架的开发提供支持。
 
 计划支持的求解器：
-* IBM ILOG CPLEX(已支持)
-* Gurobi(已支持)
-* Mosek(已支持)
-* SCIP(已支持)
-* COPT(已支持)
-* IPOPT(已支持)
-* GLPK(已支持)
-* CBC(已支持)
+* IBM ILOG CPLEX(已支持，V12.8)
+* Gurobi(已支持，V9.5)
+* Mosek(已支持，V9.3.20)
+* SCIP(已支持，V9.2.0)
+* COPT(已支持，V5.01)
+* IPOPT(已支持，V3.14.7)
+* GLPK(已支持，V5.0)
+* CBC(已支持，V2.10.8)
 
 <p align="right">
 By: Katyusha

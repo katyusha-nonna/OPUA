@@ -1,6 +1,7 @@
 #ifdef OPUA_COMPILE_SCIP
 #include "OPUA.Solver.h"
 #include "OPUA.Exception.h"
+#include "OPUA.Common.h"
 #include <objscip/objscip.h>
 #include <objscip/objscipdefplugins.h>
 #include <iostream>
@@ -9,8 +10,26 @@ using namespace OPUA;
 #endif
 
 #ifdef OPUA_COMPILE_SCIP
-/* OPUA::Solver::OpSCIPCfgCvt */
 
+// 动态数组
+template<typename T>
+class OpSCIPDynArr
+{
+public:
+	T* data_;
+public:
+	T* data() { return data_; }
+	void release() { if (data_) delete data_; }
+	void resize(OpLInt size) { release(); data_ = new T[size](); }
+public:
+	OpSCIPDynArr()
+		: data_(nullptr) {}
+	OpSCIPDynArr(OpLInt size)
+		: data_(new T[size]()) {}
+	~OpSCIPDynArr() { release(); }
+};
+
+/* OPUA::Solver::OpSCIPCfgCvt */
 // SCIP配置翻译器
 class Solver::OpSCIPCfgCvt
 {
@@ -47,6 +66,8 @@ protected:
 	SCIP_Sol* sol_; // SCIP解
 	std::vector<SCIP_VAR*> vars_; // SCIP变量表
 	std::vector<SCIP_CONS*> cons_; // SCIP约束表
+	std::vector<std::string> vnames_; // SCIP变量名称表
+	std::vector<std::string> cnames_; // SCIP约束名称表
 protected:
 	// OPUA-SCIP映射组件
 
@@ -64,12 +85,20 @@ private:
 	void update(); // 更新SCIP模型
 	SCIP_VARTYPE senseConvert1(Variable::OpVarType sense); // OPUA->SCIP变量类型转换
 	SCIP_OBJSENSE senseConvert2(Objective::OpObjSense sense); // OPUA->SCIP优化目标类型转换
-	SCIP_EXPR* createNewExprByOp(OpFloat val); // 添加一个SCIP常量表达式
-	SCIP_EXPR* createNewExprByOp(Variable::OpVar var); // 添加一个SCIP单变量表达式
-	SCIP_EXPR* createNewExprByOp(const Expression::OpNLExpr& expr, SCIP_EXPROP op, bool param); // 添加一个SCIP单目表达式
-	SCIP_EXPR* createNewExprByOp2(const Expression::OpNLExpr& expr, SCIP_EXPROP op, bool param); // 添加一个SCIP双目表达式
-	SCIP_EXPR* createNewExprByOpN(const Expression::OpNLExpr& expr, SCIP_EXPROP op, int nvars, bool param); // 添加一个SCIP多目表达式
-	SCIP_EXPR* createNewExprOfNLE(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式添加一个SCIP表达式
+	std::string createNewExprOfSum(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Sum表达式
+	std::string createNewExprOfAbs(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Abs表达式
+	std::string createNewExprOfSquare(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Square表达式
+	std::string createNewExprOfSqrt(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Sqrt表达式
+	std::string createNewExprOfPow(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Pow表达式
+	std::string createNewExprOfExp1(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Exp1表达式
+	std::string createNewExprOfExp2(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Exp2表达式
+	std::string createNewExprOfLog2(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Log2表达式
+	std::string createNewExprOfSin(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Sin表达式
+	std::string createNewExprOfCos(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Cos表达式
+	//std::string createNewExprOfDiv(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Div表达式
+	//std::string createNewExprOfMult(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式创建一个SCIP格式的Mult表达式
+	std::string createNewExprOfVar(Variable::OpVar var); // 根据一个OPUA变量添加一个SCIP表达式
+	std::string createNewExprOfNLE(const Expression::OpNLExpr& expr); // 根据一个OPUA非线性表达式添加一个SCIP表达式
 protected:
 	void init(); // 初始化(仅用于构造函数)
 	void clear(); // 清除所有组件与映射信息(仅用于析构函数)
@@ -105,6 +134,7 @@ void Solver::OpSCIPSolI::clearSCIP()
 		if (v.second != SIZE_MAX)
 			SCIPreleaseVar(scip_, &(vars_[v.second]));
 	vars_ = std::vector<SCIP_VAR*>();
+	vnames_ = std::vector<std::string>();
 	for (auto& lc : lcidxs_)
 		if (lc.second != SIZE_MAX)
 			SCIPreleaseCons(scip_, &(cons_[lc.second]));
@@ -115,6 +145,7 @@ void Solver::OpSCIPSolI::clearSCIP()
 		if (nlc.second != SIZE_MAX)
 			SCIPreleaseCons(scip_, &(cons_[nlc.second]));
 	cons_ = std::vector<SCIP_CONS*>();
+	cnames_ = std::vector<std::string>();
 	sol_ = nullptr;
 	if (scip_)
 	{
@@ -140,12 +171,14 @@ void Solver::OpSCIPSolI::update()
 		initSCIP();
 		size_t count(0);
 		vars_.resize(varidxs_.size(), nullptr);
+		vnames_.resize(varidxs_.size(), "");
 		for (auto& v : varidxs_)
 		{
 			Variable::OpVar var(v.first);
 			double lb(Constant::IsInfinity(var.getLb()) ? -SCIPinfinity(scip_) : var.getLb());
 			double ub(Constant::IsInfinity(var.getUb()) ? SCIPinfinity(scip_) : var.getUb());
-			SCIPcreateVar(scip_, &(vars_[count]), var.getName().c_str(), lb, ub, 0.0, senseConvert1(var.getType()),
+			vnames_[count] = "v_" + std::to_string(count) /* + "_" + var.getName()*/;
+			SCIPcreateVar(scip_, &(vars_[count]), vnames_[count].c_str(), lb, ub, 0.0, senseConvert1(var.getType()),
 				TRUE, FALSE, NULL, NULL, NULL, NULL, NULL);
 			SCIPaddVar(scip_, vars_[count]);
 			v.second = count;
@@ -153,29 +186,38 @@ void Solver::OpSCIPSolI::update()
 		}
 		count = 0;
 		cons_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), nullptr);
+		cnames_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), "");
 		// 解析线性约束
 		for (auto& lc : lcidxs_)
 		{
 			auto& tmp(cons_[count]);
 			Constraint::OpLinCon con(lc.first);
 			double constItem(con.getExpr().getConstant());
-			SCIPcreateConsLinear(scip_, &(tmp), con.getName().c_str(),
-				0, nullptr, nullptr, -SCIPinfinity(scip_), SCIPinfinity(scip_),
-				TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
+			OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
+			OpSCIPDynArr<double> cfls(con.getExpr().getSize());
+			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+			size_t countl(0);
 			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
 			{
 				auto var(iter.getVar());
 				if (!var.getFixed())
-					SCIPaddCoefLinear(scip_, tmp, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
+					vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
 				else
 					constItem += iter.getCoeff() * var.getFixedValue();
 			}
+			double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsLinear(scip_, tmp, con.getLb() - constItem);
+				lb = con.getLb() - constItem;
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsLinear(scip_, tmp, con.getUb() - constItem);
+				ub = con.getUb() - constItem;
+			//SCIPcreateConsLinear(scip_, &(tmp), cnames_[count].c_str(),
+				//0, nullptr, nullptr, -SCIPinfinity(scip_), SCIPinfinity(scip_),
+				//TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
+			SCIPcreateConsBasicLinear(scip_, &(tmp), cnames_[count].c_str(),
+				countl, vls.data(), cfls.data(), lb, ub);
 			SCIPaddCons(scip_, tmp);
-			lc.second = count++;
+			lc.second = count;
+			count++;
 		}
 		// 解析二次约束
 		for (auto& qc : qcidxs_)
@@ -183,14 +225,18 @@ void Solver::OpSCIPSolI::update()
 			auto& tmp(cons_[count]);
 			Constraint::OpQuadCon con(qc.first);
 			double constItem(con.getExpr().getConstant());
-			SCIPcreateConsQuadratic(scip_, &(tmp), con.getName().c_str(),
-				0, nullptr, nullptr, 0, nullptr, nullptr, nullptr, 0.0, 0.0,
-				TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE);
+			OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
+			OpSCIPDynArr<double> cfls(con.getExpr().getSize());
+			OpSCIPDynArr<SCIP_VAR*> vq1s(con.getExpr().getSize());
+			OpSCIPDynArr<SCIP_VAR*> vq2s(con.getExpr().getSize());
+			OpSCIPDynArr<double> cfqs(con.getExpr().getSize());
+			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+			size_t countl(0), countq(0);
 			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
 			{
 				auto var(iter.getVar());
 				if (!var.getFixed())
-					SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
+					vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
 				else
 					constItem += iter.getCoeff() * var.getFixedValue();
 			}
@@ -200,7 +246,7 @@ void Solver::OpSCIPSolI::update()
 				if (var1.getImpl() == var2.getImpl())
 				{
 					if (!var1.getFixed())
-						SCIPaddSquareCoefQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], iter.getCoeff());
+						vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
 					else
 						constItem += iter.getCoeff() * var1.getFixedValue() * var1.getFixedValue();
 				}
@@ -208,46 +254,55 @@ void Solver::OpSCIPSolI::update()
 				{
 					auto fix1(var1.getFixed()), fix2(var2.getFixed());
 					if (!fix1 && !fix2)
-						SCIPaddBilinTermQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], vars_[varidxs_.at(var2.getImpl())], iter.getCoeff());
+						vq1s.data()[countq] = vars_[varidxs_.at(var1.getImpl())], vq2s.data()[countq] = vars_[varidxs_.at(var2.getImpl())], cfqs.data()[countq] = iter.getCoeff(), countq++;
 					else if (fix1 && !fix2)
-						SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var2.getImpl())], iter.getCoeff() * var1.getFixedValue());
+						vls.data()[countl] = vars_[varidxs_.at(var2.getImpl())], cfls.data()[countl] = iter.getCoeff() * var1.getFixedValue(), countl++;
 					else if (!fix1 && fix2)
-						SCIPaddLinearVarQuadratic(scip_, tmp, vars_[varidxs_.at(var1.getImpl())], iter.getCoeff() * var2.getFixedValue());
+						vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff() * var2.getFixedValue(), countl++;
 					else
 						constItem += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
-					
 				}
 			}
+			double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
 			if (!Constant::IsInfinity(con.getLb()))
-				SCIPchgLhsQuadratic(scip_, tmp, con.getLb() - constItem);
+				lb = con.getLb() - constItem;
 			if (!Constant::IsInfinity(con.getUb()))
-				SCIPchgRhsQuadratic(scip_, tmp, con.getUb() - constItem);
+				ub = con.getUb() - constItem;
+			SCIPcreateConsBasicQuadraticNonlinear(scip_, &(tmp), cnames_[count].c_str(), 
+				countl, vls.data(), cfls.data(), countq, vq1s.data(), vq2s.data(), cfqs.data(), lb, ub);
 			SCIPaddCons(scip_, tmp);
-			qc.second = count++;
+			qc.second = count;
+			count++;
 		}
 		// 非线性约束解析
 		for (auto& nlc : nlcidxs_)
 		{
 			Constraint::OpNLCon con(nlc.first);
-			SCIP_EXPR* rhs(createNewExprOfNLE(con.getExpr()));
-			if (rhs)
-			{
-				auto& tmp(cons_[count]);
-				SCIP_EXPR* lhs(createNewExprByOp(con.getVar()));
-				SCIP_EXPR* nlexpr(nullptr);
-				SCIP_EXPRTREE* nltree(nullptr);
-				SCIPexprCreate(SCIPblkmem(scip_), &nlexpr, SCIP_EXPR_MINUS, rhs, lhs);
-				SCIPexprtreeCreate(SCIPblkmem(scip_), &nltree, nlexpr, varidxs_.size(), 0, nullptr);
-				SCIPexprtreeSetVars(nltree, varidxs_.size(), vars_.data());
-				SCIPcreateConsNonlinear(scip_, &tmp, con.getName().c_str(),
-					0, nullptr, nullptr, 0, nullptr, nullptr, 0.0, 0.0,
-					TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
-				SCIPaddExprtreesNonlinear(scip_, tmp, 1, &nltree, nullptr);
-				SCIPaddCons(scip_, tmp);
-				nlc.second = count;
-			}
-			else
-				OpExcBase("[Solver::OpSCIPSolI::update]: Exception->create NL expression failed");
+			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+			std::string nlexpr0(createNewExprOfNLE(con.getExpr()));
+			if (nlexpr0.empty())
+				OpExcBase("[Solver::OpSCIPSolI::update]: Exception->create NL expression failed" + con.getName());
+			std::string nlexpr("1.0*(" + nlexpr0 + ")");
+			nlexpr += " - 1.0*";
+			nlexpr += createNewExprOfVar(con.getVar());
+			//std::cout << nlexpr << std::endl;
+			SCIP_EXPR* expr(nullptr);
+			SCIP_EXPR* simplified(nullptr);
+			SCIP_Bool changed;
+			SCIP_Bool infeasible;
+			OpAutoFree guard([&]() {
+				if (simplified)
+					SCIPreleaseExpr(scip_, &simplified);
+				SCIPreleaseExpr(scip_, &expr);
+				});
+			SCIPparseExpr(scip_, &expr, nlexpr.c_str(), NULL, NULL, NULL);
+			//SCIPsimplifyExpr(scip_, expr, &simplified, &changed, &infeasible, NULL, NULL);
+			//SCIPprintExpr(scip_, expr, NULL);
+			auto& tmp(cons_[count]);
+			SCIPcreateConsBasicNonlinear(scip_, &(tmp), cnames_[count].c_str(), expr/*simplified*/,
+				0.0, 0.0);
+			SCIPaddCons(scip_, tmp);
+			nlc.second = count;		
 			count++;
 		}
 		// 解析目标函数
@@ -304,117 +359,153 @@ SCIP_OBJSENSE Solver::OpSCIPSolI::senseConvert2(Objective::OpObjSense sense)
 	return sobjs;
 }
 
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprByOp(OpFloat val)
+std::string Solver::OpSCIPSolI::createNewExprOfSum(const Expression::OpNLExpr& expr)
 {
-	SCIP_EXPR* newexpr(nullptr);
-	SCIPexprCreate(SCIPblkmem(scip_), &newexpr, SCIP_EXPR_CONST, val);
-	return newexpr;
-}
-
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprByOp(Variable::OpVar var)
-{
-	SCIP_EXPR* newexpr(nullptr);
-	SCIPexprCreate(SCIPblkmem(scip_), &newexpr, SCIP_EXPR_VARIDX, varidxs_.at(var.getImpl()));
-	return newexpr;
-}
-
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprByOp(const Expression::OpNLExpr& expr, SCIP_EXPROP op, bool param)
-{
-	SCIP_EXPR* newexpr(nullptr);
-	SCIP_EXPR* varexpr(createNewExprByOp(expr.getVar(0)));
-	if (param)
+	std::string nlexpr;
+	for (auto iter = expr.getNLBegin(); iter != expr.getNLEnd(); ++iter)
 	{
-		SCIP_EXPR* valexpr(createNewExprByOp(expr.getParam()));
-		SCIPexprCreate(SCIPblkmem(scip_), &newexpr, op, varexpr, valexpr);
+		nlexpr += createNewExprOfVar(iter.getVar());
+		nlexpr += " + ";
 	}
-	else
-	{
-		SCIPexprCreate(SCIPblkmem(scip_), &newexpr, op, varexpr);
-	}
-	return newexpr;
+	nlexpr += std::to_string(expr.getParam());
+	return nlexpr;
 }
 
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprByOp2(const Expression::OpNLExpr& expr, SCIP_EXPROP op, bool param)
+std::string Solver::OpSCIPSolI::createNewExprOfAbs(const Expression::OpNLExpr& expr)
 {
-	SCIP_EXPR* newexpr(nullptr);
-	SCIP_EXPR* var1expr(createNewExprByOp(expr.getVar(0)));
-	SCIP_EXPR* var2expr(createNewExprByOp(expr.getVar(1)));
-	if (param)
-	{
-		SCIP_EXPR* valexpr(createNewExprByOp(expr.getParam()));
-		SCIPexprCreate(SCIPblkmem(scip_), &newexpr, op, var1expr, var2expr, valexpr);
-	}
-	else
-	{
-		SCIPexprCreate(SCIPblkmem(scip_), &newexpr, op, var1expr, var2expr);
-	}
-	return newexpr;
+	std::string nlexpr;
+	if(expr.getSize())
+		nlexpr += "abs(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
 }
 
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprByOpN(const Expression::OpNLExpr& expr, SCIP_EXPROP op, int nvars, bool param)
+std::string Solver::OpSCIPSolI::createNewExprOfSquare(const Expression::OpNLExpr& expr)
 {
-	SCIP_EXPR* newexpr(nullptr);
-	return newexpr;
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "(" + createNewExprOfVar(expr.getVar(0)) + ")^2";
+	return nlexpr;
 }
 
-SCIP_EXPR* Solver::OpSCIPSolI::createNewExprOfNLE(const Expression::OpNLExpr& expr)
+std::string Solver::OpSCIPSolI::createNewExprOfSqrt(const Expression::OpNLExpr& expr)
 {
-	SCIP_EXPR* rhs(nullptr);
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "(" + createNewExprOfVar(expr.getVar(0)) + ")^0.5";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfPow(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "(" + createNewExprOfVar(expr.getVar(0)) + ")^" + std::to_string(expr.getParam());
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfExp1(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "exp(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfExp2(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += std::to_string(expr.getParam()) + "^(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfLog2(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "log(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfSin(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "sin(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfCos(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
+	if (expr.getSize())
+		nlexpr += "cos(" + createNewExprOfVar(expr.getVar(0)) + ")";
+	return nlexpr;
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfVar(Variable::OpVar var)
+{
+	return "<" + vnames_[varidxs_.at(var.getImpl())] + ">";
+}
+
+std::string Solver::OpSCIPSolI::createNewExprOfNLE(const Expression::OpNLExpr& expr)
+{
+	std::string nlexpr;
 	switch (expr.getFunction())
 	{
 	case OPUA::Expression::OpNLFunc::Unknow: // 无法处理
 		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Unknow");
 		break;
-	case OPUA::Expression::OpNLFunc::Sum: // 无法处理
-		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Sum");
+	case OPUA::Expression::OpNLFunc::Sum:
+		nlexpr = createNewExprOfSum(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Abs:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_ABS, false);
+		nlexpr = createNewExprOfAbs(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Max:
-		rhs = createNewExprByOp2(expr, SCIP_EXPR_MAX, false);
+		//rhs = createNewExprByOp2(expr, SCIP_EXPR_MAX, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Min:
-		rhs = createNewExprByOp2(expr, SCIP_EXPR_MIN, false);
+		//rhs = createNewExprByOp2(expr, SCIP_EXPR_MIN, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Square:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_SQUARE, false);
+		nlexpr = createNewExprOfSquare(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Sqrt:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_SQRT, false);
+		nlexpr = createNewExprOfSqrt(expr);
 		break;
-	case OPUA::Expression::OpNLFunc::Pow: // 无法处理
-		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Pow");
+	case OPUA::Expression::OpNLFunc::Pow:
+		nlexpr = createNewExprOfPow(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Exp1:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_EXP, false);
+		nlexpr = createNewExprOfExp1(expr);
 		break;
-	case OPUA::Expression::OpNLFunc::Exp2:// 无法处理
-		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Exp2");
+	case OPUA::Expression::OpNLFunc::Exp2:
+		nlexpr = createNewExprOfExp2(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Log1:// 无法处理
 		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Log1");
 		break;
 	case OPUA::Expression::OpNLFunc::Log2:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_LOG, false);
+		nlexpr = createNewExprOfLog2(expr);
 		break;
 	case OPUA::Expression::OpNLFunc::Log3:// 无法处理
 		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Log3");
 		break;
 	case OPUA::Expression::OpNLFunc::Sin:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_SIN, false);
+		//rhs = createNewExprByOp(expr, SCIP_EXPR_SIN, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Cos:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_COS, false);
+		//rhs = createNewExprByOp(expr, SCIP_EXPR_COS, false);
 		break;
 	case OPUA::Expression::OpNLFunc::Tan:
-		rhs = createNewExprByOp(expr, SCIP_EXPR_TAN, false);
+		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle Expression::OpNLFunc::Tan");
 		break;
 	default:
 		throw OpExcBase("[Solver::OpSCIPSolI::createNewExprOfNLE]: Exception->can not handle other NL function");
 		break;
 	}
-	return rhs;
+	return nlexpr;
 }
 
 void Solver::OpSCIPSolI::init()
@@ -430,6 +521,11 @@ void Solver::OpSCIPSolI::clear()
 
 void Solver::OpSCIPSolI::extract(Model::OpModel mdl)
 {
+	OpBool success(false);
+	OpAutoFree guard([&]() {
+		if (!success)
+			clear();
+		});
 	try
 	{
 		// 首先清除原有模型
@@ -457,20 +553,18 @@ void Solver::OpSCIPSolI::extract(Model::OpModel mdl)
 		sense_ = senseConvert2(mdl.getObj().getSense());
 		// 更新SCIP模型
 		update();
+		success = true;
 	}
 	catch (OpExcBase& e)
 	{
-		clear();
 		throw e;
 	}
 	catch (std::exception& e)
 	{
-		clear();
 		throw e;
 	}
 	catch (...)
 	{
-		clear();
 		throw OpExcBase("[Solver::OpSCIPSolI::extract]: Exception->unknow exception!");
 	}
 }
@@ -479,7 +573,8 @@ void Solver::OpSCIPSolI::solve()
 {
 	if (scip_)
 	{
-		SCIPsolve(scip_);
+		//SCIPsolve(scip_);
+		SCIPsolveConcurrent(scip_);
 		sol_ = SCIPgetBestSol(scip_);
 	}
 }
@@ -528,14 +623,16 @@ void Solver::OpSCIPSolI::write(OpStr path)
 	{
 		if (path.size())
 		{
-			FILE* fr(nullptr);
-			fr = fopen(path.c_str(), "wt+");
-			SCIPprintOrigProblem(scip_, fr, nullptr, FALSE);
-			fclose(fr);
+			//FILE* fr(nullptr);
+			//fr = fopen(path.c_str(), "wt+");
+			//SCIPprintOrigProblem(scip_, fr, nullptr, FALSE);
+			SCIPwriteOrigProblem(scip_, path.c_str(), nullptr, FALSE);
+			//fclose(fr);
 		}
 		else
 		{
-			SCIPprintOrigProblem(scip_, nullptr, nullptr, FALSE);
+			SCIPwriteOrigProblem(scip_, nullptr, nullptr, FALSE);
+			//SCIPprintOrigProblem(scip_, nullptr, nullptr, FALSE);
 		}
 	}
 }

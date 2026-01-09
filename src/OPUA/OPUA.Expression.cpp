@@ -615,6 +615,16 @@ OpULInt Expression::OpQuadExpr::getSize() const
 	return linexpr_.getSize() + quadterm_.size();
 }
 
+OpULInt Expression::OpQuadExpr::getLSize() const
+{
+	return linexpr_.getSize();
+}
+
+OpULInt Expression::OpQuadExpr::getQSize() const
+{
+	return quadterm_.size();
+}
+
 OpEnv Expression::OpQuadExpr::getEnv() const
 {
 	OpEnv env(nullptr);

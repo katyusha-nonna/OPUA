@@ -1,5 +1,5 @@
 #include <iostream>
-#include "OPUA.h"
+#include "../src/OPUA/OPUA.h"
 
 int main()
 {
@@ -80,7 +80,7 @@ int main()
 	// 输出模型
 	mdl.write("");
 	// 创建求解器对象并抽取模型
-	OpAdapSol solver(OpSolType::GRB, env, mdl);
+	OpAdapSol solver(OpSolType::SCIP, env, mdl);
 	// 创建配置器并配置求解参数
 	OpConfig config;
 	config.regCfg("OPUA.GRB.Termination.TimeLimit", OpFloat(60));

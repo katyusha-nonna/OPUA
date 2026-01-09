@@ -85,6 +85,8 @@ namespace OPUA
 			Sin, // 正弦 sin(x1)
 			Cos, // 余弦 cos(x1)
 			Tan, // 正切 tan(x1)
+			// Div, // 相除 x1/x2
+			// Mult, // 相乘 x1*x2
 		};
 
 		OpStr NLFunc2Str(OpNLFunc func); // 将非线性操作函数类型转换为字符
@@ -260,6 +262,8 @@ namespace OPUA
 			friend OpQuadExpr operator/(const OpQuadExpr& expr, OpFloat val);
 		public:
 			OpULInt getSize() const; // 获取线性项与二次项数目
+			OpULInt getLSize() const; // 获取线性项数目
+			OpULInt getQSize() const; // 获取二次项数目
 			OpEnv getEnv() const; // 获取环境变量(默认返回线性项中第一个变量的环境变量，其次是二次项，否则为空环境变量)
 			OpFloat getCoeff(Variable::OpVar var) const; // 获取变量的线性项系数
 			OpFloat getCoeff(Variable::OpVar var1, Variable::OpVar var2) const; // 获取变量的二次项系数

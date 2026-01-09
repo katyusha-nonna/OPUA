@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug4EG|Win32">
+      <Configuration>Debug4EG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug4EG|x64">
+      <Configuration>Debug4EG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release4GLPK|Win32">
+      <Configuration>Release4GLPK</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release4GLPK|x64">
+      <Configuration>Release4GLPK</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release4MSK|Win32">
+      <Configuration>Release4MSK</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release4MSK|x64">
+      <Configuration>Release4MSK</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="OPUA.Algorithm.h" />
+    <ClInclude Include="OPUA.Common.h" />
+    <ClInclude Include="OPUA.Constant.h" />
+    <ClInclude Include="OPUA.Constraint.h" />
+    <ClInclude Include="OPUA.Container.h" />
+    <ClInclude Include="OPUA.Environment.h" />
+    <ClInclude Include="OPUA.Exception.h" />
+    <ClInclude Include="OPUA.Expression.h" />
+    <ClInclude Include="OPUA.h" />
+    <ClInclude Include="OPUA.Math.h" />
+    <ClInclude Include="OPUA.Model.h" />
+    <ClInclude Include="OPUA.Objective.h" />
+    <ClInclude Include="OPUA.Solver.h" />
+    <ClInclude Include="OPUA.Type.h" />
+    <ClInclude Include="OPUA.Variable.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\example\atc.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">$(SolutionDir)\OPUA;$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\mdd\include;$(SolutionDir)..\3rd\IPOPT\mdd\include\coin-or;$(SolutionDir)..\3rd\Mosek\include</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\example\auto_kpi.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\example\bd.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">$(SolutionDir)\OPUA;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\example\ccg.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">$(SolutionDir)\OPUA;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\example\n_queen.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">$(SolutionDir)\OPUA;$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\mdd\include;$(SolutionDir)..\3rd\IPOPT\mdd\include\coin-or;$(SolutionDir)..\3rd\Mosek\include</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.ADMM.cpp" />
+    <ClCompile Include="OPUA.Algorithm.ATC.cpp" />
+    <ClCompile Include="OPUA.Algorithm.BD.cpp" />
+    <ClCompile Include="OPUA.Algorithm.CCG.cpp" />
+    <ClCompile Include="OPUA.Algorithm.cpp" />
+    <ClCompile Include="OPUA.Algorithm.Dual.cpp" />
+    <ClCompile Include="OPUA.Algorithm.Linearize.cpp" />
+    <ClCompile Include="OPUA.Common.cpp" />
+    <ClCompile Include="OPUA.Constant.cpp" />
+    <ClCompile Include="OPUA.Constraint.cpp" />
+    <ClCompile Include="OPUA.Environment.cpp" />
+    <ClCompile Include="OPUA.Exception.cpp" />
+    <ClCompile Include="OPUA.Expression.cpp" />
+    <ClCompile Include="OPUA.Math.cpp" />
+    <ClCompile Include="OPUA.Model.cpp" />
+    <ClCompile Include="OPUA.Objective.cpp" />
+    <ClCompile Include="OPUA.Solver.CBC.cpp" />
+    <ClCompile Include="OPUA.Solver.COPT.cpp" />
+    <ClCompile Include="OPUA.Solver.cpp" />
+    <ClCompile Include="OPUA.Solver.CPX.cpp" />
+    <ClCompile Include="OPUA.Solver.GLPK.cpp" />
+    <ClCompile Include="OPUA.Solver.GRB.cpp" />
+    <ClCompile Include="OPUA.Solver.IPOPT.cpp" />
+    <ClCompile Include="OPUA.Solver.MSK.cpp" />
+    <ClCompile Include="OPUA.Solver.SCIP.cpp" />
+    <ClCompile Include="OPUA.Variable.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{f4f7ac7e-c868-4485-89a1-2b99f630c853}</ProjectGuid>
+    <RootNamespace>OPUA</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)..\temp\link\$(ConfigurationName)</OutDir>
+    <IntDir>$(SolutionDir)..\temp\compile\$(ConfigurationName)</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)..\temp\link\$(ConfigurationName)</OutDir>
+    <IntDir>$(SolutionDir)..\temp\compile\$(ConfigurationName)</IntDir>
+    <SourcePath>$(VC_SourcePath);$(SolutionDir)..\example</SourcePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryWPath>$(LibraryWPath)</LibraryWPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+    <OutDir>$(SolutionDir)..\temp\link\$(ConfigurationName)</OutDir>
+    <IntDir>$(SolutionDir)..\temp\compile\$(ConfigurationName)</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryWPath>$(LibraryWPath)</LibraryWPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+    <OutDir>$(SolutionDir)..\temp\link\$(ConfigurationName)</OutDir>
+    <IntDir>$(SolutionDir)..\temp\compile\$(ConfigurationName)</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryWPath>$(LibraryWPath)</LibraryWPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+    <OutDir>$(SolutionDir)..\temp\link\$(ConfigurationName)</OutDir>
+    <IntDir>$(SolutionDir)..\temp\compile\$(ConfigurationName)</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;IL_STD;_CRT_SECURE_NO_WARNINGS;_OPUA_COMPILE_CPX;_OPUA_COMPILE_GRB;_OPUA_COMPILE_MSK;OPUA_COMPILE_SCIP;_OPUA_COMPILE_COPT;_OPUA_COMPILE_IPOPT;OPUA_COMPILE_EIGEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\mdd\include;$(SolutionDir)..\3rd\IPOPT\mdd\include\coin-or;$(SolutionDir)..\3rd\Mosek\include;$(SolutionDir)..\3rd\GLPK\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Cplex\lib\stat_mdd\concert.lib;Cplex\lib\stat_mdd\ilocplex.lib;Cplex\lib\stat_mdd\cplex12100.lib;SCIP\lib\libscip.lib;SCIP\lib\libgcg.lib;SCIP\lib\libpapilo-core.lib;SCIP\lib\libsoplex.lib;SCIP\lib\libsoplex-pic.lib;SCIP\lib\libsoplexshared.lib;SCIP\lib\zimpl.lib;SCIP\lib\zimpl-pic.lib;Gurobi\lib\gurobi_c++mdd2017.lib;Gurobi\lib\gurobi95.lib;COPT\lib\copt_cpp.lib;CppAD\lib\cppad_ipopt.lib;CppAD\lib\cppad_lib.lib;IPOPT\mdd\lib\coinmumps.dll.lib;IPOPT\mdd\lib\ipopt.dll.lib;IPOPT\mdd\lib\ipoptamplinterface.dll.lib;IPOPT\mdd\lib\sipopt.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rd</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)..\bin\$(Configuration)
+copy $(TargetPath) $(SolutionDir)..\bin\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug4EG|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;IL_STD;_CRT_SECURE_NO_WARNINGS;OPUA_COMPILE_CPX;OPUA_COMPILE_GRB;_OPUA_COMPILE_MSK;OPUA_COMPILE_SCIP;OPUA_COMPILE_COPT;OPUA_COMPILE_IPOPT;OPUA_COMPILE_EIGEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\mdd\include;$(SolutionDir)..\3rd\IPOPT\mdd\include\coin-or;$(SolutionDir)..\3rd\Mosek\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Cplex\lib\stat_mdd\concert.lib;Cplex\lib\stat_mdd\ilocplex.lib;Cplex\lib\stat_mdd\cplex12100.lib;SCIP\lib\libscip.lib;SCIP\lib\EasySCIP.lib;Gurobi\lib\gurobi_c++mdd2017.lib;Gurobi\lib\gurobi95.lib;COPT\lib\copt_cpp.lib;CppAD\lib\cppad_ipopt.lib;CppAD\lib\cppad_lib.lib;IPOPT\mdd\lib\coinmumps.dll.lib;IPOPT\mdd\lib\ipopt.dll.lib;IPOPT\mdd\lib\ipoptamplinterface.dll.lib;IPOPT\mdd\lib\sipopt.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rd</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)..\bin\$(Configuration)
+copy $(TargetPath) $(SolutionDir)..\bin\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;IL_STD;_CRT_SECURE_NO_WARNINGS;_OPUA_COMPILE_CPX;_OPUA_COMPILE_GRB;OPUA_COMPILE_SCIP;_OPUA_COMPILE_COPT;_OPUA_COMPILE_IPOPT;OPUA_COMPILE_EIGEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\md\include;$(SolutionDir)..\3rd\IPOPT\md\include\coin-or;$(SolutionDir)..\3rd\Mosek\include;$(SolutionDir)..\3rd\GLPK\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Cplex\lib\stat_mda\concert.lib;Cplex\lib\stat_mda\ilocplex.lib;Cplex\lib\stat_mda\cplex12100.lib;SCIP\lib\libscip.lib;SCIP\lib\libgcg.lib;SCIP\lib\libpapilo-core.lib;SCIP\lib\libsoplex.lib;SCIP\lib\libsoplex-pic.lib;SCIP\lib\libsoplexshared.lib;SCIP\lib\zimpl.lib;SCIP\lib\zimpl-pic.lib;Gurobi\lib\gurobi_c++md2017.lib;Gurobi\lib\gurobi95.lib;COPT\lib\copt_cpp.lib;CppAD\lib\cppad_ipopt.lib;CppAD\lib\cppad_lib.lib;IPOPT\md\lib\coinmumps.dll.lib;IPOPT\md\lib\ipopt.dll.lib;IPOPT\md\lib\ipoptamplinterface.dll.lib;IPOPT\md\lib\sipopt.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rd</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)..\bin\$(Configuration)
+copy $(TargetPath) $(SolutionDir)..\bin\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release4GLPK|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;IL_STD;_CRT_SECURE_NO_WARNINGS;OPUA_COMPILE_GLPK;OPUA_COMPILE_CBC;OPUA_COMPILE_EIGEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\md\include;$(SolutionDir)..\3rd\IPOPT\md\include\coin-or;$(SolutionDir)..\3rd\Mosek\include;$(SolutionDir)..\3rd\GLPK\include;$(SolutionDir)..\3rd\CBC\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>GLPK/lib/glpk.lib;CBC/lib/libCbc.lib;CBC/lib/libCbcSolver.lib;CBC/lib/libCgl.lib;CBC/lib/libClp.lib;CBC/lib/libClpSolver.lib;CBC/lib/libCoinUtils.lib;CBC/lib/libOsi.lib;CBC/lib/libOsiCbc.lib;CBC/lib/libOsiClp.lib;CBC/lib/libOsiCommonTests.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rd</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)..\bin\$(Configuration)
+copy $(TargetPath) $(SolutionDir)..\bin\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release4MSK|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;IL_STD;_CRT_SECURE_NO_WARNINGS;OPUA_COMPILE_MSK;OPUA_COMPILE_EIGEN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rd\Cplex\include;$(SolutionDir)..\3rd\SCIP\include;$(SolutionDir)..\3rd\Gurobi\include;$(SolutionDir)..\3rd\Eigen;$(SolutionDir)..\3rd\COPT\include;$(SolutionDir)..\3rd\COPT\include\coptcpp_inc;$(SolutionDir)..\3rd\CppAD\include;$(SolutionDir)..\3rd\CppAD\include\cppad;$(SolutionDir)..\3rd\IPOPT\md\include;$(SolutionDir)..\3rd\IPOPT\md\include\coin-or;$(SolutionDir)..\3rd\Mosek\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Mosek\lib\fusion64_9_3.lib;Mosek\lib\mosek64_9_3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rd</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>md $(SolutionDir)..\bin\$(Configuration)
+copy $(TargetPath) $(SolutionDir)..\bin\$(Configuration)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

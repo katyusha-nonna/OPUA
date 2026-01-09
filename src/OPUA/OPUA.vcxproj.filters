@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="示例程序">
+      <UniqueIdentifier>{0e81f02b-d143-4846-8c37-d3dfe27dd942}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="OPUA.Algorithm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Constant.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Constraint.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Container.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Environment.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Expression.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Math.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Objective.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Solver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Type.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Variable.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="OPUA.Exception.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Constraint.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Environment.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Expression.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Model.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Objective.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Variable.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.GRB.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.CPX.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.SCIP.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Constant.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.CCG.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Common.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Exception.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Math.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.Linearize.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.ATC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.BD.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.COPT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.Dual.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.IPOPT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.MSK.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\example\ccg.cpp">
+      <Filter>示例程序</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\example\bd.cpp">
+      <Filter>示例程序</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\example\n_queen.cpp">
+      <Filter>示例程序</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\example\atc.cpp">
+      <Filter>示例程序</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.GLPK.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Solver.CBC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="OPUA.Algorithm.ADMM.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\example\auto_kpi.cpp">
+      <Filter>示例程序</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+</Project>
