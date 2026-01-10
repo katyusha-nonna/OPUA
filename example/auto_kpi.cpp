@@ -287,6 +287,9 @@ int main()
 	solver.write("test.cip");
 	// 创建配置器并配置求解参数
 	OpConfig config;
+	config.regCfg("OPUA.SCIP.Limits.Time", cfg.getFloat("OPUA.SCIP.Limits.Time", OpFloat(3600)));
+	config.regCfg("OPUA.SCIP.Limits.Gap", cfg.getFloat("OPUA.SCIP.Limits.Gap", OpFloat(1e-2)));
+	config.regCfg("OPUA.SCIP.Parallel.MaxNThreads", cfg.getInt("OPUA.SCIP.Parallel.MaxNThreads", OpInt(1)));
 	solver.setParam(config);
 	// 求解模型
 	solver.solve();

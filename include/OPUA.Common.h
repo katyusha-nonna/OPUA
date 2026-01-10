@@ -3,8 +3,10 @@
 #include "OPUA.Type.h"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 #include <functional>
 #include <chrono>
+#include <unordered_map>
 
 namespace OPUA
 {
@@ -47,6 +49,24 @@ namespace OPUA
 			: file(ifile), files(nullptr) {}
 		OpDisplay(std::ofstream& ifiles)
 			: files(&ifiles), file("") {}
+	};
+
+	//配置表单加载器
+	class OpCfgParser
+	{
+	private:
+		std::unordered_map<OpStr, OpStr> entries; //配置表，key=单项配置名称，value=单项配置的值	
+		void Load(std::istream& inputStream); //加载配置
+	public:	
+		OpStr getStr(const OpStr& key, const OpStr& defaultValue) const; //得到某项属性为OpStr的配置的值
+		OpChar getChr(const OpStr& key, const OpChar& defaultValue) const; //得到某项属性为OpChar的配置的值
+		OpInt getInt(const OpStr& key, OpInt defaultValue) const; //得到某项属性为OpInt的配置的值
+		OpLInt getLInt(const OpStr& key, OpLInt defaultValue) const; //得到某项属性为OpLInt的配置的值
+		OpFloat getFloat(const OpStr& key, OpFloat defaultValue) const; //得到某项属性为OpFloat的配置的值	
+		OpBool getBool(const OpStr& key, OpBool defaultValue) const; //得到某项属性为OpBool的配置的值
+	public:
+		OpCfgParser(std::istream& inputStream);
+		OpCfgParser(std::experimental::filesystem::v1::path filePath);
 	};
 
 	// 计时器(支持中途暂停计时和恢复计时)

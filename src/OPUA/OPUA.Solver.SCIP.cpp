@@ -4,12 +4,23 @@
 #include "OPUA.Common.h"
 #include <objscip/objscip.h>
 #include <objscip/objscipdefplugins.h>
+#include <scip_exception.hpp> // from "scip-9.2.0/examples/Queens/src"
 #include <iostream>
 
 using namespace OPUA;
 #endif
 
 #ifdef OPUA_COMPILE_SCIP
+
+#define SCIP_CALL_EXC1(x) do                                                                                   \
+                       {                                                                                      \
+                          SCIP_RETCODE _retcode_;                                                             \
+                          if( (_retcode_ = (x)) != SCIP_OKAY )                                                \
+                          {                                                                                   \
+                             throw SCIPException(_retcode_);                                                  \
+                          }                                                                                   \
+                       }                                                                                      \
+                       while( FALSE )
 
 // 动态数组
 template<typename T>
@@ -34,17 +45,82 @@ public:
 class Solver::OpSCIPCfgCvt
 {
 protected:
-
+	std::unordered_map<OpStr, OpStr> rpdict_;
+	std::unordered_map<OpStr, OpStr> bpdict_;
+	std::unordered_map<OpStr, OpStr> ipdict_;
+	std::unordered_map<OpStr, OpStr> lpdict_;
+	std::unordered_map<OpStr, OpStr> cpdict_;
+	std::unordered_map<OpStr, OpStr> spdict_;
 public:
 	void init();
-
+	OpStr getRealParam(OpStr key);
+	OpStr getBoolParam(OpStr key);
+	OpStr getIntParam(OpStr key);
+	OpStr getLongParam(OpStr key);
+	OpStr getCharParam(OpStr key);
+	OpStr getStringParam(OpStr key);
 public:
 	OpSCIPCfgCvt();
 };
 
 void Solver::OpSCIPCfgCvt::init()
 {
+	/*
+	这里给出一些常用参数及其属性：
+		limits/time    求解时间上限(s)    [type: real, advanced: FALSE, range: [0,1e+20], default: 1e+20]
+		limits/gap    相对收敛间隙    [type: real, advanced: FALSE, range: [0,1.79769313486232e+308], default: 0]
+		limits/absgap    绝对收敛间隙    [type: real, advanced: FALSE, range: [0,1.79769313486232e+308], default: 0]
+		numerics/infinity    数值精度-无限大   [type: real, advanced: FALSE, range: [10000000000,1e+98], default: 1e+20]
+		numerics/epsilon    数值精度-0    [type: real, advanced: FALSE, range: [1e-20,0.001], default: 1e-09]
+		parallel/minnthreads    最小并行线程数    [type: int, advanced: FALSE, range: [0,64], default: 1]
+		parallel/maxnthreads    最大并行线程数    [type: int, advanced: FALSE, range: [0,64], default: 8]
+		concurrent/presolvebefore    预求解    [type: bool, advanced: FALSE, range: {TRUE,FALSE}, default: TRUE]
+		nodeselection/hybridestim/estimweight    分支定界-节点选择策略(bset-bound/best-estimate)倾向    [type: real, advanced: TRUE, range: [0,1], default: 0.1]
+		nodeselection/hybridestim/bestnodefreq    分支定界-节点探测频率(bset-bound/best-estimate)    [type: int, advanced: FALSE, range: [0,2147483647], default: 1000]
+	*/
+#ifdef OPUA_SCIP_VERSION_920
+	// 配置对应版本：9.2.0
+	rpdict_.emplace("OPUA.SCIP.Limits.Time", "limits/time");
+	rpdict_.emplace("OPUA.SCIP.Limits.Gap", "limits/gap");
+	rpdict_.emplace("OPUA.SCIP.Limits.AbsGap", "limits/absgap");
+	rpdict_.emplace("OPUA.SCIP.Numerics.Infinity", "numerics/infinity");
+	rpdict_.emplace("OPUA.SCIP.Numerics.Epsilon", "numerics/epsilon");
+	ipdict_.emplace("OPUA.SCIP.Parallel.MinNThreads", "parallel/minnthreads");
+	ipdict_.emplace("OPUA.SCIP.Parallel.MaxNThreads", "parallel/maxnthreads");
+	bpdict_.emplace("OPUA.SCIP.Concurrent.PresolveBefore", "concurrent/presolvebefore");
+	rpdict_.emplace("OPUA.SCIP.NodeSelection.Hybridestim.EstimWeight", "nodeselection/hybridestim/estimweight");
+	ipdict_.emplace("OPUA.SCIP.NodeSelection.Hybridestim.BestNodeFreq", "nodeselection/hybridestim/bestnodefreq");
+#endif
+}
 
+OpStr Solver::OpSCIPCfgCvt::getRealParam(OpStr key)
+{
+	return rpdict_.at(key);
+}
+
+OpStr Solver::OpSCIPCfgCvt::getBoolParam(OpStr key)
+{
+	return bpdict_.at(key);
+}
+
+OpStr Solver::OpSCIPCfgCvt::getIntParam(OpStr key)
+{
+	return ipdict_.at(key);
+}
+
+OpStr Solver::OpSCIPCfgCvt::getLongParam(OpStr key)
+{
+	return lpdict_.at(key);
+}
+
+OpStr Solver::OpSCIPCfgCvt::getCharParam(OpStr key)
+{
+	return cpdict_.at(key);
+}
+
+OpStr Solver::OpSCIPCfgCvt::getStringParam(OpStr key)
+{
+	return spdict_.at(key).c_str();
 }
 
 Solver::OpSCIPCfgCvt::OpSCIPCfgCvt()
@@ -76,6 +152,7 @@ protected:
 	std::unordered_map<Constraint::OpQuadConI*, size_t> qcidxs_; // 二次约束序号表
 	std::unordered_map<Constraint::OpNLConI*, size_t> nlcidxs_; // 非线性约束序号表
 	Expression::OpLinExpr obj0_; // 当前目标函数
+	OpSCIPCfgCvt cfgcvt_; // 配置翻译器
 
 	friend class OpSCIPSol;
 private:
@@ -104,6 +181,7 @@ protected:
 	void clear(); // 清除所有组件与映射信息(仅用于析构函数)
 	void extract(Model::OpModel mdl); // 抽取OPUA模型
 	void solve(); // 求解模型
+	void setParam(const OpConfig& cfg); // 设置配置
 	OpFloat getValue(Variable::OpVar var) const; // 获取变量的解
 	OpFloat getValue(const Expression::OpLinExpr& expr) const; // 获取线性表达式的解
 	OpFloat getValue(const Expression::OpQuadExpr& expr) const; // 获取二次表达式的解
@@ -121,36 +199,50 @@ public:
 
 void Solver::OpSCIPSolI::initSCIP()
 {
-	SCIPcreate(&scip_);
-	SCIPprintVersion(scip_, nullptr);
-	SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_OPTIMALITY, FALSE);
-	SCIPincludeDefaultPlugins(scip_);
-	SCIPcreateProbBasic(scip_, "MIP");
+	try
+	{
+		SCIP_CALL_EXC1(SCIPcreate(&scip_));
+		SCIPprintVersion(scip_, nullptr);
+		SCIP_CALL_EXC1(SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_OPTIMALITY, FALSE));
+		SCIP_CALL_EXC1(SCIPincludeDefaultPlugins(scip_));
+		SCIP_CALL_EXC1(SCIPcreateProbBasic(scip_, "MIP"));
+	}
+	catch (SCIPException& e)
+	{
+		throw OpExcBase("[Solver::OpSCIPSolI::initSCIP]: Exception->" + std::string(e.what()));
+	}
 }
 
 void Solver::OpSCIPSolI::clearSCIP()
 {
-	for (auto& v : varidxs_)
-		if (v.second != SIZE_MAX)
-			SCIPreleaseVar(scip_, &(vars_[v.second]));
-	vars_ = std::vector<SCIP_VAR*>();
-	vnames_ = std::vector<std::string>();
-	for (auto& lc : lcidxs_)
-		if (lc.second != SIZE_MAX)
-			SCIPreleaseCons(scip_, &(cons_[lc.second]));
-	for (auto& qc : qcidxs_)
-		if (qc.second != SIZE_MAX)
-			SCIPreleaseCons(scip_, &(cons_[qc.second]));
-	for (auto& nlc : nlcidxs_)
-		if (nlc.second != SIZE_MAX)
-			SCIPreleaseCons(scip_, &(cons_[nlc.second]));
-	cons_ = std::vector<SCIP_CONS*>();
-	cnames_ = std::vector<std::string>();
-	sol_ = nullptr;
-	if (scip_)
+	try
 	{
-		SCIPfree(&scip_);
-		scip_ = nullptr;
+		for (auto& v : varidxs_)
+			if (v.second != SIZE_MAX)
+				SCIP_CALL_EXC1(SCIPreleaseVar(scip_, &(vars_[v.second])));
+		vars_ = std::vector<SCIP_VAR*>();
+		vnames_ = std::vector<std::string>();
+		for (auto& lc : lcidxs_)
+			if (lc.second != SIZE_MAX)
+				SCIP_CALL_EXC1(SCIPreleaseCons(scip_, &(cons_[lc.second])));
+		for (auto& qc : qcidxs_)
+			if (qc.second != SIZE_MAX)
+				SCIP_CALL_EXC1(SCIPreleaseCons(scip_, &(cons_[qc.second])));
+		for (auto& nlc : nlcidxs_)
+			if (nlc.second != SIZE_MAX)
+				SCIP_CALL_EXC1(SCIPreleaseCons(scip_, &(cons_[nlc.second])));
+		cons_ = std::vector<SCIP_CONS*>();
+		cnames_ = std::vector<std::string>();
+		sol_ = nullptr;
+		if (scip_)
+		{
+			SCIP_CALL_EXC1(SCIPfree(&scip_));
+			scip_ = nullptr;
+		}
+	}
+	catch (SCIPException& e)
+	{
+		throw OpExcBase("[Solver::OpSCIPSolI::clearSCIP]: Exception->" + std::string(e.what()));
 	}
 }
 
@@ -166,154 +258,159 @@ void Solver::OpSCIPSolI::clearMaps()
 
 void Solver::OpSCIPSolI::update()
 {
-	if (modified_)
+	try
 	{
-		initSCIP();
-		size_t count(0);
-		vars_.resize(varidxs_.size(), nullptr);
-		vnames_.resize(varidxs_.size(), "");
-		for (auto& v : varidxs_)
+		if (modified_)
 		{
-			Variable::OpVar var(v.first);
-			double lb(Constant::IsInfinity(var.getLb()) ? -SCIPinfinity(scip_) : var.getLb());
-			double ub(Constant::IsInfinity(var.getUb()) ? SCIPinfinity(scip_) : var.getUb());
-			vnames_[count] = "v_" + std::to_string(count) /* + "_" + var.getName()*/;
-			SCIPcreateVar(scip_, &(vars_[count]), vnames_[count].c_str(), lb, ub, 0.0, senseConvert1(var.getType()),
-				TRUE, FALSE, NULL, NULL, NULL, NULL, NULL);
-			SCIPaddVar(scip_, vars_[count]);
-			v.second = count;
-			count++;
-		}
-		count = 0;
-		cons_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), nullptr);
-		cnames_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), "");
-		// 解析线性约束
-		for (auto& lc : lcidxs_)
-		{
-			auto& tmp(cons_[count]);
-			Constraint::OpLinCon con(lc.first);
-			double constItem(con.getExpr().getConstant());
-			OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
-			OpSCIPDynArr<double> cfls(con.getExpr().getSize());
-			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
-			size_t countl(0);
-			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
+			initSCIP();
+			size_t count(0);
+			vars_.resize(varidxs_.size(), nullptr);
+			vnames_.resize(varidxs_.size(), "");
+			for (auto& v : varidxs_)
+			{
+				Variable::OpVar var(v.first);
+				double lb(Constant::IsInfinity(var.getLb()) ? -SCIPinfinity(scip_) : var.getLb());
+				double ub(Constant::IsInfinity(var.getUb()) ? SCIPinfinity(scip_) : var.getUb());
+				vnames_[count] = "v_" + std::to_string(count) /* + "_" + var.getName()*/;
+				SCIP_CALL_EXC1(SCIPcreateVar(scip_, &(vars_[count]), vnames_[count].c_str(), lb, ub, 0.0, senseConvert1(var.getType()),
+					TRUE, FALSE, NULL, NULL, NULL, NULL, NULL));
+				SCIP_CALL_EXC1(SCIPaddVar(scip_, vars_[count]));
+				v.second = count;
+				count++;
+			}
+			count = 0;
+			cons_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), nullptr);
+			cnames_.resize(lcidxs_.size() + qcidxs_.size() + nlcidxs_.size(), "");
+			// 解析线性约束
+			for (auto& lc : lcidxs_)
+			{
+				auto& tmp(cons_[count]);
+				Constraint::OpLinCon con(lc.first);
+				double constItem(con.getExpr().getConstant());
+				OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
+				OpSCIPDynArr<double> cfls(con.getExpr().getSize());
+				cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+				size_t countl(0);
+				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
+				{
+					auto var(iter.getVar());
+					if (!var.getFixed())
+						vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
+					else
+						constItem += iter.getCoeff() * var.getFixedValue();
+				}
+				double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
+				if (!Constant::IsInfinity(con.getLb()))
+					lb = con.getLb() - constItem;
+				if (!Constant::IsInfinity(con.getUb()))
+					ub = con.getUb() - constItem;
+				SCIP_CALL_EXC1(SCIPcreateConsBasicLinear(scip_, &(tmp), cnames_[count].c_str(),
+					countl, vls.data(), cfls.data(), lb, ub));
+				SCIP_CALL_EXC1(SCIPaddCons(scip_, tmp));
+				lc.second = count;
+				count++;
+			}
+			// 解析二次约束
+			for (auto& qc : qcidxs_)
+			{
+				auto& tmp(cons_[count]);
+				Constraint::OpQuadCon con(qc.first);
+				double constItem(con.getExpr().getConstant());
+				OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
+				OpSCIPDynArr<double> cfls(con.getExpr().getSize());
+				OpSCIPDynArr<SCIP_VAR*> vq1s(con.getExpr().getSize());
+				OpSCIPDynArr<SCIP_VAR*> vq2s(con.getExpr().getSize());
+				OpSCIPDynArr<double> cfqs(con.getExpr().getSize());
+				cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+				size_t countl(0), countq(0);
+				for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
+				{
+					auto var(iter.getVar());
+					if (!var.getFixed())
+						vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
+					else
+						constItem += iter.getCoeff() * var.getFixedValue();
+				}
+				for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
+				{
+					auto var1(iter.getVar1()), var2(iter.getVar2());
+					if (var1.getImpl() == var2.getImpl())
+					{
+						if (!var1.getFixed())
+							vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
+						else
+							constItem += iter.getCoeff() * var1.getFixedValue() * var1.getFixedValue();
+					}
+					else
+					{
+						auto fix1(var1.getFixed()), fix2(var2.getFixed());
+						if (!fix1 && !fix2)
+							vq1s.data()[countq] = vars_[varidxs_.at(var1.getImpl())], vq2s.data()[countq] = vars_[varidxs_.at(var2.getImpl())], cfqs.data()[countq] = iter.getCoeff(), countq++;
+						else if (fix1 && !fix2)
+							vls.data()[countl] = vars_[varidxs_.at(var2.getImpl())], cfls.data()[countl] = iter.getCoeff() * var1.getFixedValue(), countl++;
+						else if (!fix1 && fix2)
+							vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff() * var2.getFixedValue(), countl++;
+						else
+							constItem += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
+					}
+				}
+				double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
+				if (!Constant::IsInfinity(con.getLb()))
+					lb = con.getLb() - constItem;
+				if (!Constant::IsInfinity(con.getUb()))
+					ub = con.getUb() - constItem;
+				SCIP_CALL_EXC1(SCIPcreateConsBasicQuadraticNonlinear(scip_, &(tmp), cnames_[count].c_str(),
+					countl, vls.data(), cfls.data(), countq, vq1s.data(), vq2s.data(), cfqs.data(), lb, ub));
+				SCIP_CALL_EXC1(SCIPaddCons(scip_, tmp));
+				qc.second = count;
+				count++;
+			}
+			// 非线性约束解析
+			for (auto& nlc : nlcidxs_)
+			{
+				Constraint::OpNLCon con(nlc.first);
+				cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
+				std::string nlexpr0(createNewExprOfNLE(con.getExpr()));
+				if (nlexpr0.empty())
+					OpExcBase("[Solver::OpSCIPSolI::update]: Exception->create NL expression failed" + con.getName());
+				std::string nlexpr("1.0*(" + nlexpr0 + ")");
+				nlexpr += " - 1.0*";
+				nlexpr += createNewExprOfVar(con.getVar());
+				//std::cout << nlexpr << std::endl;
+				SCIP_EXPR* expr(nullptr);
+				SCIP_EXPR* simplified(nullptr);
+				SCIP_Bool changed;
+				SCIP_Bool infeasible;
+				OpAutoFree guard0([&]() {
+					if (simplified)
+						SCIP_CALL_EXC1(SCIPreleaseExpr(scip_, &simplified));
+					if (expr)
+						SCIP_CALL_EXC1(SCIPreleaseExpr(scip_, &expr));
+					});
+				SCIP_CALL_EXC1(SCIPparseExpr(scip_, &expr, nlexpr.c_str(), NULL, NULL, NULL));
+				//SCIPsimplifyExpr(scip_, expr, &simplified, &changed, &infeasible, NULL, NULL);
+				//SCIPprintExpr(scip_, expr, NULL);
+				auto& tmp(cons_[count]);
+				SCIP_CALL_EXC1(SCIPcreateConsBasicNonlinear(scip_, &(tmp), cnames_[count].c_str(), expr/*simplified*/,
+					0.0, 0.0));
+				SCIP_CALL_EXC1(SCIPaddCons(scip_, tmp));
+				nlc.second = count;		
+				count++;
+			}
+			// 解析目标函数
+			for (auto iter = obj0_.getLBegin(); iter != obj0_.getLEnd(); ++iter)
 			{
 				auto var(iter.getVar());
 				if (!var.getFixed())
-					vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
-				else
-					constItem += iter.getCoeff() * var.getFixedValue();
+					SCIP_CALL_EXC1(SCIPchgVarObj(scip_, vars_[varidxs_.at(var.getImpl())], iter.getCoeff()));
 			}
-			double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
-			if (!Constant::IsInfinity(con.getLb()))
-				lb = con.getLb() - constItem;
-			if (!Constant::IsInfinity(con.getUb()))
-				ub = con.getUb() - constItem;
-			//SCIPcreateConsLinear(scip_, &(tmp), cnames_[count].c_str(),
-				//0, nullptr, nullptr, -SCIPinfinity(scip_), SCIPinfinity(scip_),
-				//TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
-			SCIPcreateConsBasicLinear(scip_, &(tmp), cnames_[count].c_str(),
-				countl, vls.data(), cfls.data(), lb, ub);
-			SCIPaddCons(scip_, tmp);
-			lc.second = count;
-			count++;
+			SCIP_CALL_EXC1(SCIPsetObjsense(scip_, sense_));
+			modified_ = false;
 		}
-		// 解析二次约束
-		for (auto& qc : qcidxs_)
-		{
-			auto& tmp(cons_[count]);
-			Constraint::OpQuadCon con(qc.first);
-			double constItem(con.getExpr().getConstant());
-			OpSCIPDynArr<SCIP_VAR*> vls(con.getExpr().getSize());
-			OpSCIPDynArr<double> cfls(con.getExpr().getSize());
-			OpSCIPDynArr<SCIP_VAR*> vq1s(con.getExpr().getSize());
-			OpSCIPDynArr<SCIP_VAR*> vq2s(con.getExpr().getSize());
-			OpSCIPDynArr<double> cfqs(con.getExpr().getSize());
-			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
-			size_t countl(0), countq(0);
-			for (auto iter = con.getExpr().getLBegin(); iter != con.getExpr().getLEnd(); ++iter)
-			{
-				auto var(iter.getVar());
-				if (!var.getFixed())
-					vls.data()[countl] = vars_[varidxs_.at(var.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
-				else
-					constItem += iter.getCoeff() * var.getFixedValue();
-			}
-			for (auto iter = con.getExpr().getQBegin(); iter != con.getExpr().getQEnd(); ++iter)
-			{
-				auto var1(iter.getVar1()), var2(iter.getVar2());
-				if (var1.getImpl() == var2.getImpl())
-				{
-					if (!var1.getFixed())
-						vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff(), countl++;
-					else
-						constItem += iter.getCoeff() * var1.getFixedValue() * var1.getFixedValue();
-				}
-				else
-				{
-					auto fix1(var1.getFixed()), fix2(var2.getFixed());
-					if (!fix1 && !fix2)
-						vq1s.data()[countq] = vars_[varidxs_.at(var1.getImpl())], vq2s.data()[countq] = vars_[varidxs_.at(var2.getImpl())], cfqs.data()[countq] = iter.getCoeff(), countq++;
-					else if (fix1 && !fix2)
-						vls.data()[countl] = vars_[varidxs_.at(var2.getImpl())], cfls.data()[countl] = iter.getCoeff() * var1.getFixedValue(), countl++;
-					else if (!fix1 && fix2)
-						vls.data()[countl] = vars_[varidxs_.at(var1.getImpl())], cfls.data()[countl] = iter.getCoeff() * var2.getFixedValue(), countl++;
-					else
-						constItem += iter.getCoeff() * var1.getFixedValue() * var2.getFixedValue();
-				}
-			}
-			double lb(-SCIPinfinity(scip_)), ub(SCIPinfinity(scip_));
-			if (!Constant::IsInfinity(con.getLb()))
-				lb = con.getLb() - constItem;
-			if (!Constant::IsInfinity(con.getUb()))
-				ub = con.getUb() - constItem;
-			SCIPcreateConsBasicQuadraticNonlinear(scip_, &(tmp), cnames_[count].c_str(), 
-				countl, vls.data(), cfls.data(), countq, vq1s.data(), vq2s.data(), cfqs.data(), lb, ub);
-			SCIPaddCons(scip_, tmp);
-			qc.second = count;
-			count++;
-		}
-		// 非线性约束解析
-		for (auto& nlc : nlcidxs_)
-		{
-			Constraint::OpNLCon con(nlc.first);
-			cnames_[count] = "c_" + std::to_string(count) /* + "_" + con.getName()*/;
-			std::string nlexpr0(createNewExprOfNLE(con.getExpr()));
-			if (nlexpr0.empty())
-				OpExcBase("[Solver::OpSCIPSolI::update]: Exception->create NL expression failed" + con.getName());
-			std::string nlexpr("1.0*(" + nlexpr0 + ")");
-			nlexpr += " - 1.0*";
-			nlexpr += createNewExprOfVar(con.getVar());
-			//std::cout << nlexpr << std::endl;
-			SCIP_EXPR* expr(nullptr);
-			SCIP_EXPR* simplified(nullptr);
-			SCIP_Bool changed;
-			SCIP_Bool infeasible;
-			OpAutoFree guard([&]() {
-				if (simplified)
-					SCIPreleaseExpr(scip_, &simplified);
-				SCIPreleaseExpr(scip_, &expr);
-				});
-			SCIPparseExpr(scip_, &expr, nlexpr.c_str(), NULL, NULL, NULL);
-			//SCIPsimplifyExpr(scip_, expr, &simplified, &changed, &infeasible, NULL, NULL);
-			//SCIPprintExpr(scip_, expr, NULL);
-			auto& tmp(cons_[count]);
-			SCIPcreateConsBasicNonlinear(scip_, &(tmp), cnames_[count].c_str(), expr/*simplified*/,
-				0.0, 0.0);
-			SCIPaddCons(scip_, tmp);
-			nlc.second = count;		
-			count++;
-		}
-		// 解析目标函数
-		for (auto iter = obj0_.getLBegin(); iter != obj0_.getLEnd(); ++iter)
-		{
-			auto var(iter.getVar());
-			if (!var.getFixed())
-				SCIPchgVarObj(scip_, vars_[varidxs_.at(var.getImpl())], iter.getCoeff());
-		}
-		SCIPsetObjsense(scip_, sense_);
-		modified_ = false;
+	}
+	catch (SCIPException& e)
+	{
+		throw OpExcBase("[Solver::OpSCIPSolI::update]: Exception->" + std::string(e.what()));
 	}
 }
 
@@ -571,11 +668,84 @@ void Solver::OpSCIPSolI::extract(Model::OpModel mdl)
 
 void Solver::OpSCIPSolI::solve()
 {
-	if (scip_)
+	try
 	{
-		//SCIPsolve(scip_);
-		SCIPsolveConcurrent(scip_);
-		sol_ = SCIPgetBestSol(scip_);
+		if (scip_)
+		{
+			int maxnthreads(0);
+			SCIP_CALL_EXC1(SCIPgetIntParam(scip_, "parallel/maxnthreads", &maxnthreads));
+			if (maxnthreads > 1)
+				SCIP_CALL_EXC1(SCIPsolveConcurrent(scip_));
+			else
+				SCIP_CALL_EXC1(SCIPsolve(scip_));
+			sol_ = SCIPgetBestSol(scip_);
+		}
+	}
+	catch (SCIPException& e)
+	{
+		throw OpExcBase("[Solver::OpSCIPSolI::solve]: Exception->" + std::string(e.what()));
+	}
+}
+
+void Solver::OpSCIPSolI::setParam(const OpConfig& cfg)
+{
+	try
+	{
+		if (scip_)
+		{
+			for (auto iter = cfg.getCBegin<OpBool>("OPUA.SCIP"); iter != cfg.getCEnd<OpBool>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getBoolParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetBoolParam(scip_, pn.c_str(), iter.getVal()));
+				}
+			}
+			for (auto iter = cfg.getCBegin<OpInt>("OPUA.SCIP"); iter != cfg.getCEnd<OpInt>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getIntParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetIntParam(scip_, pn.c_str(), iter.getVal()));
+				}
+			}
+			for (auto iter = cfg.getCBegin<OpLInt>("OPUA.SCIP"); iter != cfg.getCEnd<OpLInt>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getLongParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetLongintParam(scip_, pn.c_str(), iter.getVal()));
+				}
+			}
+			for (auto iter = cfg.getCBegin<OpFloat>("OPUA.SCIP"); iter != cfg.getCEnd<OpFloat>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getRealParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetRealParam(scip_, pn.c_str(), iter.getVal()));
+				}
+			}
+			for (auto iter = cfg.getCBegin<OpChar>("OPUA.SCIP"); iter != cfg.getCEnd<OpChar>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getCharParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetCharParam(scip_, pn.c_str(), iter.getVal()));
+				}
+			}
+			for (auto iter = cfg.getCBegin<OpStr>("OPUA.SCIP"); iter != cfg.getCEnd<OpStr>("OPUA.SCIP"); ++iter)
+			{
+				if (iter.ok())
+				{
+					OpStr pn(cfgcvt_.getCharParam(iter.getKey()));
+					SCIP_CALL_EXC1(SCIPsetStringParam(scip_, pn.c_str(), iter.getVal().c_str()));
+				}
+			}
+		}
+	}
+	catch (SCIPException& e)
+	{
+		throw OpExcBase("[Solver::OpSCIPSolI::solve]: Exception->" + std::string(e.what()));
 	}
 }
 
@@ -680,7 +850,7 @@ void Solver::OpSCIPSol::solveFixed()
 
 void Solver::OpSCIPSol::setParam(const OpConfig& cfg)
 {
-	
+	static_cast<OpSCIPSolI*>(impl_)->setParam(cfg);
 }
 
 OpLInt Solver::OpSCIPSol::getStatus() const
