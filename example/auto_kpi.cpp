@@ -240,7 +240,7 @@ int main()
 		mdl.add(OpLinCon(env, OpFloat(0), d1[i] - z2[i], OpFloat(0)));
 	for (OpLInt i = 0; i < N; i++)
 		mdl.add(OpAbs(env, z1[i], z2[i]));
-	mdl.add(OpLinCon(env, yearLB * v2 * N, obj, yearUB * v2 * N));
+	mdl.add(OpLinCon(env, yearLB * v1 * N, obj, Constant::Infinity));
 	// 月度
 	//for (OpLInt j = 0; j < M; j++)
 		//mdl.add(OpLinCon(env, OpFloat(0), s2[j] - z02[j], OpFloat(0)));
@@ -348,6 +348,8 @@ int main()
 	config.regCfg("OPUA.SCIP.Limits.Time", cfg.getFloat("OPUA.SCIP.Limits.Time", OpFloat(3600)));
 	config.regCfg("OPUA.SCIP.Limits.Gap", cfg.getFloat("OPUA.SCIP.Limits.Gap", OpFloat(1e-2)));
 	config.regCfg("OPUA.SCIP.Parallel.MaxNThreads", cfg.getInt("OPUA.SCIP.Parallel.MaxNThreads", OpInt(1)));
+	config.regCfg("OPUA.SCIP.Concurrent.PresolveBefore", cfg.getBool("OPUA.SCIP.Parallel.MaxNThreads", OpBool(true)));
+	config.regCfg("OPUA._SCIP.Emphasis", cfg.getInt("OPUA._SCIP.Emphasis", OpInt(3)));
 	solver.setParam(config);
 	// 求解模型
 	solver.solve();

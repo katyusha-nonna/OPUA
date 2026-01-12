@@ -203,7 +203,6 @@ void Solver::OpSCIPSolI::initSCIP()
 	{
 		SCIP_CALL_EXC1(SCIPcreate(&scip_));
 		SCIPprintVersion(scip_, nullptr);
-		SCIP_CALL_EXC1(SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_OPTIMALITY, FALSE));
 		SCIP_CALL_EXC1(SCIPincludeDefaultPlugins(scip_));
 		SCIP_CALL_EXC1(SCIPcreateProbBasic(scip_, "MIP"));
 	}
@@ -693,6 +692,7 @@ void Solver::OpSCIPSolI::setParam(const OpConfig& cfg)
 	{
 		if (scip_)
 		{
+			SCIP_CALL_EXC1(SCIPsetEmphasis(scip_, (SCIP_PARAMEMPHASIS)cfg.getCfg<OpInt>("OPUA._SCIP.Emphasis"), FALSE));
 			for (auto iter = cfg.getCBegin<OpBool>("OPUA.SCIP"); iter != cfg.getCEnd<OpBool>("OPUA.SCIP"); ++iter)
 			{
 				if (iter.ok())
