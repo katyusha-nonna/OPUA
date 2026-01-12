@@ -737,7 +737,7 @@ void Solver::OpSCIPSolI::setParam(const OpConfig& cfg)
 			{
 				if (iter.ok())
 				{
-					OpStr pn(cfgcvt_.getCharParam(iter.getKey()));
+					OpStr pn(cfgcvt_.getStringParam(iter.getKey()));
 					SCIP_CALL_EXC1(SCIPsetStringParam(scip_, pn.c_str(), iter.getVal().c_str()));
 				}
 			}
