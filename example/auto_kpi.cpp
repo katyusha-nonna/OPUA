@@ -19,9 +19,10 @@ int main()
 	using namespace OPUA::Model;
 	using namespace OPUA::Solver;
 
-	std::ifstream fin;
-	fin.open("config.txt", std::ios::in);
-	OpCfgParser cfg(fin);
+	std::ifstream fin1;
+	fin1.open("config.txt", std::ios::in);
+	OpCfgParser cfg(fin1);
+	fin1.close();
 	OpEnv env(true, "OPUA_ENV_TEST");
 	//加载配置文件
 	OpLInt N(cfg.getLInt("AutoKPI.StaffNum", OpLInt(10))); //参数-员工人数（默认10）
@@ -72,6 +73,15 @@ int main()
 	if (lastNum > priorNum) lastNum = priorNum;
 	OpBool isSemi(cfg.getBool("AutoKPI.IsSemiannual", OpBool(true))); //参数-是否开启半年约束（默认开启）
 	if (!(M == 12 && K0 == 0)) isSemi = false;
+	OpLInt FM(cfg.getLInt("AutoKPI.FixedMonthNum", OpLInt(0))); //参数-固定结果月度数（即前FM个月的结果由输入固定，默认0）
+	if (FM < 0) FM = 0;
+	if (FM > M) FM = M;
+	std::ifstream fin2;
+	fin2.open("initial.txt", std::ios::in);
+	OpFloatArr initial(env, N * FM, 0);
+	for (OpULInt i = 0; i < N * FM; i++)
+		fin2 >> initial[i];
+	fin2.close();
 	std::default_random_engine rande;
 	std::uniform_real_distribution<OpFloat> randd1(randUB1 / 2, randUB1);
 	std::uniform_real_distribution<OpFloat> randd2(randUB2 / 2, randUB2);
@@ -303,39 +313,54 @@ int main()
 			//// B岗之间随机排序分差
 			//for (OpLInt ii = 0; ii < N - priorNum - 1; ii++)
 			//	mdl.add(OpLinCon(env, v2 * 6 * randd2(rande), z04[semiOrd[ii]] - z04[semiOrd[ii + 1]], Constant::Infinity));
-			
+			OpLInt totalM(0);
 			// 一、二季度
 			for (OpLInt k = 0; k < 2; k++)
 			{
-				if (priorNum > 0)
+				totalM += qk2[k];
+				if (totalM > FM)
 				{
-					// A岗岗内分差
-					for (OpLInt i = 0; i < priorNum - 1; i++)
-						mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
-					//// A-B岗分差
-					//mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[semiOrd[0]][k], Constant::Infinity));
-				}
-				//// B岗之间随机排序分差
-				//for (OpLInt ii = 0; ii < N - priorNum - 1; ii++)
-				//	mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[semiOrd[ii]][k] - z05[semiOrd[ii + 1]][k], Constant::Infinity));
-				// A岗排名必须大于B岗
-				for (OpLInt ii = priorNum; ii < N; ii++)
-					mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[ii][k], Constant::Infinity));
+					if (priorNum > 0)
+					{
+						// A岗岗内分差
+						for (OpLInt i = 0; i < priorNum - 1; i++)
+							mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+						//// A-B岗分差
+						//mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[semiOrd[0]][k], Constant::Infinity));
+					}
+					//// B岗之间随机排序分差
+					//for (OpLInt ii = 0; ii < N - priorNum - 1; ii++)
+					//	mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[semiOrd[ii]][k] - z05[semiOrd[ii + 1]][k], Constant::Infinity));
+					// A岗排名必须大于B岗
+					for (OpLInt ii = priorNum; ii < N; ii++)
+						mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[ii][k], Constant::Infinity));
+				}		
 			}
 			// 三、四季度A+岗员工（与B-员工数量相对应，lastNum为B-员工数量）
 			for (OpLInt k = 2; k < 4; k++)
 			{
-				if (priorNum > 0 && lastNum > 0)
+				totalM += qk2[k];
+				if (totalM > FM)
 				{
-					// A+岗员工（lastNum为B-员工数量）排名必须依次最高
-					for (OpLInt i = 0; i < lastNum - 1; i++)
-						mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
-					// A+岗员工排名必须大于其余员工
-					for (OpLInt ii = lastNum; ii < N; ii++)
-						mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[lastNum - 1][k] - z05[ii][k], Constant::Infinity));
-				}
+					if (priorNum > 0 && lastNum > 0)
+					{
+						// A+岗员工（lastNum为B-员工数量）排名必须依次最高
+						for (OpLInt i = 0; i < lastNum - 1; i++)
+							mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+						// A+岗员工排名必须大于其余员工
+						for (OpLInt ii = lastNum; ii < N; ii++)
+							mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[lastNum - 1][k] - z05[ii][k], Constant::Infinity));
+					}
+				}	
 			}			
 		}
+	}
+	// 固定初始值
+	if (FM > 0)
+	{
+		for (OpLInt i = 0; i < N; i++)
+			for (OpLInt j = 0; j < FM; j++)
+				mdl.add(OpLinCon(env, OpFloat(0), x[i][j] - initial[i * FM + j], OpFloat(0)));
 	}
 	// 目标函数
 	mdl.setObj(OpMinimize(env, obj));
