@@ -379,7 +379,7 @@ int main()
 	// 求解模型
 	solver.solve();
 	// 输出结果
-	OpDisplay dp("result.txt");
+	OpDisplay dp("results.txt");
 	dp << "Status:\t" << solver.getStatus(), dp.newLine();
 	dp << "Obj:\t" << solver.getObjValue(), dp.newLine();
 	dp << "x: ", dp.newLine();
@@ -389,6 +389,14 @@ int main()
 			dp << solver.getValue(x[i][j]) << '\t';
 		dp.newLine();
 	}
+	std::ofstream dp0("result.txt", std::ios::out);
+	for (OpULInt i = 0; i < N; i++)
+	{
+		for (OpULInt j = 0; j < M; j++)
+			dp0 << solver.getValue(x[i][j]) << '\t';
+		dp0 << std::endl;
+	}
+	dp0.close();
 	// 释放内存
 	mdl.release();
 	env.release();
