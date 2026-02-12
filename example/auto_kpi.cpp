@@ -63,7 +63,8 @@ int main()
 	OpLInt monDiffUB(cfg.getLInt("AutoKPI.MonthDiffUpperBound", OpLInt(25))); //参数-月度分差上限（默认25）
 	OpLInt quarDiffUB(cfg.getLInt("AutoKPI.QuarterDiffUpperBound", OpLInt(25))); //参数-季度分差上限（默认25）
 	OpFloat randUB1(cfg.getFloat("AutoKPI.RandomUpperBound1", OpFloat(0.005))); //参数-随机值上限1（控制A岗与B岗分差）（默认0.005）
-	OpFloat randUB2(cfg.getFloat("AutoKPI.RandomUpperBound2", OpFloat(0.001))); //参数-随机值上限2（控制A岗内部、B岗内部分差）（默认0.001）
+	OpFloat randUB2(cfg.getFloat("AutoKPI.RandomUpperBound2", OpFloat(0.001))); //参数-随机值上限2（控制A岗内部分差）（默认0.001）
+	OpFloat randUB3(cfg.getFloat("AutoKPI.RandomUpperBound3", OpFloat(0.001))); //参数-随机值上限3（控制B岗内部分差）（默认0.001）
 	OpBool isRand(cfg.getBool("AutoKPI.IsRandom", OpBool(true))); //参数-是否开启随机化（默认开启）
 	OpLInt priorNum(cfg.getLInt("AutoKPI.PriorNum", OpLInt(2))); //参数-A岗人数（默认2，不能高于总人数-1）
 	if (priorNum < 0) priorNum = 0;
@@ -84,7 +85,8 @@ int main()
 	fin2.close();
 	std::default_random_engine rande;
 	std::uniform_real_distribution<OpFloat> randd1(randUB1 / 2, randUB1);
-	std::uniform_real_distribution<OpFloat> randd2(randUB2 / 2, randUB2);
+	std::uniform_real_distribution<OpFloat> randd21(randUB2 / 2, randUB2);
+	std::uniform_real_distribution<OpFloat> randd22(randUB3 / 2, randUB3);
 	std::uniform_int_distribution<OpLInt> randd3(0, 1000 * N);
 	OpLIntArr semiOrd(env, N - priorNum, OpLInt(-1));
 	rande.seed(time(0));
@@ -292,13 +294,13 @@ int main()
 		{
 			// A岗岗内分差
 			for (OpLInt i = 0; i < priorNum - 1; i++)
-				mdl.add(OpLinCon(env, v1 * randd2(rande), z01[i] - z01[i + 1], Constant::Infinity));
+				mdl.add(OpLinCon(env, v1 * randd21(rande), z01[i] - z01[i + 1], Constant::Infinity));
 			// A-B岗分差
 			mdl.add(OpLinCon(env, v1 * randd1(rande), z01[priorNum - 1] - z01[priorNum], Constant::Infinity));
 		}
 		// B岗岗内分差
 		for (OpLInt i = priorNum; i < N - 1; i++)
-			mdl.add(OpLinCon(env, v1 * randd2(rande), z01[i] - z01[i + 1], Constant::Infinity));
+			mdl.add(OpLinCon(env, v1 * randd22(rande), z01[i] - z01[i + 1], Constant::Infinity));
 		// 半年总分差约束
 		if (isSemi)
 		{
@@ -324,7 +326,7 @@ int main()
 					{
 						// A岗岗内分差
 						for (OpLInt i = 0; i < priorNum - 1; i++)
-							mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+							mdl.add(OpLinCon(env, v2 * qk2[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
 						//// A-B岗分差
 						//mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[semiOrd[0]][k], Constant::Infinity));
 					}
@@ -346,7 +348,7 @@ int main()
 					{
 						// A+岗员工（lastNum为B-员工数量）排名必须依次最高
 						for (OpLInt i = 0; i < lastNum - 1; i++)
-							mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+							mdl.add(OpLinCon(env, v2 * qk2[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
 						// A+岗员工排名必须大于其余员工
 						for (OpLInt ii = lastNum; ii < N; ii++)
 							mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[lastNum - 1][k] - z05[ii][k], Constant::Infinity));
