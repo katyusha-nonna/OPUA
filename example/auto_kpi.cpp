@@ -24,12 +24,28 @@ int main()
 	OpCfgParser cfg(fin1);
 	fin1.close();
 	OpEnv env(true, "OPUA_ENV_TEST");
+	OpAutoFree guard([&env]() {
+		env.release();
+		});
+	OpDisplay dp("results.txt");
 	//加载配置文件
 	OpLInt N(cfg.getLInt("AutoKPI.StaffNum", OpLInt(10))); //参数-员工人数（默认10）
 	if (N < 0) N = 0;
+	if (N < 2)
+	{
+		dp << "[AutoKPI]: 输入参数员工人数不足2人，程序结束！", dp.newLine();
+		system("pause");
+		return 0;
+	}
 	OpLInt M(cfg.getLInt("AutoKPI.MonthNum", OpLInt(12))); //参数-月度数（默认12）
 	if (M < 0) M = 0;
 	if (M > 12) M = 12;
+	if (M == 0)
+	{
+		dp << "[AutoKPI]: 输入参数月度数为0，程序结束！", dp.newLine();
+		system("pause");
+		return 0;
+	}
 	OpLInt K0(cfg.getLInt("AutoKPI.LastQuarterEnd", OpLInt(0))); //参数-上一季度结束月份（默认0， 请填写0-2）
 	if (K0 < 0 || K0 > 2 || K0 >= M) K0 = 0;
 	OpLInt K(((M - K0) % 3 > 0 ? (M - K0) / 3 + 1 : (M - K0) / 3) + (K0 > 0 ? 1 : 0)); // 参数-季度数
@@ -77,11 +93,24 @@ int main()
 	OpLInt FM(cfg.getLInt("AutoKPI.FixedMonthNum", OpLInt(0))); //参数-固定结果月度数（即前FM个月的结果由输入固定，默认0）
 	if (FM < 0) FM = 0;
 	if (FM > M) FM = M;
+	if (FM == M)
+	{
+		dp << "[AutoKPI]: 参数固定结果月度数与月度数相等，程序结束！", dp.newLine();
+		system("pause");
+		return 0;
+	}
+	OpLInt isFMCons(cfg.getBool("AutoKPI.IsFixedMonthConstraint", OpBool(true))); //参数-固定结果月份是否纳入约束（如果开启，即输入的固定月份解也必须满足约束条件，否则问题将无解）
+	OpLInt objType(cfg.getLInt("AutoKPI.ObjectiveType", OpLInt(1)));
 	std::ifstream fin2;
 	fin2.open("initial.txt", std::ios::in);
 	OpFloatArr initial(env, N * FM, 0);
 	for (OpULInt i = 0; i < N * FM; i++)
 		fin2 >> initial[i];
+	OpFloatArr initSum0(env, FM, 0); // 初始解月度总分
+	for (OpLInt i = 0; i < N; i++)
+		for (OpLInt j = 0; j < FM; j++)
+			initSum0[j] += initial[i * FM + j];
+	OpFloat initSum1(Math::OpSum(initSum0));
 	fin2.close();
 	std::default_random_engine rande;
 	std::uniform_real_distribution<OpFloat> randd1(randUB1 / 2, randUB1);
@@ -185,15 +214,23 @@ int main()
 		}
 	}
 	// 中间变量
-	OpLinExpr obj; // 中间变量-目标函数
+	OpLinExpr obj0; // 中间变量-目标函数
+	OpLinExpr obj1, obj2, obj3;
 	OpLEArr s1(env, N, OpFloat(0)); // 中间变量数组-个人年度总分
 	OpLEArr s2(env, M, OpFloat(0)); // 中间变量数组-员工月度总分
 	OpLEArr s3(env, K, OpFloat(0)); // 中间变量数组-员工季度总分
 	OpLEArr s4(env, N, OpFloat(0)); // 中间变量数组-个人半年总分
 	OpArray<OpLEArr> s5(env, N, env, K, OpFloat(0)); // 中间变量-个人季度总分
-	OpFloat v1(monArg * M); // 中间变量-个人年度总分均值（月度均值*月份数）
-	OpFloat v2(monArg); // 中间变量-月度均值
-	OpFloat v3(monArg); // 中间变量-季度均值
+	OpFloat v1(isFMCons ? monArg * M : initSum1 / N + monArg * (M - FM)); // 中间变量-个人年度总分均值（月度均值*月份数）
+	OpFloat v20(monArg); // 中间变量-月度均值
+	OpFloatArr v2(env, M, v20);
+	for (OpLInt j = 0; j < FM; j++)
+		v2[j] = initSum0[j] / N;
+	OpFloat v30(monArg * 3); // 中间变量-季度均值
+	OpFloatArr v3(env, K, OpFloat(0));
+	for (OpULInt k = 0; k < K; k++)
+		for (OpLInt j0(qk1[k]), j1(j0 + qk2[k]), j(j0); j < j1; j++)
+			v3[k] += v2[j];
 	//OpQEArr d1(env, N, OpFloat(0)); // 中间变量-年度总分离散值（ (个人年度总分-年度均分)*2 ）
 	OpLEArr d1(env, N, OpFloat(0)); // 中间变量-年度总分离散值（ (个人年度总分-年度均分) ）
 	//OpArray<OpQEArr> d2(env, N, env, M, OpFloat(0)); // 中间变量-月度总分离散值（ (月度得分-月度均分)*2 ）
@@ -227,17 +264,20 @@ int main()
 					s5[i][k] += x[i][j];
 	}
 	for (OpLInt i = 0; i < N; i++)
-		obj += z1[i];
+		obj0 += z1[i];
+	obj1 = s1[0] - s1[N - 1];
+	obj2 = s1[N - 1] - s1[0];
+	obj3 = OpFloat(0);
 	//obj /= v1 * N;
 	for (OpLInt i = 0; i < N; i++)
 		d1[i] = z01[i] - v1;
 	for (OpLInt i = 0; i < N; i++)
 		for (OpLInt j = 0; j < M; j++)
-			d2[i][j] = x[i][j] - v2;
+			d2[i][j] = x[i][j] - v2[j];
 	for (OpLInt i = 0; i < N; i++)
 		for (OpULInt k = 0; k < K; k++)
 			for (OpLInt j0(qk1[k]), j1(j0 + qk2[k]), j(j0); j < j1; j++)
-				d3[i][k] += x[i][j] - v2;
+				d3[i][k] += x[i][j] - v2[j];
 	for (OpLInt j = 0; j < M; j++)
 		for (OpLInt i = 0; i < N; i++)
 			a2[j] += z3[i][j];
@@ -252,7 +292,7 @@ int main()
 		mdl.add(OpLinCon(env, OpFloat(0), d1[i] - z2[i], OpFloat(0)));
 	for (OpLInt i = 0; i < N; i++)
 		mdl.add(OpAbs(env, z1[i], z2[i]));
-	mdl.add(OpLinCon(env, yearLB * v1 * N, obj, Constant::Infinity));
+	mdl.add(OpLinCon(env, isFMCons ? yearLB * v1 * N : yearLB * (v20 * (M - FM) * N + initSum1), obj0, Constant::Infinity));
 	// 月度
 	//for (OpLInt j = 0; j < M; j++)
 		//mdl.add(OpLinCon(env, OpFloat(0), s2[j] - z02[j], OpFloat(0)));
@@ -262,10 +302,10 @@ int main()
 	for (OpLInt i = 0; i < N; i++)
 		for (OpLInt j = 0; j < M; j++)
 			mdl.add(OpAbs(env, z3[i][j], z4[i][j]));
-	for (OpLInt j = 0; j < M; j++)
-		mdl.add(OpLinCon(env, monLB * v2 * N, a2[j], monUB * v2 * N));
-	for (OpLInt j = 0; j < M; j++)
-		mdl.add(OpLinCon(env, v2 * N, s2[j], v2 * N));
+	for (OpLInt j = isFMCons ? 0 : FM; j < M; j++)
+		mdl.add(OpLinCon(env, monLB * v20 * N, a2[j], monUB * v20 * N));
+	for (OpLInt j = isFMCons ? 0 : FM; j < M; j++)
+		mdl.add(OpLinCon(env, v20 * N, s2[j], v20 * N));
 	// 季度
 	//for (OpLInt k = 0; k < K; k++)
 		//mdl.add(OpLinCon(env, OpFloat(0), s3[k] - z03[k], OpFloat(0)));
@@ -275,8 +315,13 @@ int main()
 	for (OpLInt i = 0; i < N; i++)
 		for (OpLInt k = 0; k < K; k++)
 			mdl.add(OpAbs(env, z5[i][k], z6[i][k]));
+	OpLInt totalM(0);
 	for (OpLInt k = 0; k < K; k++)
-		mdl.add(OpLinCon(env, quarLB * v2 * qk2[k] * N, a3[k], quarUB * v2 * qk2[k] * N));
+	{
+		totalM += qk2[k];
+		if (totalM > FM || isFMCons)
+			mdl.add(OpLinCon(env, quarLB * v3[k] * N, a3[k], quarUB * v3[k] * N));
+	}
 	// 半年度
 	if (isSemi)
 	{
@@ -315,7 +360,7 @@ int main()
 			//// B岗之间随机排序分差
 			//for (OpLInt ii = 0; ii < N - priorNum - 1; ii++)
 			//	mdl.add(OpLinCon(env, v2 * 6 * randd2(rande), z04[semiOrd[ii]] - z04[semiOrd[ii + 1]], Constant::Infinity));
-			OpLInt totalM(0);
+			totalM = 0;
 			// 一、二季度
 			for (OpLInt k = 0; k < 2; k++)
 			{
@@ -326,7 +371,7 @@ int main()
 					{
 						// A岗岗内分差
 						for (OpLInt i = 0; i < priorNum - 1; i++)
-							mdl.add(OpLinCon(env, v2 * qk2[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+							mdl.add(OpLinCon(env, v3[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
 						//// A-B岗分差
 						//mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[semiOrd[0]][k], Constant::Infinity));
 					}
@@ -335,7 +380,7 @@ int main()
 					//	mdl.add(OpLinCon(env, v2 * qk2[k] * randd2(rande), z05[semiOrd[ii]][k] - z05[semiOrd[ii + 1]][k], Constant::Infinity));
 					// A岗排名必须大于B岗
 					for (OpLInt ii = priorNum; ii < N; ii++)
-						mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[priorNum - 1][k] - z05[ii][k], Constant::Infinity));
+						mdl.add(OpLinCon(env, v3[k] * randd1(rande), z05[priorNum - 1][k] - z05[ii][k], Constant::Infinity));
 				}		
 			}
 			// 三、四季度A+岗员工（与B-员工数量相对应，lastNum为B-员工数量）
@@ -348,10 +393,10 @@ int main()
 					{
 						// A+岗员工（lastNum为B-员工数量）排名必须依次最高
 						for (OpLInt i = 0; i < lastNum - 1; i++)
-							mdl.add(OpLinCon(env, v2 * qk2[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
+							mdl.add(OpLinCon(env, v3[k] * randd21(rande), z05[i][k] - z05[i + 1][k], Constant::Infinity));
 						// A+岗员工排名必须大于其余员工
 						for (OpLInt ii = lastNum; ii < N; ii++)
-							mdl.add(OpLinCon(env, v2 * qk2[k] * randd1(rande), z05[lastNum - 1][k] - z05[ii][k], Constant::Infinity));
+							mdl.add(OpLinCon(env, v3[k] * randd1(rande), z05[lastNum - 1][k] - z05[ii][k], Constant::Infinity));
 					}
 				}	
 			}			
@@ -365,7 +410,15 @@ int main()
 				mdl.add(OpLinCon(env, OpFloat(0), x[i][j] - initial[i * FM + j], OpFloat(0)));
 	}
 	// 目标函数
-	mdl.setObj(OpMinimize(env, obj));
+	//mdl.setObj(OpMinimize(env, obj));
+	if (objType == 2) // 年度总分最小化（快速计算）
+		mdl.setObj(OpMinimize(env, obj1));
+	else if (objType == 3)  // 年度总分最大化（快速计算）
+		mdl.setObj(OpMinimize(env, obj2));
+	else if (objType == 4) // 返回任意可行解
+		mdl.setObj(OpMinimize(env, obj3));
+	else // 默认-年度指标最小化
+		mdl.setObj(OpMinimize(env, obj0));
 	//mdl.write("");
 	// 创建求解器对象并抽取模型
 	OpSCIPSol solver(env, mdl);
@@ -381,10 +434,10 @@ int main()
 	// 求解模型
 	solver.solve();
 	// 输出结果
-	OpDisplay dp("results.txt");
-	dp << "Status:\t" << solver.getStatus(), dp.newLine();
-	dp << "Obj:\t" << solver.getObjValue(), dp.newLine();
-	dp << "x: ", dp.newLine();
+	OpSolStatus solstat(IntSCIPStatus2OpStatus(solver.getStatus()));
+	dp << "[AutoKPI]: Status:\t" << solver.getStatus(), dp.newLine();
+	dp << "[AutoKPI]: Obj:\t" << solver.getObjValue(), dp.newLine();
+	dp << "[AutoKPI]: x: ", dp.newLine();
 	for (OpULInt i = 0; i < N; i++)
 	{
 		for (OpULInt j = 0; j < M; j++)
@@ -399,9 +452,20 @@ int main()
 		dp0 << std::endl;
 	}
 	dp0.close();
+	if (solstat == OpSolStatus::Optimal)
+		dp << "[AutoKPI]: 已找到最优解，程序结束！", dp.newLine();
+	else if(solstat == OpSolStatus::Feasible)
+		dp << "[AutoKPI]: 已找到可行解，程序结束！", dp.newLine();
+	else if(solstat == OpSolStatus::TimeLimit)
+		dp << "[AutoKPI]: 已超出求解时间限制，程序结束！", dp.newLine();
+	else if (solstat == OpSolStatus::GapLimit)
+		dp << "[AutoKPI]: 已超出求解间隙限制，程序结束！", dp.newLine();
+	else if (solstat == OpSolStatus::Infeasible || solstat == OpSolStatus::Unbounded || solstat == OpSolStatus::InfeasibleOrUnbounded)
+		dp << "[AutoKPI]: 原问题无可行解/无上下界，结果无效，请检查初始解或调整参数，程序结束！", dp.newLine();
+	else
+		dp << "[AutoKPI]: 未知问题，结果无效，程序结束！", dp.newLine();
 	// 释放内存
 	mdl.release();
-	env.release();
 	system("pause");
 	return 0;
 }

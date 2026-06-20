@@ -89,12 +89,17 @@ namespace OPUA
 		// OPUA求解状态
 		enum class OpSolStatus
 		{
-			Unknown,
-			Feasible,
-			Optimal,
-			Infeasible,
-			Unbounded,
-			InfeasibleOrUnbounded
+			Unknown, // 未知状态
+			Feasible, // 可行
+			Optimal, // 最优
+			Infeasible, // 不可行
+			Unbounded, // 无界
+			InfeasibleOrUnbounded, // 不可行或无界
+			TimeLimit, // 超出计算时间限制
+			GapLimit, // 超出收敛间隙限制
+			IterLimit, // 超出迭代次数限制
+			MemLimit, // 超出内存限制
+			SolLimit // 超出解数量限制
 		};
 
 		// 通用配置器
